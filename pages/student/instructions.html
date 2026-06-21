@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Instructions — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="/pages/student/dashboard.html" class="iconbtn">&larr;</a>
+      <span class="appbar__title">Exam instructions</span>
+    </div>
+
+    <div class="app__body">
+      <h1 class="title-lg" style="margin-bottom: 4px;" id="examTitle">Exam</h1>
+      <span class="badge badge--violet mb-4" id="examBadge">&mdash;</span>
+
+      <div class="stat-grid">
+        <div class="stat"><div class="stat__n" id="statQuestions">&ndash;</div><div class="stat__l">Questions</div></div>
+        <div class="stat"><div class="stat__n" id="statMarks">&ndash;</div><div class="stat__l">Marks</div></div>
+        <div class="stat"><div class="stat__n" id="statPass">&ndash;</div><div class="stat__l">Pass %</div></div>
+      </div>
+
+      <!-- CHOOSE FORMAT -->
+      <h3 class="title-md mb-4 mt-6">Choose your format</h3>
+      <div class="chips mb-4" id="formatChips">
+        <div class="chip is-active" data-format="objective">Objective</div>
+        <div class="chip" data-format="theory">Theory</div>
+        <div class="chip" data-format="mixed">Mixed</div>
+      </div>
+
+      <!-- CHOOSE TIME -->
+      <h3 class="title-md mb-4">Choose your time</h3>
+      <div class="chips mb-4" id="timeChips">
+        <div class="chip" data-min="10">10 min</div>
+        <div class="chip" data-min="20">20 min</div>
+        <div class="chip is-active" data-min="30">30 min</div>
+        <div class="chip" data-min="45">45 min</div>
+        <div class="chip" data-min="60">1 hr</div>
+        <div class="chip" data-min="90">1.5 hr</div>
+        <div class="chip" data-min="120">2 hr</div>
+      </div>
+
+      <h3 class="title-md mb-4 mt-6">Before you begin</h3>
+      <div class="col" style="gap: 11px; margin-bottom: 18px;">
+        <div class="feature"><span class="feature__icon">1</span> Read each question carefully</div>
+        <div class="feature"><span class="feature__icon">2</span> Navigate freely between questions</div>
+        <div class="feature"><span class="feature__icon">3</span> Progress auto-saves as you go</div>
+        <div class="feature"><span class="feature__icon">4</span> Submit before the timer runs out</div>
+      </div>
+
+      <label class="feature" style="font-size: 13px; margin-bottom: 16px;">
+        <input type="checkbox" class="checkbox" id="agree">&nbsp;I've read and understood the instructions
+      </label>
+
+      <button class="btn btn--primary" id="continueBtn">I'm ready &mdash; continue</button>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const examId = params.get('exam') || '';
+    let format = 'objective', minutes = 30;
+
+    // chip pickers
+    function wireChips(id, attr, onPick) {
+      document.getElementById(id).addEventListener('click', e => {
+        const chip = e.target.closest('.chip'); if (!chip) return;
+        [...e.currentTarget.children].forEach(c => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        onPick(chip.getAttribute(attr));
+      });
+    }
+    wireChips('formatChips', 'data-format', v => format = v);
+    wireChips('timeChips', 'data-min', v => minutes = parseInt(v));
+
+    // load real exam info
+    (async function () {
+      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED || !examId) return;
+      const exam = await RunyxData.getExam(examId).catch(() => null);
+      if (!exam) return;
+      document.getElementById('examTitle').textContent = exam.title;
+      document.getElementById('examBadge').textContent = (exam.type || 'Exam').toUpperCase();
+      document.getElementById('statQuestions').textContent = exam.questionsCount || '–';
+      document.getElementById('statMarks').textContent = exam.totalMarks || '–';
+      document.getElementById('statPass').textContent = exam.passMark || '–';
+    })();
+
+    // continue → save chosen format + time, go to permissions
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      if (!document.getElementById('agree').checked) { alert('Please confirm you have read the instructions.'); return; }
+      sessionStorage.setItem('runyx_format', format);
+      sessionStorage.setItem('runyx_minutes', minutes);
+      location.href = '/pages/student/permissions.html' + (examId ? '?exam=' + examId : '');
+    });
+  </script>
+</body>
+</html>

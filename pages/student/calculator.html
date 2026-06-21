@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Calculator — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <button class="iconbtn" onclick="history.back()">&larr;</button>
+      <span class="appbar__title">Scientific calculator</span>
+    </div>
+
+    <div class="app__body">
+      <div class="calc-display">
+        <div class="calc-expr" id="expr">&nbsp;</div>
+        <div class="calc-result" id="result">0</div>
+      </div>
+
+      <input class="input mt-4" id="manual" placeholder="…or type, e.g. det([1,2;3,4]) or 2+3i" autocomplete="off">
+
+      <div class="calc-grid">
+        <button class="calc-key calc-key--fn" data-i="sin(">sin</button>
+        <button class="calc-key calc-key--fn" data-i="cos(">cos</button>
+        <button class="calc-key calc-key--fn" data-i="tan(">tan</button>
+        <button class="calc-key calc-key--fn" data-i="log(">log</button>
+        <button class="calc-key calc-key--fn" data-i="log(">ln</button>
+
+        <button class="calc-key calc-key--fn" data-i="asin(">sin⁻¹</button>
+        <button class="calc-key calc-key--fn" data-i="acos(">cos⁻¹</button>
+        <button class="calc-key calc-key--fn" data-i="atan(">tan⁻¹</button>
+        <button class="calc-key calc-key--fn" data-i="sqrt(">√</button>
+        <button class="calc-key calc-key--fn" data-i="^">xʸ</button>
+
+        <button class="calc-key calc-key--fn" data-i="pi">π</button>
+        <button class="calc-key calc-key--fn" data-i="e">e</button>
+        <button class="calc-key calc-key--fn" data-i="!">n!</button>
+        <button class="calc-key calc-key--fn" data-i="i">i</button>
+        <button class="calc-key calc-key--fn" data-i="abs(">|x|</button>
+
+        <button class="calc-key calc-key--fn" data-i="det([1,2;3,4])">det</button>
+        <button class="calc-key calc-key--fn" data-i="inv([1,2;3,4])">inv</button>
+        <button class="calc-key calc-key--fn" data-i="[1,2;3,4]">matrix</button>
+        <button class="calc-key calc-key--fn" data-i='integrate("x^2",0,1)'>∫dx</button>
+        <button class="calc-key calc-key--fn" data-i='derivative("x^2","x")'>d/dx</button>
+      </div>
+
+      <div class="calc-grid">
+        <button class="calc-key" data-i="7">7</button>
+        <button class="calc-key" data-i="8">8</button>
+        <button class="calc-key" data-i="9">9</button>
+        <button class="calc-key calc-key--op" data-i="/">÷</button>
+        <button class="calc-key calc-key--op" id="clear">C</button>
+
+        <button class="calc-key" data-i="4">4</button>
+        <button class="calc-key" data-i="5">5</button>
+        <button class="calc-key" data-i="6">6</button>
+        <button class="calc-key calc-key--op" data-i="*">×</button>
+        <button class="calc-key calc-key--op" id="back">⌫</button>
+
+        <button class="calc-key" data-i="1">1</button>
+        <button class="calc-key" data-i="2">2</button>
+        <button class="calc-key" data-i="3">3</button>
+        <button class="calc-key calc-key--op" data-i="-">−</button>
+        <button class="calc-key calc-key--op" data-i="(">(</button>
+
+        <button class="calc-key" data-i="0">0</button>
+        <button class="calc-key" data-i=".">.</button>
+        <button class="calc-key calc-key--op" data-i=",">,</button>
+        <button class="calc-key calc-key--op" data-i="+">+</button>
+        <button class="calc-key calc-key--op" data-i=")">)</button>
+
+        <button class="calc-key calc-key--eq calc-key--wide" id="equals">=</button>
+        <button class="calc-key calc-key--op calc-key--wide" id="ans">Ans</button>
+        <button class="calc-key calc-key--op" data-i=";">;</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@13.2.0/lib/browser/math.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    const exprEl = document.getElementById('expr');
+    const resEl  = document.getElementById('result');
+    const manual = document.getElementById('manual');
+    let expr = '', ans = 0, mathReady = (typeof math !== 'undefined');
+
+    if (mathReady) {
+      math.import({
+        integrate: function (fStr, a, b) {
+          const f = math.compile(fStr);
+          const n = 1000, h = (b - a) / n;
+          let s = f.evaluate({ x: a }) + f.evaluate({ x: b });
+          for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f.evaluate({ x: a + i * h });
+          return (h / 3) * s;
+        },
+        derivative: function (fStr, v) { return math.derivative(fStr, v).toString(); },
+      }, { override: true });
+    } else {
+      resEl.textContent = 'Loading…';
+    }
+
+    function fmt(v) { try { return math.format(v, { precision: 10 }); } catch (e) { return String(v); } }
+
+    // live evaluate — never flash an error while typing
+    function tryEval() {
+      const src = manual.value;
+      if (!src) { resEl.textContent = '0'; return; }
+      if (!mathReady) return;
+      try { const out = math.evaluate(src); ans = out; resEl.textContent = fmt(out); } catch (e) {}
+    }
+    // final evaluate — show error if invalid
+    function finalEval() {
+      const src = manual.value;
+      if (!src || !mathReady) return;
+      try { const out = math.evaluate(src); ans = out; resEl.textContent = fmt(out); }
+      catch (e) { resEl.textContent = 'Error'; }
+    }
+
+    function sync() { exprEl.textContent = expr || '\u00A0'; manual.value = expr; }
+
+    document.querySelectorAll('[data-i]').forEach(b =>
+      b.addEventListener('click', () => { expr = manual.value + b.getAttribute('data-i'); sync(); tryEval(); }));
+
+    document.getElementById('clear').onclick  = () => { expr = ''; sync(); resEl.textContent = '0'; };
+    document.getElementById('back').onclick   = () => { expr = manual.value.slice(0, -1); sync(); tryEval(); };
+    document.getElementById('equals').onclick = finalEval;
+    document.getElementById('ans').onclick    = () => { expr = manual.value + fmt(ans); sync(); };
+
+    manual.addEventListener('input', () => { expr = manual.value; exprEl.textContent = expr || '\u00A0'; tryEval(); });
+    manual.addEventListener('keydown', e => { if (e.key === 'Enter') finalEval(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI study mode — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/results.html" class="iconbtn">←</a>
+      <span class="appbar__title">AI study mode</span>
+    </div>
+
+    <div class="app__body">
+      <p class="eyebrow">Personalized for you</p>
+      <h1 class="title-lg mb-4">Turn mistakes into mastery</h1>
+
+      <a href="/pages/student/notes.html" class="list-item">
+        <div class="list-item__icon">📔</div>
+        <div style="flex:1;"><div class="list-item__text">Study notes</div><div class="list-item__sub">13 generated notes</div></div><span>›</span>
+      </a>
+      <a href="/pages/student/notes.html" class="list-item">
+        <div class="list-item__icon">🃏</div>
+        <div style="flex:1;"><div class="list-item__text">Flashcards</div><div class="list-item__sub">24 cards from weak topics</div></div><span>›</span>
+      </a>
+      <a href="/pages/student/instructions.html" class="list-item">
+        <div class="list-item__icon">📝</div>
+        <div style="flex:1;"><div class="list-item__text">Practice quiz</div><div class="list-item__sub">15 questions · weak areas</div></div><span>›</span>
+      </a>
+      <a href="/pages/student/notes.html" class="list-item">
+        <div class="list-item__icon">🎯</div>
+        <div style="flex:1;"><div class="list-item__text">Weak topics</div><div class="list-item__sub">3 topics need attention</div></div><span>›</span>
+      </a>
+      <a href="/pages/student/notes.html" class="list-item">
+        <div class="list-item__icon">📅</div>
+        <div style="flex:1;"><div class="list-item__text">Study plan</div><div class="list-item__sub">7-day improvement plan</div></div><span>›</span>
+      </a>
+
+      <div class="card card--accent mt-4">
+        <p class="text-tiny" style="margin-bottom: 6px;">Exam readiness</p>
+        <div class="between mb-4">
+          <b class="title-md">72%</b>
+          <span class="text-tiny">+8% this week</span>
+        </div>
+        <div class="pbar"><i class="pbar__fill" style="width: 72%;"></i></div>
+      </div>
+    </div>
+
+    <nav class="tabbar" data-nav="study"></nav>
+  </div>
+
+  <script src="/js/ui.js"></script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

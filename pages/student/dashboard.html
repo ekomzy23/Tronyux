@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <div style="flex: 1;">
+        <p class="text-muted" style="margin-bottom: 2px;">Good morning &#128075;</p>
+        <h2 id="userName" style="font-family: var(--font-display); font-size: 21px; font-weight: 600;">John Dave</h2>
+      </div>
+      <a href="/pages/student/notifications.html" class="iconbtn">&#128276;</a>
+      <a href="/pages/student/search.html" class="iconbtn">&#128269;</a>
+    </div>
+
+    <div class="app__body">
+
+      <div class="card card--brand">
+        <p style="font-size: 13px; opacity: .85;">Next exam in</p>
+        <h3 class="title-md" style="margin: 4px 0;" id="nextExamTitle">No upcoming exam</h3>
+        <div class="between" style="margin-top: 10px;">
+          <span class="text-tiny" style="color: rgba(255,255,255,.85);">20 May &middot; 10:00 AM &middot; 90 min</span>
+          <a href="/pages/student/instructions.html" id="nextExamLink" class="btn btn--sm" style="background: rgba(255,255,255,.18); color:#fff;">Open</a>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat stat--accent"><div class="stat__n">0</div><div class="stat__l">Exams</div></div>
+        <div class="stat"><div class="stat__n">–</div><div class="stat__l">Avg score</div></div>
+        <div class="stat"><div class="stat__n">–</div><div class="stat__l">Avg rank</div></div>
+      </div>
+
+      <div class="between mb-4">
+        <h3 class="title-md">Upcoming exams</h3>
+        <a href="/pages/student/exams.html" class="link text-tiny">View all</a>
+      </div>
+
+      <div class="chips mb-4" id="yearChips">
+        <div class="chip" data-level="1">Year 1</div>
+        <div class="chip" data-level="2">Year 2</div>
+        <div class="chip" data-level="3">Year 3</div>
+        <div class="chip" data-level="4">Year 4</div>
+        <div class="chip" data-level="5">Year 5</div>
+      </div>
+
+
+      <!-- live exams render here; static cards are the fallback -->
+      <div id="examList">
+        <a href="/pages/student/instructions.html" class="row-card"><div class="row-card__icon">&#128218;</div><div class="row-card__meta"><h4>Data Structures Final</h4><p>26 May &middot; 10:10 AM &middot; 60 marks</p></div><span class="badge badge--violet">Final</span></a>
+        <a href="/pages/student/instructions.html" class="row-card"><div class="row-card__icon">&#9881;&#65039;</div><div class="row-card__meta"><h4>Operating Systems Mid Sem</h4><p>28 May &middot; 01:00 PM &middot; 40 marks</p></div><span class="badge badge--green">Mid</span></a>
+        <a href="/pages/student/instructions.html" class="row-card"><div class="row-card__icon">&#128451;&#65039;</div><div class="row-card__meta"><h4>Database Systems Quiz</h4><p>30 May &middot; 11:00 AM &middot; 20 marks</p></div><span class="badge badge--violet">Quiz</span></a>
+      </div>
+
+
+      <h3 class="title-md mb-4 mt-6">Learn</h3>
+      <a href="/pages/student/library.html" class="row-card">
+        <div class="row-card__icon">📚</div>
+        <div class="row-card__meta"><h4>Library</h4><p>Read AI book summaries before you study</p></div>
+        <span>›</span>
+      </a>
+    </div>
+
+    <nav class="tabbar" data-nav="dashboard"></nav>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/render.js"></script>
+  <script>
+    (async function () {
+      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED) return;
+
+      const user = await RunyxData.currentUser();
+      if (user) document.getElementById('userName').textContent = (user.name || 'Student').split(' ')[0];
+
+      let level = await RunyxData.getLevel();
+      const chips = document.getElementById('yearChips');
+      const listEl = document.getElementById('examList');
+
+      function markYear(l){ [...chips.children].forEach(c => c.classList.toggle('is-active', +c.dataset.level === l)); }
+
+      async function loadExams(l) {
+        listEl.innerHTML = '<div class="empty"><div class="empty__icon">⏳</div><p>Loading…</p></div>';
+        const exams = await RunyxData.listExams(l);
+        if (!exams.length) {
+          listEl.innerHTML = '<div class="empty"><div class="empty__icon">📭</div><p>No exams for Year ' + l + ' yet.</p></div>';
+          document.getElementById('nextExamTitle').textContent = 'No upcoming exam';
+          return;
+        }
+        listEl.innerHTML = exams.map(renderExamCard).join('');
+        const first = exams[0];
+        document.getElementById('nextExamTitle').textContent = first.title;
+        document.getElementById('nextExamLink').href = '/pages/student/instructions.html?exam=' + first.$id;
+      }
+
+      markYear(level);
+      loadExams(level);
+      chips.addEventListener('click', e => {
+        const chip = e.target.closest('.chip'); if (!chip) return;
+        level = +chip.dataset.level; markYear(level); loadExams(level);
+      });
+    })();
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "runyx-backend-setup",
+  "version": "1.0.0",
+  "description": "Build the RUNYX Appwrite backend (database, collections, storage) and seed data in one command.",
+  "type": "commonjs",
+  "scripts": {
+    "backend": "node install.js",
+    "setup": "node setup.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "node-appwrite": "^14.1.0",
+    "dotenv": "^16.4.5"
+  }
+}

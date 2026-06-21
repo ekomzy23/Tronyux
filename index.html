@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Runyx — Exams. Evolved.</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Styles (always in this order) -->
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+
+  <!-- ============ App shell ============ -->
+  <div class="app">
+
+    <!-- Status bar -->
+
+    <!-- ============ Splash content ============ -->
+    <div class="app__body center" style="gap: var(--space-5);">
+      <div class="logo-mark logo-mark--lg">R</div>
+      <h1 class="title-xl">Runyx</h1>
+      <p class="text-muted" style="max-width: 260px;">
+        Exams. Evolved. Learning. Empowered.<br>
+        Your smart way to learn and excel.
+      </p>
+      <div class="pbar" style="width: 140px; margin-top: var(--space-2);">
+        <i class="pbar__fill" style="width: 0;" id="loaderFill"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ Splash logic ============ -->
+  <script>
+    // Animate the loader bar, then move to the welcome screen.
+    const fill = document.getElementById('loaderFill');
+
+    // kick off the fill on the next frame so the transition runs
+    requestAnimationFrame(() => {
+      fill.style.transition = 'width 2s ' + 'cubic-bezier(.2,.8,.2,1)';
+      fill.style.width = '100%';
+    });
+
+    // advance to welcome after the splash plays
+    setTimeout(() => {
+      window.location.href = '/pages/auth/welcome.html';
+    }, 2200);
+
+    // let the user tap anywhere to skip
+    document.body.addEventListener('click', () => {
+      window.location.href = '/pages/auth/welcome.html';
+    });
+  </script>
+
+  <script src="/js/theme.js"></script>
+</body>
+</html>

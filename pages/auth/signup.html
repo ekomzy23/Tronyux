@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sign up — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/auth/welcome.html" class="iconbtn">←</a>
+      <span class="appbar__title"></span>
+    </div>
+
+    <div class="app__body">
+      <p class="eyebrow">Create account</p>
+      <h1 class="title-lg mb-4">Sign up to get started</h1>
+
+      <div class="field">
+        <label class="field__label">Full name</label>
+        <input class="input" id="name" placeholder="John Dave">
+      </div>
+      <div class="field">
+        <label class="field__label">Email address</label>
+        <input class="input" id="email" type="email" placeholder="john.dave@gmail.com">
+      </div>
+      <div class="field">
+        <label class="field__label">Password</label>
+        <input class="input" id="password" type="password" placeholder="••••••••">
+      </div>
+      <div class="field">
+        <label class="field__label">Confirm password</label>
+        <input class="input" id="confirm" type="password" placeholder="••••••••">
+      </div>
+
+      <label class="feature" style="font-size: 13px; margin: 6px 0 16px;">
+        <input type="checkbox" class="checkbox" id="agree">&nbsp;
+        I agree to the <span class="link">Terms &amp; Privacy Policy</span>
+      </label>
+
+      <button class="btn btn--primary" id="signupBtn" data-label="Create account">Create account</button>
+
+      <p class="text-center text-muted mt-4">
+        Already have an account? <a href="/pages/auth/login.html" class="link">Log in</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script>
+    document.getElementById('signupBtn').addEventListener('click', () => {
+      const name     = document.getElementById('name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm  = document.getElementById('confirm').value;
+      const agree    = document.getElementById('agree').checked;
+      const emailOk  = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+
+      if (!name)                return toast('Enter your full name.');
+      if (!emailOk)             return toast('Enter a valid email address.');
+      if (password.length < 8)  return toast('Password must be at least 8 characters.');
+      if (password !== confirm) return toast('Passwords do not match.');
+      if (!agree)               return toast('Please accept the terms.');
+
+      runyxSignup(name, email, password);
+    });
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

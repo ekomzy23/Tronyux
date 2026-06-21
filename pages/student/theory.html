@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Theory — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/exam.html" class="iconbtn">&larr;</a>
+      <div style="flex: 1;"></div>
+      <span class="timer">&#9201; 01:18:02</span>
+    </div>
+
+    <div class="app__body">
+      <div class="between mb-4">
+        <span class="text-tiny">Question 25 of 60</span>
+        <span class="badge badge--green">Theory &middot; 5 marks</span>
+      </div>
+
+      <h3 class="title-md mb-4">Explain the concept of recursion with an example.</h3>
+
+      <!-- answer auto-saves: the data-autosave key makes it unique -->
+      <textarea class="input" id="answer25" rows="7"
+                data-autosave="exam:ds-final:q25"
+                placeholder="Write your answer here&hellip;"></textarea>
+
+      <!-- live save status -->
+      <div class="row" style="justify-content: flex-end; margin-top: 6px;">
+        <span class="text-tiny" data-status data-for="answer25"></span>
+      </div>
+
+      <div class="card mt-4 row" style="justify-content: space-around;">
+        <span class="link text-tiny">&fnof; Equation</span>
+        <span class="link text-tiny">&#127912; Canvas</span>
+        <span class="link text-tiny">&#10515; Upload</span>
+      </div>
+    </div>
+
+    <nav class="tabbar tabbar--actions">
+      <a href="/pages/student/exam.html" class="btn btn--ghost">&larr; Previous</a>
+      <a href="/pages/student/upload.html" class="btn btn--primary">Next &rarr;</a>
+    </nav>
+  </div>
+
+  <!-- real-time auto-save -->
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/autosave.js"></script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

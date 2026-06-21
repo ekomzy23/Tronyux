@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Exams — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/dashboard.html" class="iconbtn">&larr;</a>
+      <span class="appbar__title">Exams</span>
+      <a href="/pages/student/search.html" class="iconbtn">&#128269;</a>
+    </div>
+
+    <div class="app__body">
+      <div class="chips mb-4">
+        <div class="chip is-active">All</div>
+        <div class="chip">Upcoming</div>
+        <div class="chip">Ongoing</div>
+        <div class="chip">Completed</div>
+      </div>
+
+      <div class="chips mb-4" id="yearChips">
+        <div class="chip" data-level="1">Year 1</div>
+        <div class="chip" data-level="2">Year 2</div>
+        <div class="chip" data-level="3">Year 3</div>
+        <div class="chip" data-level="4">Year 4</div>
+        <div class="chip" data-level="5">Year 5</div>
+      </div>
+
+      <div id="examList">
+        <div class="empty"><div class="empty__icon">📭</div><p>No exams yet. They appear here once published in Appwrite.</p></div>
+      </div>
+    </div>
+
+    <nav class="tabbar" data-nav="exams"></nav>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/render.js"></script>
+  <script>
+    (async function () {
+      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED) return;
+      let level = await RunyxData.getLevel();
+      const chips = document.getElementById('yearChips');
+      const listEl = document.getElementById('examList');
+      function markYear(l){ [...chips.children].forEach(c => c.classList.toggle('is-active', +c.dataset.level === l)); }
+      async function load(l) {
+        listEl.innerHTML = '<div class="empty"><div class="empty__icon">⏳</div><p>Loading…</p></div>';
+        const exams = await RunyxData.listExams(l);
+        listEl.innerHTML = exams.length
+          ? exams.map(renderExamCard).join('')
+          : '<div class="empty"><div class="empty__icon">📭</div><p>No exams for Year ' + l + ' yet.</p></div>';
+      }
+      markYear(level); load(level);
+      chips.addEventListener('click', e => {
+        const chip = e.target.closest('.chip'); if (!chip) return;
+        level = +chip.dataset.level; markYear(level); load(level);
+      });
+    })();
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

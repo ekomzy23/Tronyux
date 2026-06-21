@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Log in — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/auth/welcome.html" class="iconbtn">←</a>
+      <span class="appbar__title"></span>
+    </div>
+
+    <div class="app__body">
+      <p class="eyebrow">Welcome back</p>
+      <h1 class="title-lg mb-4">Continue your learning journey</h1>
+
+      <div class="field">
+        <label class="field__label">Email or username</label>
+        <input class="input" id="email" type="email" placeholder="john.dave@gmail.com">
+      </div>
+      <div class="field">
+        <label class="field__label">Password</label>
+        <input class="input" id="password" type="password" placeholder="••••••••">
+      </div>
+
+      <p class="text-center text-muted mb-4">
+        <a href="/pages/auth/forgot.html" class="link">Forgot password?</a>
+      </p>
+
+      <button class="btn btn--primary" id="loginBtn" data-label="Log in">Log in</button>
+
+      <div class="or">or</div>
+      <button class="btn btn--ghost">Continue with Google</button>
+
+      <p class="text-center text-muted mt-4">
+        No account yet? <a href="/pages/auth/signup.html" class="link">Sign up</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script>
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const emailOk  = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+
+      if (!emailOk)  return toast('Enter a valid email address.');
+      if (!password) return toast('Enter your password.');
+
+      runyxLogin(email, password);
+    });
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

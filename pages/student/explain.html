@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI explanation — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/qreview.html" class="iconbtn">←</a>
+      <span class="appbar__title">AI explanation</span>
+    </div>
+
+    <div class="app__body">
+      <span class="badge badge--red mb-4">Question 3 · Incorrect</span>
+      <h3 class="title-md mb-4">Why this answer is wrong</h3>
+
+      <div class="note">
+        <p class="text-muted">
+          You chose <b style="color: var(--color-danger);">O(n)</b>. Binary search halves the
+          search space at each step, so the correct complexity is logarithmic.
+        </p>
+      </div>
+
+      <div class="note note--correct">
+        <p class="text-tiny" style="margin-bottom: 4px; color: var(--color-success);">Correct answer</p>
+        <p style="font-size: 15px; font-weight: 600;">B) O(log n)</p>
+      </div>
+
+      <a href="/pages/student/study.html" class="btn btn--primary">Ask AI follow-up</a>
+    </div>
+  </div>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

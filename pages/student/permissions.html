@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Permissions — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/instructions.html" class="iconbtn">←</a>
+      <span class="appbar__title">Permissions</span>
+    </div>
+
+    <div class="app__body">
+      <h1 class="title-lg" style="margin-bottom: 4px;">Permission required</h1>
+      <p class="text-muted mb-4">We need the following to keep your exam secure and fair.</p>
+
+      <div class="list-item">
+        <div class="list-item__icon">📷</div>
+        <div style="flex:1;"><div class="list-item__text">Camera access</div><div class="list-item__sub">Enable proctoring monitoring</div></div>
+        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
+      </div>
+      <div class="list-item">
+        <div class="list-item__icon">🎙️</div>
+        <div style="flex:1;"><div class="list-item__text">Microphone access</div><div class="list-item__sub">Detect background activity</div></div>
+        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
+      </div>
+      <div class="list-item">
+        <div class="list-item__icon">📁</div>
+        <div style="flex:1;"><div class="list-item__text">Storage access</div><div class="list-item__sub">Upload answer files</div></div>
+        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
+      </div>
+      <div class="list-item">
+        <div class="list-item__icon">🔔</div>
+        <div style="flex:1;"><div class="list-item__text">Notifications</div><div class="list-item__sub">Send exam alerts</div></div>
+        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
+      </div>
+
+      <a href="/pages/student/exam.html" id="toExam" class="btn btn--primary mt-6">Continue to exam</a>
+    <script>(function(){var e=new URLSearchParams(location.search).get("exam");if(e)document.getElementById("toExam").href="/pages/student/exam.html?exam="+e;})();</script>
+    </div>
+  </div>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

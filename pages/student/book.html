@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Summary — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="/pages/student/library.html" class="iconbtn">←</a>
+      <span class="appbar__title">Summary</span>
+    </div>
+
+    <div class="app__body" id="content">
+      <div class="empty"><div class="empty__icon">📖</div><p>Loading…</p></div>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    const id = new URLSearchParams(location.search).get('id');
+
+    function show(b) {
+      const paras = (b.summary || '').split('\n').filter(Boolean)
+        .map(p => `<p class="text-muted" style="margin-bottom:12px; line-height:1.6;">${p}</p>`).join('');
+      let takeaways = [];
+      try { takeaways = JSON.parse(b.takeaways || '[]'); } catch (e) {}
+      const tk = takeaways.map(t => `<div class="feature" style="margin-bottom:10px;"><span class="feature__icon">✓</span> ${t}</div>`).join('');
+
+      const fileUrl = b.fileId ? RunyxData.fileViewUrl(b.fileId) : null;
+
+      document.getElementById('content').innerHTML = `
+        <div class="text-center mb-4">
+          <div style="font-size:56px;">${b.cover || '📘'}</div>
+          <h1 class="title-lg" style="margin-top:8px;">${b.title}</h1>
+          <p class="text-muted">${b.author || 'Unknown'}</p>
+          <div class="row" style="justify-content:center; gap:8px; margin-top:10px;">
+            <span class="badge badge--violet">${b.subject || 'General'}</span>
+            <span class="badge badge--green">${b.readMinutes || 10} min read</span>
+          </div>
+        </div>
+
+        <div class="card card--accent mb-4">
+          <p class="text-tiny" style="margin-bottom:4px;">✨ AI Summary</p>
+          <p class="text-muted" style="font-size:13px;">A condensed version so you grasp the big ideas before reading the full book.</p>
+        </div>
+
+        ${paras}
+
+        ${takeaways.length ? `<h3 class="title-md mb-4 mt-6">Key takeaways</h3>${tk}` : ''}
+
+        ${fileUrl ? `<a href="${fileUrl}" target="_blank" rel="noopener" class="btn btn--primary mt-4">📄 Read full book</a>` : ''}
+      `;
+    }
+
+    (async function () {
+      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED || !id) {
+        document.getElementById('content').innerHTML =
+          '<div class="empty"><div class="empty__icon">📖</div><p>Connect Appwrite to read book summaries.</p></div>';
+        return;
+      }
+      const b = await RunyxData.getBook(id).catch(() => null);
+      if (!b) {
+        document.getElementById('content').innerHTML =
+          '<div class="empty"><div class="empty__icon">📖</div><p>Book not found.</p></div>';
+        return;
+      }
+      show(b);
+    })();
+  </script>
+</body>
+</html>

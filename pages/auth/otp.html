@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Verify — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/auth/signup.html" class="iconbtn">←</a>
+      <span class="appbar__title"></span>
+    </div>
+
+    <div class="app__body">
+      <p class="eyebrow">Verify your email</p>
+      <h1 class="title-lg mb-4">Enter the 6-digit code</h1>
+      <p class="text-muted mb-4">We sent a code to <b style="color: var(--color-text);" id="emailLabel">your email</b></p>
+
+      <div class="otp" id="otpRow">
+        <input maxlength="1" inputmode="numeric">
+        <input maxlength="1" inputmode="numeric">
+        <input maxlength="1" inputmode="numeric">
+        <input maxlength="1" inputmode="numeric">
+        <input maxlength="1" inputmode="numeric">
+        <input maxlength="1" inputmode="numeric">
+      </div>
+
+      <button class="btn btn--primary" id="verifyBtn" data-label="Verify">Verify</button>
+      <p class="text-center text-muted mt-4">
+        Resend code in <b style="color: var(--color-primary-2);" id="resend">00:30</b>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script>
+    // show the email if we stored one during signup
+    const savedEmail = sessionStorage.getItem('runyx_email');
+    if (savedEmail) document.getElementById('emailLabel').textContent = savedEmail;
+
+    // auto-advance between boxes
+    const boxes = document.querySelectorAll('#otpRow input');
+    boxes.forEach((box, i) => {
+      box.addEventListener('input', () => { if (box.value && boxes[i + 1]) boxes[i + 1].focus(); });
+      box.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !box.value && boxes[i - 1]) boxes[i - 1].focus();
+      });
+    });
+
+    // resend countdown
+    let seconds = 30;
+    const resend = document.getElementById('resend');
+    const timer = setInterval(() => {
+      seconds--;
+      if (seconds > 0) {
+        resend.textContent = '00:' + String(seconds).padStart(2, '0');
+      } else {
+        resend.textContent = 'Resend now';
+        resend.style.cursor = 'pointer';
+        resend.onclick = () => runyxResendOtp();
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    // verify
+    document.getElementById('verifyBtn').addEventListener('click', () => {
+      const code = Array.from(boxes).map(b => b.value).join('');
+      runyxVerifyOtp(code);
+    });
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

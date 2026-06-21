@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Notepad — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <button class="iconbtn" onclick="history.back()">&larr;</button>
+      <span class="appbar__title">Notepad</span>
+      <span class="text-tiny" data-status data-for="scratch"></span>
+    </div>
+
+    <div class="app__body col" style="height: 100%;">
+      <p class="text-muted mb-4">Rough work &amp; equations. Auto-saved. Use the scientific keyboard for math, chemistry &amp; physics.</p>
+      <textarea class="input" id="scratch" data-autosave="notes:scratch"
+                style="min-height: 200px;" placeholder="Start writing… e.g. \int_0^1 x^2 dx"></textarea>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/autosave.js"></script>
+  <script src="/js/scikeyboard.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    RunyxSciKeyboard.attach(document.getElementById('scratch'));
+  </script>
+</body>
+</html>

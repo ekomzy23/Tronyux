@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Appearance — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/profile.html" class="iconbtn">←</a>
+      <span class="appbar__title">Appearance</span>
+    </div>
+
+    <div class="app__body">
+      <h3 class="title-md mb-4">Theme</h3>
+      <div class="btn-row mb-6">
+        <button class="btn btn--ghost" data-theme-btn="light">☀️ Light</button>
+        <button class="btn btn--primary" data-theme-btn="dark">🌙 Dark</button>
+      </div>
+
+      <h3 class="title-md mb-4">Accent color</h3>
+      <div class="row" style="gap: 14px;">
+        <span class="swatch" data-accent="#6d5efc" style="width:40px;height:40px;border-radius:50%;background:#6d5efc;cursor:pointer;"></span>
+        <span class="swatch" data-accent="#3b82f6" style="width:40px;height:40px;border-radius:50%;background:#3b82f6;cursor:pointer;"></span>
+        <span class="swatch" data-accent="#34d399" style="width:40px;height:40px;border-radius:50%;background:#34d399;cursor:pointer;"></span>
+        <span class="swatch" data-accent="#fbbf24" style="width:40px;height:40px;border-radius:50%;background:#fbbf24;cursor:pointer;"></span>
+        <span class="swatch" data-accent="#fb7185" style="width:40px;height:40px;border-radius:50%;background:#fb7185;cursor:pointer;"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const root = document.documentElement;
+
+    // apply + persist theme
+    function setTheme(name) {
+      root.setAttribute('data-theme', name);
+      localStorage.setItem('runyx_theme', name);
+      document.querySelectorAll('[data-theme-btn]').forEach(b => {
+        b.classList.toggle('btn--primary', b.dataset.themeBtn === name);
+        b.classList.toggle('btn--ghost',   b.dataset.themeBtn !== name);
+      });
+    }
+
+    // apply + persist accent
+    function setAccent(color) {
+      root.style.setProperty('--color-primary', color);
+      root.style.setProperty('--color-primary-2', color);
+      root.style.setProperty('--gradient-brand', `linear-gradient(135deg, ${color}, ${color})`);
+      localStorage.setItem('runyx_accent', color);
+      document.querySelectorAll('.swatch').forEach(s => {
+        s.style.outline = s.dataset.accent === color ? '2px solid var(--color-text)' : 'none';
+        s.style.outlineOffset = '3px';
+      });
+    }
+
+    // restore saved choices
+    setTheme(localStorage.getItem('runyx_theme') || 'dark');
+    const savedAccent = localStorage.getItem('runyx_accent');
+    if (savedAccent) setAccent(savedAccent);
+
+    // wire buttons
+    document.querySelectorAll('[data-theme-btn]').forEach(b =>
+      b.addEventListener('click', () => setTheme(b.dataset.themeBtn)));
+    document.querySelectorAll('.swatch').forEach(s =>
+      s.addEventListener('click', () => setAccent(s.dataset.accent)));
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

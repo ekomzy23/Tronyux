@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Palette — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/exam.html" class="iconbtn">←</a>
+      <span class="appbar__title">Question palette</span>
+    </div>
+
+    <div class="app__body">
+      <div class="legend">
+        <div><span class="legend__dot" style="background: var(--color-success);"></span>Answered</div>
+        <div><span class="legend__dot" style="background: var(--color-primary-2);"></span>Marked</div>
+        <div><span class="legend__dot" style="background: var(--color-surface-2); border: 1px solid var(--color-stroke);"></span>Not visited</div>
+      </div>
+
+      <div class="palette" id="paletteGrid"></div>
+
+      <a href="/pages/student/review.html" class="btn btn--primary mt-6">Go to review &amp; submit</a>
+    </div>
+  </div>
+
+  <script>
+    // build 60 cells: answered (1-11), current (12), marked (every 7th), rest not-visited
+    const grid = document.getElementById('paletteGrid');
+    for (let i = 1; i <= 60; i++) {
+      let cls = '';
+      if (i === 12) cls = 'pcell--current';
+      else if (i < 12) cls = 'pcell--answered';
+      else if (i % 7 === 0) cls = 'pcell--marked';
+      grid.insertAdjacentHTML('beforeend', `<a href="/pages/student/exam.html" class="pcell ${cls}">${i}</a>`);
+    }
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

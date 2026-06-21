@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Exam — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- KaTeX for equation preview in theory answers -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .overlay { position:absolute; inset:0; background:rgba(4,4,15,.75); backdrop-filter:blur(6px); display:none; z-index:30; padding:22px; }
+    .overlay.open { display:block; }
+    .overlay__sheet { background:var(--color-bg-2); border:1px solid var(--color-stroke); border-radius:var(--radius-lg); padding:20px; margin-top:60px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="/pages/student/dashboard.html" class="iconbtn">&larr;</a>
+      <span class="text-tiny" data-status style="flex:1;"></span>
+      <span class="timer">&#9201; <span id="examTimer">--:--:--</span></span>
+      <button class="iconbtn" id="paletteBtn">&#9638;</button>
+    </div>
+
+    <div class="app__body" id="examBody">
+      <div class="between mb-4">
+        <span class="text-tiny" id="qcount">Loading…</span>
+        <span class="badge badge--violet" id="qbadge">—</span>
+      </div>
+      <h3 class="title-md mb-4" id="qtext">Loading questions…</h3>
+      <div id="qbody"></div>
+      <div class="card mt-4 row" style="justify-content: space-around;" id="toolRow">
+        <span class="link text-tiny" id="flagBtn">&#9872; Flag</span>
+        <a class="link text-tiny" href="/pages/student/calculator.html">&#129518; Calculator</a>
+        <a class="link text-tiny" href="/pages/student/notepad.html">&#128221; Notepad</a>
+      </div>
+    </div>
+
+    <div style="padding: 0 22px 12px;">
+      <div class="pbar"><i class="pbar__fill" id="progress" style="width: 0;"></i></div>
+    </div>
+
+    <nav class="tabbar tabbar--actions" id="navRow">
+      <button class="btn btn--ghost" id="prevBtn">&larr; Previous</button>
+      <button class="btn btn--primary" id="nextBtn">Next &rarr;</button>
+    </nav>
+
+    <div class="overlay" id="overlay">
+      <div class="overlay__sheet">
+        <div class="between mb-4">
+          <h3 class="title-md">Questions</h3>
+          <button class="iconbtn" id="closePalette">&times;</button>
+        </div>
+        <div class="legend">
+          <div><span class="legend__dot" style="background: var(--color-success);"></span>Answered</div>
+          <div><span class="legend__dot" style="background: var(--color-primary-2);"></span>Marked</div>
+          <div><span class="legend__dot" style="background: var(--color-surface-2); border: 1px solid var(--color-stroke);"></span>Not done</div>
+        </div>
+        <div class="palette" id="paletteGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/scikeyboard.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+  (function () {
+    const cfg = window.RUNYX_CONFIG || { CONFIGURED: false };
+    const params = new URLSearchParams(location.search);
+    const examId = params.get('exam') || '';
+    const format = sessionStorage.getItem('runyx_format') || 'mixed';
+    const minutes = parseInt(sessionStorage.getItem('runyx_minutes')) || 30;
+
+    const OBJECTIVE = ['mcq','truefalse','multi'];
+    const THEORY    = ['theory','fill'];
+    const BADGE = { mcq:'MCQ', multi:'Multi-select', truefalse:'True / False', theory:'Theory', fill:'Fill blank', upload:'Upload' };
+
+    let questions = [], current = 0, attemptId = null, durationSec = minutes * 60;
+    const answers = JSON.parse(sessionStorage.getItem('runyx_answers') || '{}');
+    const marked  = new Set(JSON.parse(sessionStorage.getItem('runyx_marked') || '[]'));
+    const statusEl = document.querySelector('[data-status]');
+
+    function emptyState(msg) {
+      document.getElementById('examBody').innerHTML =
+        `<div class="empty"><div class="empty__icon">📭</div><p>${msg}</p></div>`;
+      document.getElementById('navRow').style.display = 'none';
+      document.getElementById('examTimer').textContent = '--:--:--';
+    }
+
+    (async function init() {
+      if (!cfg.CONFIGURED || !window.RunyxData) {
+        emptyState('Connect Appwrite to load this exam. Questions come from your database — none are built in.');
+        return;
+      }
+      try {
+        const exam = await RunyxData.getExam(examId).catch(() => null);
+        let all = await RunyxData.listQuestions(examId);
+
+        // filter by the format the student chose
+        if (format === 'objective') all = all.filter(q => OBJECTIVE.includes(q.type));
+        else if (format === 'theory') all = all.filter(q => THEORY.includes(q.type));
+        questions = all;
+
+        if (!questions.length) { emptyState(`This exam has no ${format} questions yet.`); return; }
+
+        const user = await RunyxData.currentUser();
+        if (user) {
+          const attempt = await RunyxData.startAttempt(examId).catch(() => null);
+          if (attempt) attemptId = attempt.$id;
+        }
+        sessionStorage.setItem('runyx_total', questions.length);
+        render(); buildPalette(); startTimer();
+      } catch (e) {
+        emptyState('Could not load questions. Check your Appwrite connection.');
+      }
+    })();
+
+    function render() {
+      const q = questions[current];
+      document.getElementById('qcount').textContent = `Question ${current + 1} of ${questions.length}`;
+      document.getElementById('qbadge').textContent = `${BADGE[q.type] || 'Question'} · ${q.marks || 1} marks`;
+      document.getElementById('qtext').textContent = q.text;
+
+      const body = document.getElementById('qbody');
+      const val = answers[q.$id];
+
+      if (q.type === 'theory' || q.type === 'fill') {
+        body.innerHTML = `<textarea class="input" id="ans" rows="6" placeholder="Write your answer…">${val || ''}</textarea>`;
+        const ta = document.getElementById('ans');
+        ta.addEventListener('input', e => setAnswer(q.$id, e.target.value));
+        RunyxSciKeyboard.attach(ta);   // scientific keyboard + equation preview
+      } else if (q.type === 'upload') {
+        body.innerHTML = `
+          <p class="text-muted mb-4">Accepted: PDF, DOC, JPG, PNG · max 10 MB</p>
+          <label class="btn btn--ghost">⤓ ${val ? 'Replace file' : 'Choose file'}
+            <input type="file" hidden accept=".pdf,.doc,.docx,.jpg,.png"></label>
+          <p class="text-tiny mt-2" id="fileName">${val || ''}</p>`;
+        body.querySelector('input').addEventListener('change', e => {
+          const f = e.target.files[0]; if (!f) return;
+          setAnswer(q.$id, f.name);
+          document.getElementById('fileName').textContent = f.name;
+          if (window.RunyxData) RunyxData.uploadFile(f).catch(() => {});
+        });
+      } else {
+        const opts = JSON.parse(q.options || '[]');
+        const keys = ['A','B','C','D','E','F'];
+        body.innerHTML = opts.map((o, i) =>
+          `<div class="opt ${val === o ? 'is-selected' : ''}" data-opt="${String(o).replace(/"/g,'&quot;')}">
+             <span class="opt__key">${keys[i]}</span><span>${o}</span></div>`).join('');
+        body.querySelectorAll('.opt').forEach(el =>
+          el.addEventListener('click', () => {
+            body.querySelectorAll('.opt').forEach(o => o.classList.remove('is-selected'));
+            el.classList.add('is-selected');
+            setAnswer(q.$id, el.getAttribute('data-opt'));
+          }));
+      }
+
+      document.getElementById('progress').style.width = ((current + 1) / questions.length * 100) + '%';
+      document.getElementById('prevBtn').style.visibility = current === 0 ? 'hidden' : 'visible';
+      document.getElementById('nextBtn').textContent = current === questions.length - 1 ? 'Review →' : 'Next →';
+    }
+
+    let saveTimer;
+    function setAnswer(qid, value) {
+      answers[qid] = value;
+      sessionStorage.setItem('runyx_answers', JSON.stringify(answers));
+      statusEl.textContent = 'Saving…';
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => {
+        try { if (attemptId && window.RunyxData) await RunyxData.saveAnswers(attemptId, answers); } catch (e) {}
+        statusEl.textContent = '✓ Saved';
+        buildPalette();
+      }, 600);
+    }
+
+    function buildPalette() {
+      const grid = document.getElementById('paletteGrid');
+      grid.innerHTML = questions.map((q, i) => {
+        let cls = '';
+        if (i === current) cls = 'pcell--current';
+        else if (marked.has(q.$id)) cls = 'pcell--marked';
+        else if (answers[q.$id] != null && answers[q.$id] !== '') cls = 'pcell--answered';
+        return `<div class="pcell ${cls}" data-i="${i}">${i + 1}</div>`;
+      }).join('');
+      grid.querySelectorAll('.pcell').forEach(c =>
+        c.addEventListener('click', () => { current = +c.dataset.i; render(); closeOverlay(); }));
+    }
+
+    document.getElementById('prevBtn').onclick = () => { if (current > 0) { current--; render(); } };
+    document.getElementById('nextBtn').onclick = () => {
+      if (current < questions.length - 1) { current++; render(); }
+      else location.href = '/pages/student/review.html';
+    };
+    document.getElementById('flagBtn').onclick = () => {
+      const id = questions[current].$id;
+      marked.has(id) ? marked.delete(id) : marked.add(id);
+      sessionStorage.setItem('runyx_marked', JSON.stringify([...marked]));
+      buildPalette();
+    };
+
+    const overlay = document.getElementById('overlay');
+    function closeOverlay() { overlay.classList.remove('open'); }
+    document.getElementById('paletteBtn').onclick = () => overlay.classList.add('open');
+    document.getElementById('closePalette').onclick = closeOverlay;
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
+
+    function startTimer() {
+      const display = document.getElementById('examTimer');
+      const tick = () => {
+        if (durationSec <= 0) { location.href = '/pages/student/review.html'; return; }
+        durationSec--;
+        const h = Math.floor(durationSec / 3600), m = Math.floor(durationSec % 3600 / 60), s = durationSec % 60;
+        display.textContent = [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
+      };
+      tick(); setInterval(tick, 1000);
+    }
+  })();
+  </script>
+</body>
+</html>

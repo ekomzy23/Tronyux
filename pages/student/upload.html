@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Upload — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/theory.html" class="iconbtn">←</a>
+      <div style="flex: 1;"></div>
+      <span class="timer">⏱ 01:11:33</span>
+    </div>
+
+    <div class="app__body">
+      <div class="between mb-4">
+        <span class="text-tiny">Question 40 of 60</span>
+        <span class="badge badge--violet">Upload · 5 marks</span>
+      </div>
+
+      <h3 class="title-md mb-4">Upload your worked solution file.</h3>
+      <p class="text-muted mb-4">Accepted: PDF, DOC, JPG, PNG · max 10 MB</p>
+
+      <div class="card row" style="margin-bottom: 14px;">
+        <div class="row-card__icon">📄</div>
+        <div style="flex: 1;">
+          <h4 style="font-size: 14px;">answer.pdf</h4>
+          <p class="text-tiny">2.4 MB · uploaded</p>
+        </div>
+        <span class="link">✕</span>
+      </div>
+
+      <label class="btn btn--ghost">
+        ⤓ Choose file
+        <input type="file" hidden accept=".pdf,.doc,.docx,.jpg,.png">
+      </label>
+    </div>
+
+    <nav class="tabbar tabbar--actions">
+      <a href="/pages/student/theory.html" class="btn btn--ghost">← Previous</a>
+      <a href="/pages/student/review.html" class="btn btn--primary">Review →</a>
+    </nav>
+  </div>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

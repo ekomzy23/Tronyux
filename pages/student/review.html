@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Review — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/exam.html" class="iconbtn">&larr;</a>
+      <span class="appbar__title">Review your answers</span>
+    </div>
+
+    <div class="app__body">
+      <div class="list-item">
+        <div class="list-item__icon" style="background: var(--color-success-soft); color: var(--color-success);">&#10003;</div>
+        <div class="list-item__text">Answered</div><b id="answered">0</b>
+      </div>
+      <div class="list-item">
+        <div class="list-item__icon" style="background: var(--color-danger-soft); color: var(--color-danger);">!</div>
+        <div class="list-item__text">Not answered</div><b id="notAnswered">0</b>
+      </div>
+      <div class="list-item">
+        <div class="list-item__icon" style="background: rgba(139,92,246,.18); color: var(--color-primary-2);">&#9872;</div>
+        <div class="list-item__text">Marked for review</div><b id="marked">0</b>
+      </div>
+
+      <div class="card card--danger mt-4 mb-4">
+        <p style="font-size: 13px; color: var(--color-danger);">Once submitted, you can't change your answers.</p>
+      </div>
+
+      <a href="/pages/student/submitted.html" class="btn btn--primary">Submit exam</a>
+      <a href="/pages/student/exam.html" class="btn btn--ghost" style="margin-top: var(--space-2);">Keep working</a>
+    </div>
+  </div>
+
+  <script>
+    const answers = JSON.parse(sessionStorage.getItem('runyx_answers') || '{}');
+    const marked  = JSON.parse(sessionStorage.getItem('runyx_marked') || '[]');
+    const total   = +(sessionStorage.getItem('runyx_total') || 0);
+    const answered = Object.values(answers).filter(v => v != null && v !== '').length;
+
+    document.getElementById('answered').textContent    = answered;
+    document.getElementById('notAnswered').textContent = Math.max(total - answered, 0);
+    document.getElementById('marked').textContent      = marked.length;
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Library — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="/pages/student/dashboard.html" class="iconbtn">←</a>
+      <span class="appbar__title">Library</span>
+    </div>
+
+    <div class="app__body">
+      <p class="text-muted mb-4">Read a quick AI summary before you dive into the full book.</p>
+      <input class="input mb-4" id="search" placeholder="🔍 Search books…">
+
+      <div class="chips mb-4" id="subjectChips">
+        <div class="chip is-active" data-subject="">All</div>
+      </div>
+
+      <div id="bookList">
+        <div class="empty"><div class="empty__icon">📚</div><p>No books yet. They appear here once added in the admin panel.</p></div>
+      </div>
+    </div>
+
+    <nav class="tabbar" data-nav="library"></nav>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/theme.js"></script>
+  <script>
+    let allBooks = [];
+
+    function card(b) {
+      return `
+        <a href="/pages/student/book.html?id=${b.$id}" class="row-card">
+          <div class="row-card__icon" style="font-size:22px;">${b.cover || '📘'}</div>
+          <div class="row-card__meta">
+            <h4>${b.title}</h4>
+            <p>${b.author || 'Unknown'} · ${b.readMinutes || 10} min read</p>
+          </div>
+          <span class="badge badge--violet">Summary</span>
+        </a>`;
+    }
+
+    function draw(list) {
+      const el = document.getElementById('bookList');
+      el.innerHTML = list.length
+        ? list.map(card).join('')
+        : '<div class="empty"><div class="empty__icon">🔎</div><p>No books match.</p></div>';
+    }
+
+    (async function () {
+      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED) return;
+      allBooks = await RunyxData.listBooks();
+      if (!allBooks.length) return;
+      draw(allBooks);
+
+      // build subject filter chips
+      const subjects = [...new Set(allBooks.map(b => b.subject).filter(Boolean))];
+      const chips = document.getElementById('subjectChips');
+      chips.innerHTML = '<div class="chip is-active" data-subject="">All</div>' +
+        subjects.map(s => `<div class="chip" data-subject="${s}">${s}</div>`).join('');
+      chips.addEventListener('click', e => {
+        const chip = e.target.closest('.chip'); if (!chip) return;
+        [...chips.children].forEach(c => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        const subj = chip.getAttribute('data-subject');
+        draw(subj ? allBooks.filter(b => b.subject === subj) : allBooks);
+      });
+
+      // search
+      document.getElementById('search').addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        draw(allBooks.filter(b => (b.title + ' ' + (b.author || '')).toLowerCase().includes(q)));
+      });
+    })();
+  </script>
+</body>
+</html>

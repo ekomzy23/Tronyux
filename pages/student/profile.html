@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Profile — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/student/dashboard.html" class="iconbtn">←</a>
+      <span class="appbar__title">Profile</span>
+      <a href="/pages/student/settings.html" class="iconbtn">⚙️</a>
+    </div>
+
+    <div class="app__body">
+      <div class="text-center">
+        <div class="avatar">JD</div>
+        <h2 class="title-md mt-2" id="profileName">John Dave</h2>
+        <p class="text-muted mb-4" id="profileEmail">john.dave@gmail.com</p>
+      </div>
+
+      <div class="card mb-4">
+        <p class="text-tiny" style="margin-bottom:8px;">Year / Level</p>
+        <div class="chips" id="levelChips">
+          <div class="chip" data-level="1">Year 1</div>
+          <div class="chip" data-level="2">Year 2</div>
+          <div class="chip" data-level="3">Year 3</div>
+          <div class="chip" data-level="4">Year 4</div>
+          <div class="chip" data-level="5">Year 5</div>
+        </div>
+      </div>
+
+
+      <a href="/pages/student/settings.html" class="list-item"><div class="list-item__icon">👤</div><div class="list-item__text">Personal information</div><span>›</span></a>
+      <a href="/pages/student/settings.html" class="list-item"><div class="list-item__icon">🔒</div><div class="list-item__text">Security &amp; sessions</div><span>›</span></a>
+      <a href="/pages/student/notifications.html" class="list-item"><div class="list-item__icon">🔔</div><div class="list-item__text">Notifications</div><span>›</span></a>
+      <a href="/pages/student/offline.html" class="list-item"><div class="list-item__icon">⤓</div><div class="list-item__text">Offline exams</div><span>›</span></a>
+      <a href="/pages/student/appearance.html" class="list-item"><div class="list-item__icon">🎨</div><div class="list-item__text">Appearance</div><span>›</span></a>
+      <a href="/pages/student/help.html" class="list-item"><div class="list-item__icon">❔</div><div class="list-item__text">Help &amp; support</div><span>›</span></a>
+
+      <button class="list-item list-item--danger" id="logoutBtn" style="width:100%; text-align:left;">
+        <div class="list-item__icon">⏻</div><div class="list-item__text">Log out</div>
+      </button>
+    </div>
+
+    <nav class="tabbar" data-nav="profile"></nav>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/ui.js"></script>
+  <script>
+
+    // Year / Level selector
+    (async function () {
+      let level = parseInt(localStorage.getItem('runyx_level')) || 1;
+      if (window.RUNYX_CONFIG && RUNYX_CONFIG.CONFIGURED) {
+        const p = await RunyxData.getProfile().catch(() => null);
+        if (p) {
+          level = p.level || level;
+          if (p.name)  document.getElementById('profileName') && (document.getElementById('profileName').textContent = p.name);
+          if (p.email) document.getElementById('profileEmail').textContent = p.email;
+        }
+      }
+      const chips = document.getElementById('levelChips');
+      function mark(l){ [...chips.children].forEach(c => c.classList.toggle('is-active', +c.dataset.level === l)); }
+      mark(level);
+      chips.addEventListener('click', async e => {
+        const chip = e.target.closest('.chip'); if (!chip) return;
+        level = +chip.dataset.level; mark(level);
+        await RunyxData.setLevel(level);
+      });
+    })();
+
+    document.getElementById('logoutBtn').addEventListener('click', runyxLogout);
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

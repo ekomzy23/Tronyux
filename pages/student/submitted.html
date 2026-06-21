@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Submitted — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="app__body center" style="gap: var(--space-5);">
+      <div class="check check--glow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h1 class="title-xl">Exam submitted</h1>
+      <p class="text-muted" style="max-width: 260px;">
+        Your answers were saved successfully. Results will appear once published.
+      </p>
+      <a href="/pages/student/results.html" class="btn btn--primary mt-4" style="max-width: 260px;">View results</a>
+      <a href="/pages/student/dashboard.html" class="btn btn--ghost" style="max-width: 260px; margin-top: var(--space-2);">Back to dashboard</a>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script>
+    (async function () {
+      // finalise the attempt in Appwrite, then clear local exam state
+      const attemptId = sessionStorage.getItem('runyx_attemptId');
+      try {
+        if (attemptId && window.RunyxData && RUNYX_CONFIG.CONFIGURED) {
+          await RunyxData.submitAttempt(attemptId);
+        }
+      } catch (e) { /* offline — will sync later */ }
+
+      ['runyx_answers','runyx_marked','runyx_total','runyx_attemptId']
+        .forEach(k => sessionStorage.removeItem(k));
+    })();
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Reset password — Runyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <a href="/pages/auth/login.html" class="iconbtn">←</a>
+      <span class="appbar__title"></span>
+    </div>
+
+    <div class="app__body">
+      <p class="eyebrow">Reset password</p>
+      <h1 class="title-lg mb-4">We'll send you a reset link</h1>
+      <p class="text-muted mb-4">Enter the email linked to your account.</p>
+
+      <div class="field">
+        <label class="field__label">Email address</label>
+        <input class="input" id="email" type="email" placeholder="john.dave@gmail.com">
+      </div>
+
+      <button class="btn btn--primary" id="resetBtn">Send reset link</button>
+
+      <p class="text-center text-muted mt-4">
+        <a href="/pages/auth/login.html" class="link">Back to log in</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script>
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      const email = document.getElementById('email').value.trim();
+      if (RUNYX.CONFIGURED && !email) return toast('Enter your email.');
+      runyxForgot(email);
+    });
+  </script>
+  <script src="/js/theme.js"></script>
+</body>
+</html>
