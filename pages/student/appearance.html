@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Appearance — Runyx</title>
+  <title>Appearance — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,7 +44,7 @@
     // apply + persist theme
     function setTheme(name) {
       root.setAttribute('data-theme', name);
-      localStorage.setItem('runyx_theme', name);
+      localStorage.setItem('ronyx_theme', name);
       document.querySelectorAll('[data-theme-btn]').forEach(b => {
         b.classList.toggle('btn--primary', b.dataset.themeBtn === name);
         b.classList.toggle('btn--ghost',   b.dataset.themeBtn !== name);
@@ -56,7 +56,7 @@
       root.style.setProperty('--color-primary', color);
       root.style.setProperty('--color-primary-2', color);
       root.style.setProperty('--gradient-brand', `linear-gradient(135deg, ${color}, ${color})`);
-      localStorage.setItem('runyx_accent', color);
+      localStorage.setItem('ronyx_accent', color);
       document.querySelectorAll('.swatch').forEach(s => {
         s.style.outline = s.dataset.accent === color ? '2px solid var(--color-text)' : 'none';
         s.style.outlineOffset = '3px';
@@ -64,8 +64,8 @@
     }
 
     // restore saved choices
-    setTheme(localStorage.getItem('runyx_theme') || 'dark');
-    const savedAccent = localStorage.getItem('runyx_accent');
+    setTheme(localStorage.getItem('ronyx_theme') || 'dark');
+    const savedAccent = localStorage.getItem('ronyx_accent');
     if (savedAccent) setAccent(savedAccent);
 
     // wire buttons
@@ -74,6 +74,6 @@
     document.querySelectorAll('.swatch').forEach(s =>
       s.addEventListener('click', () => setAccent(s.dataset.accent)));
   </script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
 </body>
 </html>

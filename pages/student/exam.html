@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Exam — Runyx</title>
+  <title>Exam — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,6 +17,77 @@
     .overlay { position:absolute; inset:0; background:rgba(4,4,15,.75); backdrop-filter:blur(6px); display:none; z-index:30; padding:22px; }
     .overlay.open { display:block; }
     .overlay__sheet { background:var(--color-bg-2); border:1px solid var(--color-stroke); border-radius:var(--radius-lg); padding:20px; margin-top:60px; }
+
+    /* Immediate answer feedback */
+    .opt.fb-correct { border-color:var(--color-success) !important; background:rgba(52,211,153,.1) !important; }
+    .opt.fb-wrong   { border-color:var(--color-danger)  !important; background:rgba(251,113,133,.1) !important; }
+    .opt.fb-correct .opt__key { background:var(--color-success) !important; color:#fff !important; }
+    .opt.fb-wrong   .opt__key { background:var(--color-danger)  !important; color:#fff !important; }
+    .feedback-card {
+      margin-top:12px; padding:13px 15px; border-radius:14px;
+      animation:fbIn .2s ease;
+    }
+    .feedback-card.correct { background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.35); }
+    .feedback-card.wrong   { background:rgba(251,113,133,.1); border:1px solid rgba(251,113,133,.3); }
+    .feedback-card__hd { font-size:13px; font-weight:700; margin-bottom:5px; }
+    .feedback-card__body { font-size:12px; color:var(--color-muted); line-height:1.55; }
+    @keyframes fbIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+    /* ── Audio exam buttons (stacked FABs) ── */
+    .audio-fab-group {
+      position:fixed; bottom:92px; right:14px;
+      z-index:25; display:flex; flex-direction:column; align-items:center; gap:8px;
+    }
+    .audio-fab-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .audio-fab {
+      width:46px; height:46px; border-radius:50%;
+      background:var(--color-bg-2); border:1.5px solid var(--color-stroke);
+      color:var(--color-text); font-size:19px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 18px rgba(0,0,0,.38); transition:background .2s,border .2s;
+      line-height:1; padding:0;
+    }
+    .audio-fab:active { transform:scale(.9); }
+    .audio-fab__lbl {
+      font-size:9px; font-weight:700; color:var(--color-muted);
+      text-transform:uppercase; letter-spacing:.5px;
+    }
+    .audio-fab--on {
+      background:var(--color-primary,#6d5efc) !important;
+      border-color:transparent !important; color:#fff !important;
+      animation:audioPulse 2.5s ease-in-out infinite;
+    }
+    .audio-fab--listening {
+      background:#e11d48 !important; border-color:transparent !important;
+      color:#fff !important; animation:recPulse 1s ease-in-out infinite !important;
+    }
+    @keyframes audioPulse {
+      0%,100%{ box-shadow:0 4px 20px rgba(109,94,252,.4); }
+      50%    { box-shadow:0 4px 32px rgba(109,94,252,.85); }
+    }
+    @keyframes recPulse {
+      0%,100%{ box-shadow:0 4px 18px rgba(225,29,72,.4); }
+      50%    { box-shadow:0 4px 28px rgba(225,29,72,.85); }
+    }
+    /* STT status hint */
+    #sttHint {
+      position:fixed; bottom:186px; right:68px;
+      max-width:210px; font-size:11px; font-weight:600; line-height:1.45;
+      background:rgba(0,0,0,.85); color:#fff; border-radius:10px;
+      padding:7px 11px; z-index:26; pointer-events:none;
+      opacity:0; transition:opacity .25s; text-align:right;
+    }
+    #sttHint.visible { opacity:1; }
+    /* Dictation mode — pulsing red border on textarea */
+    textarea.is-dictating {
+      border-color:#e11d48 !important;
+      outline:none;
+      animation:dictPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes dictPulse {
+      0%,100%{ box-shadow:0 0 0 2px rgba(225,29,72,.22); }
+      50%    { box-shadow:0 0 0 4px rgba(225,29,72,.45); }
+    }
   </style>
 </head>
 <body>
@@ -51,6 +122,20 @@
       <button class="btn btn--primary" id="nextBtn">Next &rarr;</button>
     </nav>
 
+    <!-- Audio exam: two independent buttons -->
+    <div class="audio-fab-group">
+      <div class="audio-fab-item">
+        <button class="audio-fab" id="ttsBtn" title="Read question &amp; options aloud">&#128266;</button>
+        <span class="audio-fab__lbl">Read</span>
+      </div>
+      <div class="audio-fab-item">
+        <button class="audio-fab" id="sttBtn" title="Speak your answer (A / B / C / D or True / False)">&#127910;</button>
+        <span class="audio-fab__lbl">Speak</span>
+      </div>
+    </div>
+    <!-- STT status hint bubble -->
+    <div id="sttHint"></div>
+
     <div class="overlay" id="overlay">
       <div class="overlay__sheet">
         <div class="between mb-4">
@@ -67,28 +152,33 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
-  <script src="/js/data.js"></script>
-  <script src="/js/scikeyboard.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
+  <script src="/js/data.js?v=mqye4cj4"></script>
+  <script src="/js/scikeyboard.js?v=mqye4cj4"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
   <script>
   (function () {
-    const cfg = window.RUNYX_CONFIG || { CONFIGURED: false };
+    const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
     const params = new URLSearchParams(location.search);
     const examId = params.get('exam') || '';
-    const format = sessionStorage.getItem('runyx_format') || 'mixed';
-    const minutes = parseInt(sessionStorage.getItem('runyx_minutes')) || 30;
+    const format = sessionStorage.getItem('ronyx_format') || 'mixed';
+    const minutes = parseInt(sessionStorage.getItem('ronyx_minutes')) || 30;
+    const qcount  = parseInt(sessionStorage.getItem('ronyx_qcount') || '0');
 
     const OBJECTIVE = ['mcq','truefalse','multi'];
     const THEORY    = ['theory','fill'];
     const BADGE = { mcq:'MCQ', multi:'Multi-select', truefalse:'True / False', theory:'Theory', fill:'Fill blank', upload:'Upload' };
 
+    /* Namespace answers + flags per exam so stale data from a previous exam never pre-selects */
+    const ANSWERS_KEY = 'ronyx_ans_' + examId;
+    const MARKED_KEY  = 'ronyx_mrk_' + examId;
+
     let questions = [], current = 0, attemptId = null, durationSec = minutes * 60;
-    const answers = JSON.parse(sessionStorage.getItem('runyx_answers') || '{}');
-    const marked  = new Set(JSON.parse(sessionStorage.getItem('runyx_marked') || '[]'));
+    const answers = JSON.parse(sessionStorage.getItem(ANSWERS_KEY) || '{}');
+    const marked  = new Set(JSON.parse(sessionStorage.getItem(MARKED_KEY) || '[]'));
     const statusEl = document.querySelector('[data-status]');
 
     function emptyState(msg) {
@@ -99,31 +189,92 @@
     }
 
     (async function init() {
-      if (!cfg.CONFIGURED || !window.RunyxData) {
-        emptyState('Connect Appwrite to load this exam. Questions come from your database — none are built in.');
+      if (!cfg.CONFIGURED || !window.RonyxData) {
+        emptyState('App not configured. Run setup first.');
         return;
       }
-      try {
-        const exam = await RunyxData.getExam(examId).catch(() => null);
-        let all = await RunyxData.listQuestions(examId);
-
-        // filter by the format the student chose
-        if (format === 'objective') all = all.filter(q => OBJECTIVE.includes(q.type));
-        else if (format === 'theory') all = all.filter(q => THEORY.includes(q.type));
-        questions = all;
-
-        if (!questions.length) { emptyState(`This exam has no ${format} questions yet.`); return; }
-
-        const user = await RunyxData.currentUser();
-        if (user) {
-          const attempt = await RunyxData.startAttempt(examId).catch(() => null);
-          if (attempt) attemptId = attempt.$id;
-        }
-        sessionStorage.setItem('runyx_total', questions.length);
-        render(); buildPalette(); startTimer();
-      } catch (e) {
-        emptyState('Could not load questions. Check your Appwrite connection.');
+      if (!examId) {
+        emptyState('No exam ID found. Go back and open the exam again.');
+        return;
       }
+
+      /* ── Load questions with a 12-second timeout ─────────────────────────
+         Questions are the ONLY thing students need to see. Everything else
+         (exam title, user session, attempt record) runs in the background
+         so a slow auth check can never freeze the exam screen.
+      ──────────────────────────────────────────────────────────────────── */
+      let all;
+      try {
+        all = await Promise.race([
+          RonyxData.listQuestions(examId),
+          new Promise(function(_, rej) {
+            setTimeout(function() { rej(new Error('timeout')); }, 12000);
+          }),
+        ]);
+      } catch(e) {
+        if (e.message === 'timeout') {
+          emptyState('Questions took too long to load. Check your internet connection and tap ← to try again.');
+        } else {
+          emptyState('Could not load questions (' + (e.message || 'network error') + '). Tap ← to retry.');
+        }
+        return;
+      }
+
+      // filter by the format the student chose
+      let qs = all;
+      if (format === 'objective') qs = qs.filter(q => OBJECTIVE.includes(q.type));
+      else if (format === 'theory') qs = qs.filter(q => THEORY.includes(q.type));
+
+      // shuffle so each attempt feels fresh
+      qs = qs.sort(() => Math.random() - 0.5);
+
+      // apply question count limit (0 = all)
+      if (qcount > 0 && qs.length > qcount) qs = qs.slice(0, qcount);
+
+      questions = qs;
+
+      if (!questions.length) {
+        emptyState('No ' + format + ' questions found for this exam. The admin may need to add questions first.');
+        return;
+      }
+
+      /* Store questions for auto-scoring (note: Appwrite uses correctAnswer / explanation) */
+      try {
+        sessionStorage.setItem('ronyx_examId', examId);
+        if (!sessionStorage.getItem('ronyx_examStart')) {
+          sessionStorage.setItem('ronyx_examStart', String(Date.now()));
+        }
+        sessionStorage.setItem('ronyx_q_' + examId, JSON.stringify(questions.map(function(q) {
+          return {
+            id:      q.$id,
+            text:    q.text,
+            type:    q.type,
+            options: q.options || '[]',
+            answer:  q.correctAnswer || q.answer || '',   /* setup.js field = correctAnswer */
+            explain: q.explanation   || q.explain  || '', /* setup.js field = explanation  */
+            marks:   q.marks || 1,
+          };
+        })));
+      } catch(e) {}
+
+      sessionStorage.setItem('ronyx_total', questions.length);
+
+      /* Render NOW — student sees questions immediately */
+      render(); buildPalette(); startTimer();
+
+      /* Everything else is background — slow auth/network can't block the exam */
+      Promise.all([
+        RonyxData.getExam(examId).catch(function() { return null; }),
+        RonyxData.currentUser().catch(function() { return null; }),
+      ]).then(function(res) {
+        const exam = res[0], user = res[1];
+        if (exam) sessionStorage.setItem('ronyx_examTitle', exam.title || '');
+        if (user) {
+          RonyxData.startAttempt(examId).then(function(attempt) {
+            if (attempt) attemptId = attempt.$id;
+          }).catch(function() {});
+        }
+      }).catch(function() {});
     })();
 
     function render() {
@@ -139,7 +290,7 @@
         body.innerHTML = `<textarea class="input" id="ans" rows="6" placeholder="Write your answer…">${val || ''}</textarea>`;
         const ta = document.getElementById('ans');
         ta.addEventListener('input', e => setAnswer(q.$id, e.target.value));
-        RunyxSciKeyboard.attach(ta);   // scientific keyboard + equation preview
+        RonyxSciKeyboard.attach(ta);
       } else if (q.type === 'upload') {
         body.innerHTML = `
           <p class="text-muted mb-4">Accepted: PDF, DOC, JPG, PNG · max 10 MB</p>
@@ -150,36 +301,124 @@
           const f = e.target.files[0]; if (!f) return;
           setAnswer(q.$id, f.name);
           document.getElementById('fileName').textContent = f.name;
-          if (window.RunyxData) RunyxData.uploadFile(f).catch(() => {});
+          if (window.RonyxData) RonyxData.uploadFile(f).catch(() => {});
         });
+      } else if (q.type === 'truefalse') {
+        /* True / False — two big buttons */
+        body.innerHTML = ['True','False'].map(o =>
+          `<div class="opt ${val === o ? 'is-selected' : ''}" data-k="${o}" style="margin-bottom:10px;">
+             <span class="opt__key">${o === 'True' ? '✓' : '✗'}</span><span>${o}</span></div>`
+        ).join('');
+        body.querySelectorAll('.opt').forEach(el => el.addEventListener('click', () => {
+          body.querySelectorAll('.opt').forEach(o => {
+            o.classList.remove('is-selected','fb-correct','fb-wrong');
+            o.querySelector('.opt__key').textContent = o.dataset.k === 'True' ? '✓' : '✗';
+          });
+          el.classList.add('is-selected');
+          setAnswer(q.$id, el.dataset.k);
+          showFeedback(q, el.dataset.k);
+        }));
+        if (val) showFeedback(q, val);
       } else {
-        const opts = JSON.parse(q.options || '[]');
-        const keys = ['A','B','C','D','E','F'];
-        body.innerHTML = opts.map((o, i) =>
-          `<div class="opt ${val === o ? 'is-selected' : ''}" data-opt="${String(o).replace(/"/g,'&quot;')}">
-             <span class="opt__key">${keys[i]}</span><span>${o}</span></div>`).join('');
-        body.querySelectorAll('.opt').forEach(el =>
-          el.addEventListener('click', () => {
-            body.querySelectorAll('.opt').forEach(o => o.classList.remove('is-selected'));
-            el.classList.add('is-selected');
-            setAnswer(q.$id, el.getAttribute('data-opt'));
+        /* MCQ + Multi-select — parse options (supports string[] and {text,explain}[]) */
+        const rawOpts = JSON.parse(q.options || '[]');
+        const opts = rawOpts.map(o => typeof o === 'string' ? o : (o.text || ''));
+        const keys = ['A','B','C','D','E','F','G','H'];
+        const isMulti = q.type === 'multi';
+        const selected = isMulti && val ? val.split(',') : [];
+
+        body.innerHTML = opts.map((o, i) => {
+          const k = keys[i] || String(i + 1);
+          const active = isMulti ? selected.includes(k) : val === k;
+          return `<div class="opt ${active ? 'is-selected' : ''}" data-k="${k}" style="margin-bottom:8px;">
+                    <span class="opt__key">${k}</span><span>${o}</span></div>`;
+        }).join('');
+
+        if (isMulti) {
+          body.querySelectorAll('.opt').forEach(el => el.addEventListener('click', () => {
+            el.classList.toggle('is-selected');
+            const sel = [...body.querySelectorAll('.opt.is-selected')].map(e => e.dataset.k);
+            setAnswer(q.$id, sel.join(','));
+            showFeedback(q, sel.join(','));
           }));
+        } else {
+          body.querySelectorAll('.opt').forEach(el => el.addEventListener('click', () => {
+            body.querySelectorAll('.opt').forEach(o => {
+              o.classList.remove('is-selected','fb-correct','fb-wrong');
+              o.querySelector('.opt__key').textContent = keys[opts.indexOf(o)] || o.dataset.k;
+            });
+            el.classList.add('is-selected');
+            setAnswer(q.$id, el.dataset.k);
+            showFeedback(q, el.dataset.k);
+          }));
+        }
+        /* Re-show feedback for already-answered question */
+        if (val) showFeedback(q, val);
       }
 
       document.getElementById('progress').style.width = ((current + 1) / questions.length * 100) + '%';
       document.getElementById('prevBtn').style.visibility = current === 0 ? 'hidden' : 'visible';
       document.getElementById('nextBtn').textContent = current === questions.length - 1 ? 'Review →' : 'Next →';
+
+      /* Stop dictation when question changes */
+      if (typeof STTMode !== 'undefined' && STTMode.stop) STTMode.stop();
+      /* TTS: auto-read new question if Read mode is ON */
+      if (typeof TTSMode !== 'undefined') TTSMode.onRender(q);
+    }
+
+    /* ── Immediate answer feedback ───────────────────────────
+       Shows correct/wrong highlight + explanation right after
+       the student selects an answer (before they tap Next).
+    ──────────────────────────────────────────────────────── */
+    function showFeedback(q, selectedValue) {
+      /* Appwrite stores correct answer as "correctAnswer", explanation as "explanation".
+         Fall back to legacy field names for safety. */
+      const correctAns = q.correctAnswer || q.answer || '';
+      const explain    = q.explanation   || q.explain  || '';
+
+      if (!correctAns || q.type === 'theory' || q.type === 'fill' || q.type === 'upload') return;
+
+      const correctKeys  = String(correctAns).split(',').map(s => s.trim());
+      const selectedKeys = String(selectedValue || '').split(',').map(s => s.trim());
+      const isCorrect    = correctKeys.sort().join(',') === selectedKeys.sort().join(',');
+
+      /* Colour the option chips */
+      document.querySelectorAll('#qbody .opt').forEach(el => {
+        const k = el.dataset.k;
+        if (correctKeys.includes(k)) {
+          el.classList.add('fb-correct');
+          el.querySelector('.opt__key').textContent = '✓';
+        } else if (selectedKeys.includes(k) && !correctKeys.includes(k)) {
+          el.classList.add('fb-wrong');
+          el.querySelector('.opt__key').textContent = '✗';
+        }
+      });
+
+      /* Remove old card if re-answering */
+      const old = document.getElementById('fbCard');
+      if (old) old.remove();
+
+      /* Build feedback card */
+      const card = document.createElement('div');
+      card.id = 'fbCard';
+      card.className = 'feedback-card ' + (isCorrect ? 'correct' : 'wrong');
+      const hd = isCorrect
+        ? '&#9989; Correct!'
+        : '&#10060; Wrong &mdash; correct: <strong>' + correctAns + '</strong>';
+      card.innerHTML = '<div class="feedback-card__hd">' + hd + '</div>' +
+        (explain ? '<div class="feedback-card__body">' + explain + '</div>' : '');
+      document.getElementById('qbody').appendChild(card);
     }
 
     let saveTimer;
     function setAnswer(qid, value) {
       answers[qid] = value;
-      sessionStorage.setItem('runyx_answers', JSON.stringify(answers));
+      sessionStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
       statusEl.textContent = 'Saving…';
       clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
-        try { if (attemptId && window.RunyxData) await RunyxData.saveAnswers(attemptId, answers); } catch (e) {}
-        statusEl.textContent = '✓ Saved';
+        try { if (attemptId && window.RonyxData) await RonyxData.saveAnswers(attemptId, answers); } catch (e) {}
+        statusEl.textContent = '&#10003; Saved';
         buildPalette();
       }, 600);
     }
@@ -205,7 +444,7 @@
     document.getElementById('flagBtn').onclick = () => {
       const id = questions[current].$id;
       marked.has(id) ? marked.delete(id) : marked.add(id);
-      sessionStorage.setItem('runyx_marked', JSON.stringify([...marked]));
+      sessionStorage.setItem(MARKED_KEY, JSON.stringify([...marked]));
       buildPalette();
     };
 
@@ -225,7 +464,432 @@
       };
       tick(); setInterval(tick, 1000);
     }
+
+    /* ══════════════════════════════════════════════════════════════
+       TTS MODULE — "Read" button (🔊)
+       Reads the current question and its options aloud.
+       Completely independent of the STT module below.
+
+       Tap when OFF  → turn ON, read current question; auto-reads
+                       every question as you navigate.
+       Tap when ON   → if currently speaking: stop (stay ON for
+                       next question); if idle: re-read now.
+       Tap while ON  twice within 400ms → turn OFF completely.
+    ══════════════════════════════════════════════════════════════ */
+    var TTSMode = (function () {
+      var SYNTH  = window.speechSynthesis || null;
+      var btn    = document.getElementById('ttsBtn');
+      var KEYS   = ['A','B','C','D','E','F','G','H'];
+      var active = false;
+
+      if (!btn) return { onRender: function(){} };
+      if (!SYNTH) {
+        btn.parentElement.style.display = 'none';
+        return { onRender: function(){} };
+      }
+
+      function bestVoice() {
+        var vs = SYNTH.getVoices();
+        var en = vs.filter(function(v) { return /en/i.test(v.lang); });
+        return en.find(function(v) { return /en[-_]?(US|GB)/i.test(v.lang) && !v.localService; })
+            || en[0] || vs[0] || null;
+      }
+
+      function buildText(q) {
+        if (!q) return '';
+        var t = 'Question ' + (current + 1) + ' of ' + questions.length + '.  ' + q.text + '.  ';
+        if (q.type === 'truefalse') {
+          t += 'True or False?';
+        } else if (q.type === 'theory' || q.type === 'fill') {
+          t += 'Type your answer in the box below.';
+        } else if (q.type === 'upload') {
+          t += 'Upload your answer as a file.';
+        } else {
+          try {
+            var opts = JSON.parse(q.options || '[]');
+            opts.forEach(function(o, i) {
+              if (!KEYS[i]) return;
+              var txt = typeof o === 'string' ? o : (o.text || '');
+              t += 'Option ' + KEYS[i] + ': ' + txt + '.  ';
+            });
+          } catch(e) {}
+        }
+        return t;
+      }
+
+      function read(q) {
+        if (!active || !q) return;
+        SYNTH.cancel();
+        var u = new SpeechSynthesisUtterance(buildText(q));
+        u.rate = 0.88; u.pitch = 1;
+        var v = bestVoice(); if (v) u.voice = v;
+        u.onend = u.onerror = function() {
+          /* keep button "on" visually — stays ready for next question */
+          btn.title = 'Reading ON — tap to re-read or double-tap to turn off';
+        };
+        SYNTH.speak(u);
+        btn.classList.add('audio-fab--on');
+        btn.title = 'Speaking… tap to stop';
+      }
+
+      function turnOff() {
+        active = false;
+        SYNTH.cancel();
+        btn.classList.remove('audio-fab--on');
+        btn.innerHTML = '&#128266;';
+        btn.title = 'Read question &amp; options aloud';
+      }
+
+      var lastTap = 0;
+      btn.addEventListener('click', function() {
+        var now = Date.now();
+        if (active && now - lastTap < 400) { turnOff(); lastTap = 0; return; }
+        lastTap = now;
+
+        if (!active) {
+          active = true;
+          btn.classList.add('audio-fab--on');
+          btn.title = 'Read ON — double-tap to turn off';
+          if (questions && questions[current]) read(questions[current]);
+        } else {
+          /* Already ON: if speaking → stop; if idle → re-read */
+          if (SYNTH.speaking) { SYNTH.cancel(); }
+          else { if (questions && questions[current]) read(questions[current]); }
+        }
+      });
+
+      if (typeof SYNTH.onvoiceschanged !== 'undefined') SYNTH.onvoiceschanged = function(){};
+
+      return {
+        onRender: function(q) { if (active) read(q); }
+      };
+    })();
+
+    /* STT MODULE - "Speak" button
+       Desktop : continuous dictation with live interim preview.
+       Mobile  : short non-continuous sessions (restart per phrase)
+                 because Android Chrome kills continuous after ~5 s.    */
+    var STTMode = (function () {
+      var SRec      = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+      var btn       = document.getElementById('sttBtn');
+      var hintEl    = document.getElementById('sttHint');
+      var rec       = null;
+      var sttActive = false;
+      var hintTimer = null;
+      var recBusy   = false;
+
+      /* Android Chrome kills continuous sessions after ~5 s */
+      var isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+
+      /* Restart delays — mobile needs more time for mic to fully release */
+      var T_NOSPEECH = isMobile ? 800  : 400;
+      var T_END      = isMobile ? 900  : 300;
+      var T_MCQ      = isMobile ? 1000 : 600;
+
+      if (!btn) return { stop: function(){} };
+
+      function showHint(msg, ms) {
+        if (!hintEl) return;
+        hintEl.textContent = msg;
+        hintEl.classList.add('visible');
+        clearTimeout(hintTimer);
+        if (ms !== 0) hintTimer = setTimeout(function() { hintEl.classList.remove('visible'); }, ms || 3000);
+      }
+      function hideHint() {
+        if (!hintEl) return;
+        clearTimeout(hintTimer);
+        hintEl.classList.remove('visible');
+      }
+
+      if (!SRec) {
+        btn.addEventListener('click', function() {
+          showHint(isMobile ? 'Voice needs Chrome on Android — Safari is not supported.' : 'Voice input needs Chrome or Edge.', 5000);
+        });
+        return { stop: function(){} };
+      }
+
+      function setIdle()      { btn.classList.remove('audio-fab--listening'); btn.innerHTML = '&#127910;'; recBusy = false; }
+      function setListening() { btn.classList.add('audio-fab--listening');    btn.innerHTML = '&#127908;'; }
+      function clearDictUI()  { var ta = document.getElementById('ans'); if (ta) ta.classList.remove('is-dictating'); }
+
+      function killRec() {
+        if (rec) { try { rec.abort(); } catch(e) {} rec = null; }
+        recBusy = false;
+      }
+
+      function parseVoice(text, qtype) {
+        var t = text.trim().toUpperCase().replace(/[^A-Z0-9\s]/g,'').replace(/\s+/g,' ');
+        if (qtype === 'truefalse') {
+          if (/\b(TRUE|YES|CORRECT|RIGHT|YEP|YEA|YEAH)\b/.test(t)) return 'True';
+          if (/\b(FALSE|NO|WRONG|INCORRECT|NAH|NOPE)\b/.test(t))   return 'False';
+          return null;
+        }
+        if (/^[A-H]$/.test(t)) return t;
+        var MAP = { AY:'A',EI:'A',EY:'A',BEE:'B',BE:'B',BI:'B',
+                    SEE:'C',SEA:'C',SI:'C',DEE:'D',DE:'D',DI:'D',
+                    EE:'E',HEE:'E',EF:'F',GEE:'G',AGE:'G',AITCH:'H',ACE:'A' };
+        if (MAP[t]) return MAP[t];
+        var m = t.match(/\b(?:OPTION|ANSWER|LETTER|CHOOSE|SELECT|PICK)\s+([A-H])\b/);
+        if (m) return m[1];
+        m = t.match(/\b([A-H])\b/);
+        if (m) return m[1];
+        var NUM = { ONE:'A',TWO:'B',THREE:'C',FOUR:'D',FIVE:'E',SIX:'F',SEVEN:'G',EIGHT:'H',
+                    FIRST:'A',SECOND:'B',THIRD:'C',FOURTH:'D' };
+        var ws = t.split(' ');
+        for (var i = 0; i < ws.length; i++) { if (NUM[ws[i]]) return NUM[ws[i]]; }
+        return null;
+      }
+
+      function handleFatalError(code) {
+        var MSGS = {
+          'not-allowed'        : 'Mic blocked — tap the lock icon in your browser and allow microphone.',
+          'service-not-allowed': 'Mic blocked — allow microphone in browser settings.',
+          'audio-capture'      : 'No microphone found on this device.',
+          'network'            : 'Network error — voice input needs internet.',
+          'aborted'            : '',
+        };
+        var msg = (code in MSGS) ? MSGS[code] : ('Mic error: ' + code);
+        sttActive = false; killRec(); clearDictUI(); setIdle();
+        if (msg) showHint(msg, 6000);
+      }
+
+      function startMCQ(q) {
+        if (recBusy) return;
+        killRec(); setListening(); recBusy = true;
+        showHint('Listening... say A, B, C, D or True / False', 0);
+        try {
+          rec = new SRec();
+          rec.lang            = 'en-US';
+          rec.continuous      = false;
+          rec.interimResults  = false;
+          rec.maxAlternatives = isMobile ? 3 : 6;
+
+          rec.onresult = function(e) {
+            var letter = null, heard = '';
+            outer: for (var ri = 0; ri < e.results.length; ri++) {
+              for (var ai = 0; ai < e.results[ri].length; ai++) {
+                var tr = e.results[ri][ai].transcript || '';
+                if (!heard) heard = tr;
+                letter = parseVoice(tr, q.type);
+                if (letter) break outer;
+              }
+            }
+            recBusy = false;
+            if (letter) {
+              showHint('Heard "' + heard + '" -> ' + letter, 2500);
+              sttActive = false; killRec(); setIdle();
+              var sel = document.querySelector('#qbody .opt[data-k="' + letter + '"]');
+              if (sel) setTimeout(function() { sel.click(); }, 120);
+              else showHint('Option ' + letter + ' not on this question.', 3000);
+            } else {
+              showHint('Heard "' + heard + '" - say A, B, C or D', 3500);
+              if (sttActive) setTimeout(function() { startMCQ(q); }, T_MCQ);
+            }
+          };
+          rec.onnomatch = function() {
+            recBusy = false;
+            showHint('Could not understand - try again', 2500);
+            if (sttActive) setTimeout(function() { startMCQ(q); }, T_MCQ);
+          };
+          rec.onerror = function(ev) {
+            recBusy = false;
+            if (ev.error === 'no-speech') {
+              showHint('No speech - still listening...', 0);
+              if (sttActive) setTimeout(function() { startMCQ(q); }, T_NOSPEECH);
+              return;
+            }
+            if (ev.error === 'aborted') { rec = null; return; }
+            handleFatalError(ev.error);
+          };
+          rec.onend = function() { rec = null; recBusy = false; };
+          rec.start();
+        } catch(err) {
+          showHint('Could not start mic: ' + (err.message || err), 4000);
+          sttActive = false; recBusy = false; setIdle();
+        }
+      }
+
+      function startDictation(q) {
+        if (recBusy) return;
+        var ta = document.getElementById('ans');
+        if (!ta) { showHint('Text field not ready yet.', 2500); sttActive = false; setIdle(); return; }
+
+        killRec(); recBusy = true;
+
+        var base = ta.value;
+        if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+        var finalBuf = '';
+
+        setListening();
+        ta.classList.add('is-dictating');
+
+        try {
+          rec = new SRec();
+          rec.lang            = 'en-US';
+          rec.maxAlternatives = 1;
+
+          if (isMobile) {
+            /* Mobile: non-continuous sessions, append per phrase.
+               continuous:true on Android Chrome ends after ~5 s and may
+               drop text. false + onend restart gives reliable dictation. */
+            rec.continuous     = false;
+            rec.interimResults = false;
+            showHint('Speak a phrase, pause, speak again. Tap to stop.', 0);
+
+            rec.onresult = function(e) {
+              for (var i = 0; i < e.results.length; i++) {
+                if (e.results[i].isFinal) {
+                  finalBuf += e.results[i][0].transcript;
+                  if (finalBuf && finalBuf[finalBuf.length-1] !== ' ') finalBuf += ' ';
+                }
+              }
+              var ta2 = document.getElementById('ans');
+              if (ta2) {
+                ta2.value = base + finalBuf;
+                ta2.dispatchEvent(new Event('input'));
+                ta2.scrollTop = ta2.scrollHeight;
+              }
+              if (finalBuf) showHint('"' + finalBuf.slice(-50).trimStart() + '"', 0);
+            };
+
+            rec.onerror = function(ev) {
+              recBusy = false;
+              if (ev.error === 'no-speech') {
+                var ta2 = document.getElementById('ans');
+                if (ta2 && sttActive) {
+                  base = ta2.value;
+                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                }
+                if (sttActive) setTimeout(function() { startDictation(q); }, T_NOSPEECH);
+                return;
+              }
+              if (ev.error === 'aborted') { rec = null; return; }
+              handleFatalError(ev.error);
+            };
+
+            rec.onend = function() {
+              rec = null; recBusy = false;
+              if (sttActive) {
+                var ta2 = document.getElementById('ans');
+                if (ta2) {
+                  base = ta2.value;
+                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                }
+                finalBuf = '';
+                setTimeout(function() { if (sttActive) startDictation(q); }, T_END);
+              } else {
+                clearDictUI();
+              }
+            };
+
+          } else {
+            /* Desktop: continuous with interim results */
+            rec.continuous     = true;
+            rec.interimResults = true;
+            showHint('Dictating... speak naturally. Tap to stop.', 0);
+
+            rec.onresult = function(e) {
+              var interim = '';
+              for (var i = e.resultIndex; i < e.results.length; i++) {
+                var chunk = e.results[i][0].transcript || '';
+                if (e.results[i].isFinal) {
+                  finalBuf += chunk;
+                  if (finalBuf && finalBuf[finalBuf.length-1] !== ' ') finalBuf += ' ';
+                } else {
+                  interim += chunk;
+                }
+              }
+              var ta2 = document.getElementById('ans');
+              if (ta2) {
+                ta2.value = base + finalBuf + interim;
+                ta2.dispatchEvent(new Event('input'));
+                ta2.scrollTop = ta2.scrollHeight;
+              }
+              if (interim) showHint('"' + interim + '..."', 0);
+              else if (finalBuf) showHint('Got: ' + finalBuf.slice(-60).trimStart(), 1800);
+            };
+
+            rec.onerror = function(ev) {
+              recBusy = false;
+              if (ev.error === 'no-speech') {
+                var ta2 = document.getElementById('ans');
+                if (ta2 && sttActive) {
+                  base = ta2.value;
+                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                  finalBuf = '';
+                }
+                if (sttActive) setTimeout(function() { startDictation(q); }, T_NOSPEECH);
+                return;
+              }
+              if (ev.error === 'aborted') { rec = null; return; }
+              handleFatalError(ev.error);
+            };
+
+            rec.onend = function() {
+              rec = null; recBusy = false; clearDictUI();
+              if (sttActive) {
+                var ta2 = document.getElementById('ans');
+                if (ta2) {
+                  base = ta2.value;
+                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                }
+                finalBuf = '';
+                setTimeout(function() { if (sttActive) startDictation(q); }, T_END);
+              }
+            };
+          }
+
+          rec.start();
+        } catch(err) {
+          showHint('Could not start mic: ' + (err.message || err), 4000);
+          sttActive = false; recBusy = false; clearDictUI(); setIdle();
+        }
+      }
+
+      function startRec() {
+        var q = questions && questions[current];
+        if (!q) { showHint('No question loaded.', 2000); sttActive = false; setIdle(); return; }
+        if (q.type === 'theory' || q.type === 'fill') {
+          startDictation(q);
+        } else if (['mcq','truefalse','multi'].indexOf(q.type) !== -1) {
+          startMCQ(q);
+        } else {
+          showHint('Voice input not available for upload questions.', 3000);
+          sttActive = false; setIdle();
+        }
+      }
+
+      /* Button handler.
+         On mobile: touchend fires instantly; the 300 ms ghost click that
+         follows would double-toggle. preventDefault blocks it.
+         A 400 ms debounce (_tapping) prevents accidental double-taps.   */
+      var _tapping = false;
+      function handleTap() {
+        if (_tapping) return;
+        _tapping = true;
+        setTimeout(function() { _tapping = false; }, 400);
+        if (sttActive) {
+          sttActive = false; killRec(); clearDictUI(); setIdle();
+          showHint('Voice input stopped.', 1800);
+        } else {
+          sttActive = true; startRec();
+        }
+      }
+      if (isMobile) {
+        btn.addEventListener('touchend', function(e) { e.preventDefault(); handleTap(); }, { passive: false });
+      }
+      btn.addEventListener('click', handleTap);
+
+      return {
+        stop: function() {
+          if (!sttActive) return;
+          sttActive = false; killRec(); clearDictUI(); setIdle(); hideHint();
+        }
+      };
+    })();
+
   })();
   </script>
 </body>
 </html>
+

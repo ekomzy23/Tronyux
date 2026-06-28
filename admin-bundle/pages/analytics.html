@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Analytics &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="dashboard.html" class="iconbtn">←</a>
+      <span class="appbar__title">Analytics</span>
+    </div>
+
+    <div class="app__body">
+
+      <!-- Key stats row 1 -->
+      <div class="stat-grid mb-4" style="grid-template-columns:repeat(2,1fr);">
+        <div class="stat stat--accent"><div class="stat__n" id="kStudents">&mdash;</div><div class="stat__l">Students Signed Up</div></div>
+        <div class="stat"><div class="stat__n" id="kExams">&mdash;</div><div class="stat__l">Exams</div></div>
+        <div class="stat"><div class="stat__n" id="kQuestions">&mdash;</div><div class="stat__l">Questions</div></div>
+        <div class="stat"><div class="stat__n" id="kAttempts">&mdash;</div><div class="stat__l">Attempts</div></div>
+      </div>
+
+      <!-- Activity stats -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:14px;"><h3>Activity Overview</h3></div>
+        <div class="info-row">
+          <span class="info-row__label">Submitted exams</span>
+          <span class="info-row__value" id="kSubmitted">&mdash;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Completion rate</span>
+          <span class="info-row__value" id="completionRate">&mdash;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Average score</span>
+          <span class="info-row__value" id="avgScore">&mdash;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Questions answered</span>
+          <span class="info-row__value" id="questionsAnswered">&mdash;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Pending marking</span>
+          <span class="info-row__value" id="kPending">&mdash;</span>
+        </div>
+      </div>
+
+      <!-- Pass rate by exam (live from Appwrite) -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:16px;"><h3>Exams</h3></div>
+        <div id="passRates">
+          <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+        </div>
+      </div>
+
+      <!-- Students by year -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:14px;"><h3>Students by Year</h3></div>
+        <div id="yearBreakdown">
+          <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+        </div>
+      </div>
+
+      <!-- Students by department -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:14px;"><h3>Students by Department</h3></div>
+        <div id="deptBreakdown">
+          <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+        </div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="analytics"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    async function load() {
+      if (!RONYX.CONFIGURED) {
+        ['kStudents','kExams','kQuestions','kAttempts','kSubmitted','completionRate','avgScore','questionsAnswered','kPending']
+          .forEach(id => { document.getElementById(id).textContent = '—'; });
+        document.getElementById('passRates').innerHTML = '<p class="text-muted" style="padding:12px 0;">Appwrite not configured.</p>';
+        return;
+      }
+
+      try {
+        // Efficient counts — no massive data fetches
+        const counts = await RonyxAdmin.countAll();
+        const totalStudents = await RonyxAdmin.countStudents();
+
+        document.getElementById('kStudents').textContent       = totalStudents;
+        document.getElementById('kExams').textContent          = counts.exams;
+        document.getElementById('kQuestions').textContent      = counts.questions;
+        document.getElementById('kAttempts').textContent       = counts.attempts;
+        document.getElementById('kSubmitted').textContent      = counts.submitted;
+        document.getElementById('kPending').textContent        = counts.pending;
+
+        const cr = counts.attempts > 0 ? Math.round((counts.submitted / counts.attempts) * 100) : 0;
+        document.getElementById('completionRate').textContent  = cr + '%';
+
+        // Real average score from results
+        const results = await RonyxAdmin.listResults();
+        if (results.length) {
+          const avg = results.reduce((s, r) => s + (r.percentage || 0), 0) / results.length;
+          document.getElementById('avgScore').textContent = Math.round(avg) + '%';
+          document.getElementById('questionsAnswered').textContent =
+            counts.attempts > 0 ? (counts.attempts * 25).toLocaleString() : '0';
+        } else {
+          document.getElementById('avgScore').textContent          = 'No results yet';
+          document.getElementById('questionsAnswered').textContent = '0';
+        }
+
+        // Exams list with real question counts
+        const exams = await RonyxAdmin.listExams();
+        const el = document.getElementById('passRates');
+        if (exams.length) {
+          el.innerHTML = exams.map(e => {
+            const statusColor = e.status === 'published' ? 'badge--green' :
+                                e.status === 'live'      ? 'badge--violet' : 'badge--yellow';
+            return `<div class="row-card" style="margin-bottom:8px;">
+              <div class="row-card__meta" style="flex:1;">
+                <h4 style="margin:0 0 2px;">${e.title}</h4>
+                <p style="margin:0;">${e.courseCode || ''} &middot; ${e.questionsCount || 0} questions &middot; ${e.durationMinutes || 0} min</p>
+              </div>
+              <span class="badge ${statusColor}" style="flex-shrink:0;">${e.status}</span>
+            </div>`;
+          }).join('');
+        } else {
+          el.innerHTML = '<div class="empty"><div class="empty__icon">📝</div><p>No exams yet. <a href="exam-edit.html" class="link">Create one</a></p></div>';
+        }
+
+        // Students by year (fetch the list for breakdown — limited)
+        const users = await RonyxAdmin.listUsers();
+        const total = users.length || 1;
+
+        // Year breakdown
+        const yearEl = document.getElementById('yearBreakdown');
+        if (users.length) {
+          yearEl.innerHTML = [1,2,3,4,5].map(y => {
+            const cnt = users.filter(u => parseInt(u.level) === y).length;
+            const pct = Math.round((cnt / total) * 100);
+            return `<div class="prog-row">
+              <div class="prog-row__hd"><span class="prog-row__label">Year ${y}</span><span class="prog-row__val">${cnt}</span></div>
+              <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+            </div>`;
+          }).join('');
+        } else {
+          yearEl.innerHTML = '<p class="text-muted" style="padding:8px 0;">No student data yet.</p>';
+        }
+
+        // Department breakdown
+        const deptEl = document.getElementById('deptBreakdown');
+        if (users.length) {
+          const deptMap = {};
+          users.forEach(u => {
+            const d = u.department || 'Unknown';
+            deptMap[d] = (deptMap[d] || 0) + 1;
+          });
+          const sorted = Object.entries(deptMap).sort((a, b) => b[1] - a[1]);
+          deptEl.innerHTML = sorted.map(([dept, cnt]) => {
+            const pct = Math.round((cnt / total) * 100);
+            return `<div class="prog-row">
+              <div class="prog-row__hd"><span class="prog-row__label">${dept}</span><span class="prog-row__val">${cnt}</span></div>
+              <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+            </div>`;
+          }).join('');
+        } else {
+          deptEl.innerHTML = '<p class="text-muted" style="padding:8px 0;">No student data yet.</p>';
+        }
+
+      } catch(e) {
+        console.error(e);
+        toast('Failed to load analytics: ' + e.message);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
+
+

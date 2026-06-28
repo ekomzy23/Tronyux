@@ -1,0 +1,1047 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Edit Question &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    /* ---- Mode toggle tabs ---- */
+    .mode-tabs { display:flex; gap:4px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; padding:4px; margin-bottom:14px; }
+    .mode-tab { flex:1; padding:8px; border-radius:9px; font-size:12px; font-weight:700; text-align:center; cursor:pointer; transition:.15s; color:var(--color-muted); border:none; background:transparent; }
+    .mode-tab.active { background:var(--color-primary-2,#6d5efc); color:#fff; box-shadow:0 2px 10px rgba(109,94,252,.35); }
+
+    /* ---- JSON pane ---- */
+    #jsonPane { display:none; }
+    #jsonPane.open { display:block; }
+    #formPane.closed { display:none; }
+    .json-area {
+      width:100%; min-height:260px; border-radius:12px; border:1.5px solid var(--color-stroke);
+      background:#0a0a1e; color:#a3e635; font-family:'Courier New',monospace; font-size:12px;
+      line-height:1.7; padding:14px; resize:vertical; outline:none; box-sizing:border-box;
+      transition:border-color .2s;
+    }
+    .json-area:focus { border-color:rgba(109,94,252,.7); }
+    .json-area.valid   { border-color:rgba(52,211,153,.6); }
+    .json-area.invalid { border-color:rgba(251,113,133,.6); }
+    .json-status { display:flex; align-items:center; gap:7px; font-size:12px; margin:7px 0 10px; min-height:20px; }
+    .json-status__dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .json-hint { font-size:11.5px; color:var(--color-muted); background:rgba(109,94,252,.07); border:1px solid rgba(109,94,252,.18); border-radius:10px; padding:10px 12px; line-height:1.6; margin-bottom:12px; }
+    .jprog { display:none; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; padding:12px 14px; margin-top:10px; }
+    .jprog.open { display:block; }
+    .jprog__bar { height:4px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; margin:6px 0 4px; }
+    .jprog__fill { height:100%; background:var(--color-primary-2,#6d5efc); border-radius:4px; width:0; transition:width .25s ease; }
+
+    /* ---- Option row with explanation ---- */
+    .opt-row { display:flex; flex-direction:column; gap:4px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+    .opt-row__top { display:flex; align-items:center; gap:8px; }
+    .opt-row__letter { width:28px; height:28px; border-radius:8px; background:var(--color-primary-soft); color:var(--color-primary-2); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .opt-row__input { flex:1; border:none; background:transparent; color:var(--color-text); font-size:14px; font-family:var(--font-body); outline:none; }
+    .opt-row__input::placeholder { color:var(--color-muted-2); }
+    .opt-row__correct { width:22px; height:22px; border-radius:6px; border:2px solid var(--color-stroke); background:var(--color-surface-2); cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; }
+    .opt-row__correct.is-correct { background:var(--color-success); border-color:var(--color-success); color:#fff; }
+    .opt-row__del { width:24px; height:24px; border-radius:6px; background:transparent; color:var(--color-muted-2); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .opt-row__del:hover { color:var(--color-danger); }
+    .opt-row__exp { font-size:11px; color:var(--color-muted); padding-left:36px; border-top:1px solid var(--color-stroke); padding-top:6px; }
+    .opt-row__exp input { width:100%; background:transparent; border:none; color:var(--color-muted); font-size:11px; outline:none; font-family:var(--font-body); }
+    .opt-row__exp input::placeholder { color:var(--color-muted-2); }
+
+    /* ---- Matching pairs ---- */
+    .pair-row { display:flex; gap:8px; margin-bottom:6px; align-items:center; }
+    .pair-row input { flex:1; }
+    .pair-sep { color:var(--color-muted-2); font-size:14px; flex-shrink:0; }
+
+    /* ---- Preview pane ---- */
+    .preview-pane { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:14px; padding:14px; margin-bottom:12px; }
+    .preview-pane__label { font-size:10px; color:var(--color-muted-2); font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+    .preview-q { font-size:14px; font-weight:600; line-height:1.5; margin-bottom:10px; }
+    .preview-opt { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; border:1px solid var(--color-stroke); background:var(--color-surface-2); margin-bottom:5px; font-size:13px; }
+    .preview-opt__k { width:24px; height:24px; border-radius:7px; background:var(--color-primary-soft); color:var(--color-primary-2); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+    /* ---- Section header ---- */
+    .sec-hdr { font-size:10px; color:var(--color-muted-2); font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin:12px 0 6px; }
+
+    /* ---- Status badge row ---- */
+    .status-row { display:flex; gap:5px; margin-bottom:10px; }
+    .stbtn { flex:1; padding:7px; border-radius:10px; font-size:11px; font-weight:700; border:1px solid var(--color-stroke); background:var(--color-surface); color:var(--color-muted); cursor:pointer; }
+    .stbtn.active[data-st="draft"]   { background:rgba(251,191,36,.12); color:var(--color-warning); border-color:rgba(251,191,36,.35); }
+    .stbtn.active[data-st="published"] { background:rgba(52,211,153,.12); color:var(--color-success); border-color:rgba(52,211,153,.35); }
+    .stbtn.active[data-st="archived"] { background:rgba(251,113,133,.1); color:var(--color-danger); border-color:rgba(251,113,133,.25); }
+
+    /* ---- Image upload area ---- */
+    .img-drop { border:2px dashed var(--color-stroke); border-radius:14px; padding:20px; text-align:center; cursor:pointer; margin-bottom:8px; }
+    .img-drop:hover { border-color:var(--color-primary-2); }
+    .img-drop p { font-size:12px; color:var(--color-muted); }
+    .img-preview img { max-width:100%; border-radius:10px; margin-top:8px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="appbar">
+    <a id="backBtn" href="questions.html" class="iconbtn">&#8592;</a>
+    <span class="appbar__title" id="pageTitle">New question</span>
+    <button class="iconbtn" id="dupBtn" style="display:none;" title="Duplicate">&#9166;</button>
+  </div>
+
+  <div class="app__body">
+
+    <!-- Mode toggle -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabForm" onclick="setMode('form')">&#128221; Form</button>
+      <button class="mode-tab" id="tabJson" onclick="setMode('json')">&#10100;&#125; JSON Paste</button>
+    </div>
+
+    <!-- ======= JSON PASTE PANE ======= -->
+    <div id="jsonPane">
+      <div class="json-hint">
+        Paste <strong>1 question or 500</strong> — it works the same way. Paste an object <code>{}</code> or an array <code>[]</code>, hit Submit and they all go straight to Appwrite.<br>
+        Only <code>type</code> and <code>text</code> are required. The exam selector below applies when questions have no <code>examId</code>.
+      </div>
+
+      <!-- Inline exam selector inside JSON pane -->
+      <div class="field" style="margin-bottom:10px;">
+        <label class="field__label">Target exam (fallback if JSON has no examId)</label>
+        <select class="input" id="jsonExamSel">
+          <option value="">Loading…</option>
+        </select>
+      </div>
+
+      <textarea class="json-area" id="jsonInput" spellcheck="false" style="min-height:320px;"
+        placeholder='[&#10;  {&#10;    "type": "mcq",&#10;    "text": "What is 2 + 2?",&#10;    "options": [&#10;      { "text": "3", "explain": "Off by one." },&#10;      { "text": "4", "explain": "Correct." }&#10;    ],&#10;    "correctAnswer": "B",&#10;    "marks": 1&#10;  },&#10;  {&#10;    "type": "theory",&#10;    "text": "Explain polymorphism.",&#10;    "marks": 5&#10;  }&#10;]'
+        oninput="onJsonInput()"></textarea>
+
+      <!-- Format check panel -->
+      <div id="jsonCheckPanel" style="display:none;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;margin-top:10px;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--color-muted-2);margin-bottom:8px;">Format check</div>
+        <div id="jsonCheckRows"></div>
+      </div>
+
+      <div class="json-status" id="jsonStatus" style="margin-top:8px;"></div>
+
+      <!-- Submit always visible — disabled until JSON is valid -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+        <button class="btn btn--primary" id="jsonSubmitBtn" onclick="jsonSubmitDirect()" disabled
+          style="font-size:15px;padding:15px;opacity:.45;cursor:not-allowed;transition:opacity .2s;">
+          &#8593; Paste JSON above, then submit
+        </button>
+        <button class="btn btn--ghost" id="jsonFillBtn" onclick="jsonFillForm()" style="display:none;font-size:12px;">
+          &#8595; Fill form instead (reviews a single question before saving)
+        </button>
+      </div>
+
+      <div class="jprog" id="jsonProg">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span id="jsonProgLabel" style="font-size:13px;font-weight:600;">Uploading…</span>
+          <span id="jsonProgCount" class="text-muted" style="font-size:12px;"></span>
+        </div>
+        <div class="jprog__bar"><div class="jprog__fill" id="jsonProgFill"></div></div>
+        <p id="jsonProgResult" style="font-size:12px;color:var(--color-muted);margin-top:4px;"></p>
+      </div>
+    </div>
+    <!-- ======= END JSON PANE ======= -->
+
+    <div id="formPane">
+
+    <!-- Status -->
+    <div class="sec-hdr">Status</div>
+    <div class="status-row">
+      <button class="stbtn active" data-st="draft" onclick="setSt('draft')">Draft</button>
+      <button class="stbtn" data-st="published" onclick="setSt('published')">Published</button>
+      <button class="stbtn" data-st="archived" onclick="setSt('archived')">Archived</button>
+    </div>
+
+    <!-- Exam -->
+    <div class="field">
+      <label class="field__label">Exam</label>
+      <select class="input" id="examId">
+        <option value="">Choose exam&hellip;</option>
+      </select>
+    </div>
+
+    <!-- Type -->
+    <div class="field">
+      <label class="field__label">Question type</label>
+      <select class="input" id="type" onchange="onTypeChange()">
+        <option value="mcq">Multiple Choice (MCQ)</option>
+        <option value="multi">Multiple Answer (select all that apply)</option>
+        <option value="truefalse">True / False</option>
+        <option value="fill">Fill in the Blank</option>
+        <option value="matching">Matching Pairs</option>
+        <option value="ordering">Ordering / Sequence</option>
+        <option value="theory">Theory / Essay</option>
+        <option value="programming">Programming / Code</option>
+        <option value="mathematical">Mathematical (show working)</option>
+        <option value="image">Image-based question</option>
+        <option value="audio">Audio question</option>
+        <option value="upload">File Upload answer</option>
+      </select>
+    </div>
+
+    <!-- Question text -->
+    <div class="field">
+      <label class="field__label">Question text</label>
+      <textarea class="input" id="text" rows="3" placeholder="Type the question here&hellip;"></textarea>
+    </div>
+
+    <!-- Image upload for question -->
+    <div class="field" id="imgField" style="display:none;">
+      <label class="field__label">Question image</label>
+      <div class="img-drop" onclick="document.getElementById('imgFile').click()">
+        <p>&#128247; Tap to upload image<br><span style="font-size:10px;">PNG, JPG, GIF &mdash; max 5 MB</span></p>
+        <input type="file" id="imgFile" accept="image/*" style="display:none;" onchange="previewImg(this)">
+      </div>
+      <div class="img-preview" id="imgPreview"></div>
+      <input class="input mt-2" id="imgUrl" placeholder="Or paste image URL" oninput="previewImgUrl(this.value)">
+    </div>
+
+    <!-- Audio/Video for audio type -->
+    <div class="field" id="audioField" style="display:none;">
+      <label class="field__label">Audio / Video URL</label>
+      <input class="input" id="audioUrl" placeholder="https://... or upload URL from Appwrite">
+    </div>
+
+    <!-- ===== MCQ / Multi-answer options ===== -->
+    <div id="optSection" style="display:none;">
+      <div class="sec-hdr">
+        Options
+        <span id="multiHint" style="color:var(--color-success);display:none;"> &mdash; tick all correct answers</span>
+      </div>
+      <div id="optList"></div>
+      <button class="btn btn--ghost" style="font-size:13px;padding:10px;" onclick="addOpt()">+ Add option</button>
+    </div>
+
+    <!-- ===== True/False ===== -->
+    <div id="tfSection" style="display:none;">
+      <div class="sec-hdr">Correct answer</div>
+      <div class="status-row" style="margin-bottom:6px;">
+        <button class="stbtn active" id="tf-true" onclick="setTF('True')">&#10003; True</button>
+        <button class="stbtn" id="tf-false" onclick="setTF('False')">&#10005; False</button>
+      </div>
+      <div class="field">
+        <label class="field__label">Explanation (shown after answer)</label>
+        <textarea class="input" id="tfExpl" rows="2" placeholder="Why is this true or false?"></textarea>
+      </div>
+    </div>
+
+    <!-- ===== Fill in the blank ===== -->
+    <div id="fillSection" style="display:none;">
+      <div class="field">
+        <label class="field__label">Correct answer(s)</label>
+        <input class="input" id="fillAns" placeholder="Answer 1, Answer 2 (comma-separated for alternatives)">
+      </div>
+      <div class="field">
+        <label class="field__label">Case sensitive?</label>
+        <select class="input" id="fillCase">
+          <option value="no">No (accept any case)</option>
+          <option value="yes">Yes (exact match)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ===== Matching ===== -->
+    <div id="matchSection" style="display:none;">
+      <div class="sec-hdr">Matching pairs (left &rarr; right)</div>
+      <div id="pairList"></div>
+      <button class="btn btn--ghost" style="font-size:13px;padding:10px;" onclick="addPair()">+ Add pair</button>
+    </div>
+
+    <!-- ===== Ordering ===== -->
+    <div id="orderSection" style="display:none;">
+      <div class="sec-hdr">Items in correct order (top = first)</div>
+      <div id="orderList"></div>
+      <button class="btn btn--ghost" style="font-size:13px;padding:10px;" onclick="addOrderItem()">+ Add item</button>
+    </div>
+
+    <!-- ===== Theory ===== -->
+    <div id="theorySection" style="display:none;">
+      <div class="field">
+        <label class="field__label">Model answer / Sample answer</label>
+        <textarea class="input" id="modelAnswer" rows="4" placeholder="Full model answer for marking reference&hellip;"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Marking scheme</label>
+        <textarea class="input" id="rubric" rows="3" placeholder="e.g. 1 mark for definition, 2 marks for example&hellip;"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Keywords (comma-separated)</label>
+        <input class="input" id="keywords" placeholder="recursion, base case, stack, function call">
+      </div>
+      <div class="field">
+        <label class="field__label">AI marking instructions (optional)</label>
+        <textarea class="input" id="aiMarking" rows="2" placeholder="Instructions for automated marking&hellip;"></textarea>
+      </div>
+    </div>
+
+    <!-- ===== Programming ===== -->
+    <div id="progSection" style="display:none;">
+      <div class="field">
+        <label class="field__label">Language</label>
+        <select class="input" id="progLang">
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="java">Java</option>
+          <option value="c">C</option>
+          <option value="cpp">C++</option>
+          <option value="pseudocode">Pseudocode</option>
+          <option value="any">Any language</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label">Sample / model code</label>
+        <textarea class="input" id="sampleCode" rows="5" style="font-family:ui-monospace,monospace;font-size:12px;" placeholder="def solution():&#10;    # model implementation"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Test cases (one per line: input | expected output)</label>
+        <textarea class="input" id="testCases" rows="3" placeholder="[1,2,3] | 6&#10;[] | 0"></textarea>
+      </div>
+    </div>
+
+    <!-- ===== Mathematical ===== -->
+    <div id="mathSection" style="display:none;">
+      <div class="field">
+        <label class="field__label">Worked solution</label>
+        <textarea class="input" id="workedSol" rows="5" placeholder="Show full working here&hellip;"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Final answer</label>
+        <input class="input" id="mathAns" placeholder="e.g.  x = 5  or  f(x) = 2x + 3">
+      </div>
+    </div>
+
+    <!-- ===== Common: marks + difficulty + topic ===== -->
+    <div class="btn-row" style="margin-top:10px;">
+      <div class="field" style="flex:1;">
+        <label class="field__label">Marks</label>
+        <input class="input" id="marks" type="number" value="1" min="0.5" step="0.5">
+      </div>
+      <div class="field" style="flex:1;">
+        <label class="field__label">Difficulty</label>
+        <select class="input" id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <div class="field" style="flex:1;">
+        <label class="field__label">Topic / chapter</label>
+        <input class="input" id="topic" placeholder="e.g. Recursion">
+      </div>
+      <div class="field" style="flex:1;">
+        <label class="field__label">Learning outcome</label>
+        <input class="input" id="outcome" placeholder="e.g. LO3">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field__label">General explanation (shown after answering)</label>
+      <textarea class="input" id="explanation" rows="2" placeholder="Why is this the correct answer?"></textarea>
+    </div>
+
+    <!-- ===== Preview ===== -->
+    <div class="preview-pane" id="preview" style="display:none;">
+      <div class="preview-pane__label">&#128065; Student preview</div>
+      <div id="previewContent"></div>
+    </div>
+
+    <!-- ===== Actions ===== -->
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;padding-bottom:24px;">
+      <button class="btn btn--primary" onclick="save()">&#128190; Save question</button>
+      <button class="btn" onclick="saveAndPreview()">&#128065; Save &amp; Preview</button>
+      <button class="btn btn--danger" id="delBtn" style="display:none;" onclick="del()">&#128465; Delete question</button>
+    </div>
+
+    </div><!-- /#formPane -->
+  </div>
+</div>
+
+<script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+<script src="../js/config.js?v=mqye4cj4"></script>
+<script src="../js/appwrite.js?v=mqye4cj4"></script>
+<script src="../js/admin-data.js?v=mqye4cj4"></script>
+<script src="../js/theme.js?v=mqye4cj4"></script>
+<script>
+requireAdmin();
+
+var params    = new URLSearchParams(location.search);
+var id        = params.get('id');
+var preExamId = params.get('examId');
+var qStatus   = 'draft';
+var tfAnswer  = 'True';
+var optCount  = 0;
+var pairCount = 0;
+var orderCount= 0;
+var correctSet = new Set();   // for multi-answer
+var imgDataUrl = '';
+
+/* ---- back link ---- */
+if (preExamId) document.getElementById('backBtn').href = 'questions.html?examId=' + preExamId;
+
+/* ---- Load exams ---- */
+(async function init() {
+  var exams = await RonyxAdmin.listExams();
+  var examOpts = '<option value="">— Select exam —</option>' +
+    exams.map(function(e){ return '<option value="'+e.$id+'">'+e.title+(e.courseCode?' · '+e.courseCode:'')+'</option>'; }).join('');
+  document.getElementById('examId').innerHTML    = examOpts;
+  document.getElementById('jsonExamSel').innerHTML = examOpts;
+  if (preExamId) {
+    document.getElementById('examId').value = preExamId;
+    document.getElementById('jsonExamSel').value = preExamId;
+  }
+
+  if (id) {
+    document.getElementById('pageTitle').textContent = 'Edit question';
+    document.getElementById('delBtn').style.display  = 'block';
+    document.getElementById('dupBtn').style.display  = 'flex';
+    try {
+      var q = await RonyxAdmin.getQuestion(id);
+      if (q) loadQuestion(q);
+    } catch(e) { toast('Failed to load question: ' + e.message, 'error'); }
+  } else {
+    // New question defaults
+    onTypeChange();
+    addOpt(); addOpt(); addOpt(); addOpt();
+  }
+})();
+
+function loadQuestion(q) {
+  document.getElementById('examId').value    = q.examId || '';
+  document.getElementById('type').value      = q.type   || 'mcq';
+  document.getElementById('text').value      = q.text   || '';
+  document.getElementById('marks').value     = q.marks  || 1;
+  document.getElementById('difficulty').value= q.difficulty || 'medium';
+  document.getElementById('topic').value     = q.topic  || '';
+  document.getElementById('outcome').value   = q.outcome || '';
+  document.getElementById('explanation').value = q.explanation || '';
+
+  if (q.status) setSt(q.status);
+
+  onTypeChange();
+
+  try {
+    var opts = JSON.parse(q.options || '[]');
+    if (q.type === 'mcq' || q.type === 'multi') {
+      var correctAnswers = (q.correctAnswer || '').split('|').map(function(s){return s.trim();});
+      opts.forEach(function(o){
+        var text = typeof o === 'string' ? o : o.text;
+        var exp  = typeof o === 'object' ? (o.exp || '') : '';
+        var isC  = correctAnswers.includes(text);
+        addOpt(text, exp, isC);
+      });
+    } else if (q.type === 'matching') {
+      opts.forEach(function(p){ addPair(p.left || '', p.right || ''); });
+    } else if (q.type === 'ordering') {
+      opts.forEach(function(item){ addOrderItem(typeof item==='string'?item:item.text); });
+    } else if (q.type === 'truefalse') {
+      setTF(q.correctAnswer || 'True');
+      document.getElementById('tfExpl').value = q.explanation || '';
+    } else if (q.type === 'fill') {
+      document.getElementById('fillAns').value = q.correctAnswer || '';
+      document.getElementById('fillCase').value= (q.caseSensitive ? 'yes' : 'no');
+    }
+  } catch(e) {}
+
+  // Theory
+  if (q.type === 'theory' || q.type === 'mathematical') {
+    try {
+      var meta = JSON.parse(q.correctAnswer || '{}');
+      document.getElementById('modelAnswer').value = meta.modelAnswer || '';
+      document.getElementById('rubric').value      = meta.rubric      || '';
+      document.getElementById('keywords').value    = meta.keywords    || '';
+      document.getElementById('aiMarking').value   = meta.aiMarking   || '';
+      document.getElementById('workedSol').value   = meta.workedSol   || '';
+      document.getElementById('mathAns').value     = meta.mathAns     || '';
+    } catch(e) {}
+  }
+
+  // Programming
+  if (q.type === 'programming') {
+    try {
+      var pdata = JSON.parse(q.correctAnswer || '{}');
+      document.getElementById('progLang').value  = pdata.lang || 'python';
+      document.getElementById('sampleCode').value= pdata.code || '';
+      document.getElementById('testCases').value = pdata.tests|| '';
+    } catch(e) {}
+  }
+
+  // Image
+  if (q.options && (q.type === 'image' || q.type === 'audio')) {
+    try {
+      var media = JSON.parse(q.options);
+      if (q.type === 'image') {
+        document.getElementById('imgUrl').value = media.url || '';
+        if (media.url) document.getElementById('imgPreview').innerHTML = '<img src="'+media.url+'">';
+      } else {
+        document.getElementById('audioUrl').value = media.url || '';
+      }
+    } catch(e) {}
+  }
+}
+
+/* ---- Type change ---- */
+window.onTypeChange = function onTypeChange() {
+  var t = document.getElementById('type').value;
+  var show = function(id, vis) { document.getElementById(id).style.display = vis ? 'block' : 'none'; };
+  show('optSection',  ['mcq','multi'].includes(t));
+  show('tfSection',   t==='truefalse');
+  show('fillSection', t==='fill');
+  show('matchSection',t==='matching');
+  show('orderSection',t==='ordering');
+  show('theorySection', t==='theory');
+  show('progSection', t==='programming');
+  show('mathSection', t==='mathematical');
+  show('imgField',    t==='image');
+  show('audioField',  t==='audio');
+  document.getElementById('multiHint').style.display = t==='multi'?'inline':'none';
+
+  // Default options for T/F
+  if (t==='truefalse') setTF('True');
+  // Default options for MCQ if no opts yet
+  if ((t==='mcq'||t==='multi') && document.getElementById('optList').children.length===0) {
+    addOpt(); addOpt(); addOpt(); addOpt();
+  }
+  if (t==='matching' && document.getElementById('pairList').children.length===0) {
+    addPair(); addPair(); addPair();
+  }
+  if (t==='ordering' && document.getElementById('orderList').children.length===0) {
+    addOrderItem(); addOrderItem(); addOrderItem();
+  }
+};
+
+/* ---- Status ---- */
+function setSt(st) {
+  qStatus = st;
+  document.querySelectorAll('.stbtn[data-st]').forEach(function(b){
+    b.classList.toggle('active', b.dataset.st === st);
+  });
+}
+window.setSt = setSt;
+
+/* ---- Options (MCQ / Multi) ---- */
+var LETTERS = ['A','B','C','D','E','F','G','H'];
+function addOpt(text, exp, isCorrect) {
+  var i = optCount++;
+  var div = document.createElement('div');
+  div.className = 'opt-row';
+  div.id = 'opt-' + i;
+  var letter = LETTERS[document.getElementById('optList').children.length] || '?';
+  div.innerHTML =
+    '<div class="opt-row__top">' +
+      '<div class="opt-row__letter">'+letter+'</div>' +
+      '<input class="opt-row__input" id="ot-'+i+'" placeholder="Option '+letter+'..." value="'+(text||'').replace(/"/g,'&quot;')+'">' +
+      '<div class="opt-row__correct'+(isCorrect?' is-correct':'')+'" id="oc-'+i+'" onclick="toggleCorrect('+i+')" title="Mark as correct">&#10003;</div>' +
+      '<div class="opt-row__del" onclick="this.closest(\'.opt-row\').remove()" title="Remove">&#10005;</div>' +
+    '</div>' +
+    '<div class="opt-row__exp"><input id="oe-'+i+'" placeholder="Explanation for this option (shown after answering)..." value="'+(exp||'').replace(/"/g,'&quot;')+'"></div>';
+  document.getElementById('optList').appendChild(div);
+  if (isCorrect) correctSet.add(i);
+}
+function toggleCorrect(i) {
+  var el = document.getElementById('oc-'+i);
+  var type = document.getElementById('type').value;
+  if (type === 'mcq') {
+    // Single correct: unmark all others
+    correctSet.clear();
+    document.querySelectorAll('.opt-row__correct').forEach(function(c){ c.classList.remove('is-correct'); });
+    correctSet.add(i);
+    el.classList.add('is-correct');
+  } else {
+    // Multi: toggle
+    if (correctSet.has(i)) { correctSet.delete(i); el.classList.remove('is-correct'); }
+    else { correctSet.add(i); el.classList.add('is-correct'); }
+  }
+}
+window.addOpt = addOpt;
+window.toggleCorrect = toggleCorrect;
+
+/* ---- True/False ---- */
+function setTF(val) {
+  tfAnswer = val;
+  document.getElementById('tf-true').classList.toggle('active', val==='True');
+  document.getElementById('tf-false').classList.toggle('active', val==='False');
+}
+window.setTF = setTF;
+
+/* ---- Matching pairs ---- */
+function addPair(left, right) {
+  var i = pairCount++;
+  var row = document.createElement('div');
+  row.className = 'pair-row';
+  row.innerHTML =
+    '<input class="input" id="pl-'+i+'" placeholder="Left..." style="flex:1;" value="'+(left||'')+'">' +
+    '<span class="pair-sep">&#8594;</span>' +
+    '<input class="input" id="pr-'+i+'" placeholder="Right..." style="flex:1;" value="'+(right||'')+'">' +
+    '<button style="flex-shrink:0;background:none;color:var(--color-danger);font-size:16px;padding:0 4px;cursor:pointer;" onclick="this.closest(\'.pair-row\').remove()">&#10005;</button>';
+  document.getElementById('pairList').appendChild(row);
+}
+window.addPair = addPair;
+
+/* ---- Ordering ---- */
+function addOrderItem(val) {
+  var i = orderCount++;
+  var row = document.createElement('div');
+  row.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:center;';
+  row.innerHTML =
+    '<div style="width:22px;height:22px;border-radius:6px;background:var(--color-surface-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">'+(document.getElementById('orderList').children.length+1)+'</div>' +
+    '<input class="input" id="oi-'+i+'" placeholder="Item '+(document.getElementById('orderList').children.length+1)+'..." value="'+(val||'')+'">' +
+    '<button style="flex-shrink:0;background:none;color:var(--color-danger);font-size:16px;padding:0 4px;cursor:pointer;" onclick="this.closest(\'div\').remove()">&#10005;</button>';
+  document.getElementById('orderList').appendChild(row);
+}
+window.addOrderItem = addOrderItem;
+
+/* ---- Image upload preview ---- */
+window.previewImg = function(input) {
+  var file = input.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    imgDataUrl = e.target.result;
+    document.getElementById('imgPreview').innerHTML = '<img src="'+imgDataUrl+'">';
+    document.getElementById('imgUrl').value = '';
+  };
+  reader.readAsDataURL(file);
+};
+window.previewImgUrl = function(url) {
+  if (url) document.getElementById('imgPreview').innerHTML = '<img src="'+url+'">';
+};
+
+/* ---- Collect form data ---- */
+function collectData() {
+  var type = document.getElementById('type').value;
+  var text = document.getElementById('text').value.trim();
+  var examId = document.getElementById('examId').value;
+  if (!text) { toast('Question text is required.', 'error'); return null; }
+  if (!examId){ toast('Please select an exam.',   'error'); return null; }
+
+  var opts = [], correctAnswer = '', options = '[]';
+
+  if (type === 'mcq' || type === 'multi') {
+    var nodes = document.getElementById('optList').querySelectorAll('.opt-row');
+    var corrects = [];
+    nodes.forEach(function(row, i) {
+      var inp = row.querySelector('[id^="ot-"]');
+      var expInp = row.querySelector('[id^="oe-"]');
+      var btn = row.querySelector('.opt-row__correct');
+      if (!inp || !inp.value.trim()) return;
+      var txt = inp.value.trim();
+      var exp = expInp ? expInp.value.trim() : '';
+      var isC = btn && btn.classList.contains('is-correct');
+      opts.push({text: txt, exp: exp});
+      if (isC) corrects.push(txt);
+    });
+    if (!opts.length) { toast('Add at least one option.', 'error'); return null; }
+    if (!corrects.length) { toast('Mark at least one correct answer.', 'error'); return null; }
+    options = JSON.stringify(opts);
+    correctAnswer = corrects.join('|');
+
+  } else if (type === 'truefalse') {
+    options = JSON.stringify(['True','False']);
+    correctAnswer = tfAnswer;
+
+  } else if (type === 'fill') {
+    correctAnswer = document.getElementById('fillAns').value.trim();
+
+  } else if (type === 'matching') {
+    var pairs = [];
+    document.getElementById('pairList').querySelectorAll('.pair-row').forEach(function(row){
+      var inputs = row.querySelectorAll('input');
+      var l = inputs[0]?inputs[0].value.trim():'', r = inputs[1]?inputs[1].value.trim():'';
+      if (l && r) pairs.push({left:l, right:r});
+    });
+    options = JSON.stringify(pairs);
+    correctAnswer = JSON.stringify(pairs.map(function(p){return p.left+'='+p.right;}));
+
+  } else if (type === 'ordering') {
+    var items = [];
+    document.getElementById('orderList').querySelectorAll('input').forEach(function(inp){
+      if (inp.value.trim()) items.push(inp.value.trim());
+    });
+    options = JSON.stringify(items);
+    correctAnswer = JSON.stringify(items);
+
+  } else if (type === 'theory') {
+    correctAnswer = JSON.stringify({
+      modelAnswer: document.getElementById('modelAnswer').value.trim(),
+      rubric:      document.getElementById('rubric').value.trim(),
+      keywords:    document.getElementById('keywords').value.trim(),
+      aiMarking:   document.getElementById('aiMarking').value.trim(),
+    });
+
+  } else if (type === 'programming') {
+    correctAnswer = JSON.stringify({
+      lang:  document.getElementById('progLang').value,
+      code:  document.getElementById('sampleCode').value.trim(),
+      tests: document.getElementById('testCases').value.trim(),
+    });
+
+  } else if (type === 'mathematical') {
+    correctAnswer = JSON.stringify({
+      workedSol: document.getElementById('workedSol').value.trim(),
+      mathAns:   document.getElementById('mathAns').value.trim(),
+    });
+
+  } else if (type === 'image') {
+    var url = imgDataUrl || document.getElementById('imgUrl').value.trim();
+    options = JSON.stringify({url: url});
+
+  } else if (type === 'audio') {
+    options = JSON.stringify({url: document.getElementById('audioUrl').value.trim()});
+  }
+
+  return {
+    examId,
+    type,
+    text,
+    options,
+    correctAnswer,
+    marks:       parseFloat(document.getElementById('marks').value) || 1,
+    difficulty:  document.getElementById('difficulty').value,
+    topic:       document.getElementById('topic').value.trim(),
+    outcome:     document.getElementById('outcome').value.trim(),
+    explanation: document.getElementById('explanation').value.trim(),
+    status:      qStatus,
+  };
+}
+
+/* ---- Save ---- */
+async function save(andPreview) {
+  var data = collectData(); if (!data) return;
+  // Core fields that must exist in Appwrite schema
+  var core = { examId:data.examId, type:data.type, text:data.text, options:data.options,
+               correctAnswer:data.correctAnswer, marks:data.marks, difficulty:data.difficulty, topic:data.topic };
+  // Extended fields (require schema attributes: status, outcome, explanation)
+  var extended = Object.assign({}, core, { status:data.status, outcome:data.outcome, explanation:data.explanation });
+  try {
+    var saved;
+    try {
+      if (id) { await RonyxAdmin.updateQuestion(id, extended); saved = {$id:id}; }
+      else     { saved = await RonyxAdmin.createQuestion(extended); id = saved.$id; }
+    } catch(e2) {
+      // Retry with core fields only if extended fields caused schema error
+      if (e2.message && (e2.message.includes('Unknown attribute') || e2.message.includes('Invalid attribute'))) {
+        if (id) { await RonyxAdmin.updateQuestion(id, core); saved = {$id:id}; }
+        else     { saved = await RonyxAdmin.createQuestion(core); id = saved.$id; }
+        toast('Saved (tip: add status/outcome/explanation attributes to questions collection for full features)', 'info');
+      } else { throw e2; }
+    }
+    if (andPreview) { renderPreview(data); document.getElementById('preview').style.display='block'; }
+    else { location.href = 'questions.html' + (data.examId ? '?examId='+data.examId : ''); }
+  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+}
+window.save = function(){ save(false); };
+window.saveAndPreview = function(){ save(true); };
+
+/* ---- Preview render ---- */
+function renderPreview(data) {
+  var pane = document.getElementById('previewContent');
+  var type = data.type;
+  var html = '<div class="preview-q">'+data.text+'</div>';
+  if (type==='mcq'||type==='multi') {
+    try {
+      var opts = JSON.parse(data.options);
+      var letters = ['A','B','C','D','E','F'];
+      html += opts.map(function(o,i){
+        var txt = typeof o==='string'?o:o.text;
+        return '<div class="preview-opt"><div class="preview-opt__k">'+letters[i]+'</div>'+txt+'</div>';
+      }).join('');
+    } catch(e) {}
+  } else if (type==='truefalse') {
+    html += '<div class="preview-opt"><div class="preview-opt__k">A</div>True</div>';
+    html += '<div class="preview-opt"><div class="preview-opt__k">B</div>False</div>';
+  } else if (type==='fill') {
+    html += '<input class="input" placeholder="Student types answer here..." style="margin-top:6px;" disabled>';
+  } else if (type==='theory'||type==='mathematical'||type==='programming') {
+    html += '<textarea class="input" rows="4" placeholder="Student writes answer here..." disabled style="margin-top:6px;"></textarea>';
+  } else if (type==='image') {
+    try {
+      var m = JSON.parse(data.options);
+      if (m.url) html += '<img src="'+m.url+'" style="max-width:100%;border-radius:10px;margin-top:8px;" alt="Question image">';
+    } catch(e) {}
+  }
+  pane.innerHTML = html;
+}
+
+/* ---- Delete ---- */
+window.del = async function() {
+  if (!confirm('Delete this question permanently?')) return;
+  var eId = document.getElementById('examId').value;
+  try {
+    await RonyxAdmin.deleteQuestion(id);
+    location.href = 'questions.html' + (eId ? '?examId='+eId : '');
+  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+};
+
+/* ---- Duplicate ---- */
+document.getElementById('dupBtn').addEventListener('click', async function() {
+  var data = collectData(); if (!data) return;
+  try {
+    var created = await RonyxAdmin.createQuestion(data);
+    toast('Question duplicated!', 'success');
+    setTimeout(function(){ location.href = 'question-edit.html?id='+created.$id+(preExamId?'&examId='+preExamId:''); }, 900);
+  } catch(e) { toast('Duplicate failed: ' + e.message, 'error'); }
+});
+
+/* ================================================================
+   JSON PASTE MODE
+   ================================================================ */
+
+var _jsonParsed = null;  // null | object | array
+
+/* ---- Mode toggle ---- */
+window.setMode = function setMode(mode) {
+  var isJson = mode === 'json';
+  document.getElementById('tabForm').classList.toggle('active', !isJson);
+  document.getElementById('tabJson').classList.toggle('active',  isJson);
+  document.getElementById('jsonPane').classList.toggle('open', isJson);
+  document.getElementById('formPane').classList.toggle('closed', isJson);
+};
+
+/* ---- Live JSON validation ---- */
+var _jsonTimer;
+window.onJsonInput = function onJsonInput() {
+  clearTimeout(_jsonTimer);
+  _jsonTimer = setTimeout(validateJson, 300);
+};
+
+function validateJson() {
+  var raw = document.getElementById('jsonInput').value.trim();
+  var area      = document.getElementById('jsonInput');
+  var stat      = document.getElementById('jsonStatus');
+  var fillBtn   = document.getElementById('jsonFillBtn');
+  var submitBtn = document.getElementById('jsonSubmitBtn');
+  var checkPanel= document.getElementById('jsonCheckPanel');
+  var checkRows = document.getElementById('jsonCheckRows');
+
+  function disableSubmit(label) {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '.4';
+    submitBtn.style.cursor  = 'not-allowed';
+    submitBtn.textContent   = label || '⬆ Paste JSON above, then submit';
+  }
+  function enableSubmit(count) {
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor  = 'pointer';
+    submitBtn.textContent   = '⬆ Submit ' + count + ' question' + (count !== 1 ? 's' : '') + ' to Appwrite';
+  }
+
+  if (!raw) {
+    area.classList.remove('valid','invalid');
+    stat.innerHTML = '';
+    checkPanel.style.display = 'none';
+    fillBtn.style.display = 'none';
+    disableSubmit();
+    _jsonParsed = null;
+    return;
+  }
+
+  try {
+    var parsed = JSON.parse(raw);
+    _jsonParsed = parsed;
+    var isArr = Array.isArray(parsed);
+    var items = isArr ? parsed : [parsed];
+    var total = items.length;
+
+    /* Per-question format check */
+    var validCount = 0, skipCount = 0;
+    var checkHTML = '';
+    var FIELD_LABELS = { type:'type', text:'text', options:'options', correctAnswer:'correctAnswer', marks:'marks', difficulty:'difficulty', topic:'topic', subject:'subject', explanation:'explanation' };
+
+    items.forEach(function(q, i) {
+      var hasType = !!(q.type && q.type.trim());
+      var hasText = !!(q.text && q.text.trim());
+      var ok = hasType && hasText;
+      if (ok) validCount++; else skipCount++;
+      var label = q.text ? ('"' + q.text.slice(0,40) + (q.text.length>40?'…':'"')) : 'Question ' + (i+1);
+      var dot = ok ? '#10b981' : '#fbbf24';
+      var fields = Object.keys(FIELD_LABELS).filter(function(k){ return q[k] != null && q[k] !== ''; });
+      checkHTML += '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + dot + ';flex-shrink:0;margin-top:4px;"></span>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + label + '</div>' +
+          '<div style="font-size:10px;color:var(--color-muted);margin-top:2px;">' +
+            (hasType ? '<span style="color:#a89bff;">' + q.type + '</span>' : '<span style="color:#f87171;">⚠ no type</span>') + ' · ' +
+            (hasText ? '' : '<span style="color:#f87171;">⚠ no text</span>') +
+            fields.map(function(f){ return '<span style="background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px;">' + f + '</span>'; }).join(' ') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    });
+
+    checkRows.innerHTML = checkHTML;
+    checkPanel.style.display = total <= 20 ? 'block' : 'none'; /* hide panel for huge batches */
+
+    area.classList.add('valid'); area.classList.remove('invalid');
+
+    if (skipCount) {
+      stat.innerHTML = '<div class="json-status__dot" style="background:#fbbf24;"></div>' +
+        '<span style="color:#fbbf24;">' + skipCount + ' will be skipped (missing type/text)</span> · ' + validCount + ' ready';
+    } else {
+      stat.innerHTML = '<div class="json-status__dot" style="background:#10b981;"></div>' +
+        '✓ ' + total + ' question' + (total !== 1 ? 's' : '') + ' — all valid and ready';
+    }
+
+    if (validCount > 0) {
+      enableSubmit(validCount);
+    } else {
+      disableSubmit('⚠ No valid questions (all missing type/text)');
+    }
+
+    fillBtn.style.display = (!isArr && validCount > 0) ? 'block' : 'none';
+
+  } catch(e) {
+    area.classList.add('invalid'); area.classList.remove('valid');
+    checkPanel.style.display = 'none';
+    stat.innerHTML = '<div class="json-status__dot" style="background:#ef4444;"></div>' +
+      '<span style="color:var(--color-danger);">JSON syntax error — ' + e.message.replace(/</g,'&lt;') + '</span>';
+    fillBtn.style.display = 'none';
+    disableSubmit('⬆ Fix the JSON error first');
+    _jsonParsed = null;
+  }
+}
+
+/* ---- Parse into form ---- */
+window.jsonFillForm = function jsonFillForm() {
+  if (!_jsonParsed || Array.isArray(_jsonParsed)) return;
+  var q = _jsonParsed;
+
+  /* Exam */
+  if (q.examId) {
+    var sel = document.getElementById('examId');
+    var opt = sel.querySelector('option[value="'+q.examId+'"]');
+    if (opt) sel.value = q.examId;
+  }
+  /* Type */
+  if (q.type) document.getElementById('type').value = q.type;
+  /* Text */
+  if (q.text) document.getElementById('text').value = q.text;
+  /* Marks / difficulty / topic / outcome / explanation */
+  if (q.marks != null) document.getElementById('marks').value = q.marks;
+  if (q.difficulty) document.getElementById('difficulty').value = q.difficulty;
+  if (q.topic) document.getElementById('topic').value = q.topic || '';
+  if (q.outcome) document.getElementById('outcome').value = q.outcome || '';
+  if (q.explanation) document.getElementById('explanation').value = q.explanation || '';
+  if (q.status) setSt(q.status);
+
+  /* Trigger type-specific sections */
+  onTypeChange();
+
+  /* Options (mcq / multi) */
+  if ((q.type === 'mcq' || q.type === 'multi') && q.options && q.options.length) {
+    document.getElementById('optList').innerHTML = '';
+    optCount = 0; correctSet.clear();
+    var LETTERS_L = ['A','B','C','D','E','F','G','H'];
+    var corrects = (q.correctAnswer || '').split(',').map(function(s){ return s.trim().toUpperCase(); });
+    q.options.forEach(function(o, i) {
+      var txt  = typeof o === 'string' ? o : (o.text || '');
+      var exp  = typeof o === 'object' ? (o.explain || o.exp || '') : '';
+      var isC  = corrects.includes(LETTERS_L[i]);
+      addOpt(txt, exp, isC);
+    });
+  }
+
+  /* True/False */
+  if (q.type === 'truefalse') {
+    setTF(q.correctAnswer || 'True');
+    if (q.explanation) document.getElementById('tfExpl').value = q.explanation;
+  }
+
+  /* Fill */
+  if (q.type === 'fill' && q.correctAnswer) {
+    document.getElementById('fillAns').value = q.correctAnswer;
+  }
+
+  toast('Form filled! Review and click Save.', 'success');
+  setMode('form');
+};
+
+/* ---- Submit directly to Appwrite ---- */
+window.jsonSubmitDirect = async function jsonSubmitDirect() {
+  if (!_jsonParsed) return;
+  /* Use the inline JSON-pane exam selector first, fall back to form selector */
+  var fallbackExamId = document.getElementById('jsonExamSel').value ||
+                       document.getElementById('examId').value;
+  var items = Array.isArray(_jsonParsed) ? _jsonParsed : [_jsonParsed];
+  var validItems = items.filter(function(q){ return q.type && q.text; });
+
+  if (!validItems.length) { toast('No valid questions found — every item needs type and text.', 'error'); return; }
+
+  var needsExam = validItems.some(function(q){ return !q.examId; });
+  if (needsExam && !fallbackExamId) {
+    toast('Pick a target exam from the selector above first.', 'error');
+    document.getElementById('jsonExamSel').focus();
+    return;
+  }
+
+  var total = validItems.length;
+  var prog  = document.getElementById('jsonProg');
+  var fill  = document.getElementById('jsonProgFill');
+  var label = document.getElementById('jsonProgLabel');
+  var pcount= document.getElementById('jsonProgCount');
+  var result= document.getElementById('jsonProgResult');
+  prog.classList.add('open');
+  var submitBtn = document.getElementById('jsonSubmitBtn');
+  submitBtn.disabled = true;
+
+  var ok = 0, fail = 0, failMsgs = [];
+
+  for (var i = 0; i < total; i++) {
+    var q = validItems[i];
+    label.textContent = 'Uploading ' + (i + 1) + ' of ' + total + '…';
+    pcount.textContent = (i + 1) + ' / ' + total;
+    fill.style.width = ((i + 1) / total * 100) + '%';
+
+    try {
+      var optsStr = null;
+      if (q.options && q.options.length) {
+        var norm = q.options.map(function(o){ return typeof o === 'string' ? {text:o,explain:''} : o; });
+        optsStr = JSON.stringify(norm);
+      }
+      var data = {
+        examId:        q.examId        || fallbackExamId,
+        type:          q.type,
+        text:          q.text,
+        options:       optsStr,
+        correctAnswer: q.correctAnswer || null,
+        marks:         q.marks != null  ? parseFloat(q.marks) : 1,
+        difficulty:    q.difficulty     || 'medium',
+        topic:         q.topic          || null,
+        subject:       q.subject        || null,
+        outcome:       q.outcome        || null,
+        explanation:   q.explanation    || null,
+        status:        q.status         || 'published',
+      };
+      Object.keys(data).forEach(function(k){ if (data[k] === null) delete data[k]; });
+      await RonyxAdmin.createQuestion(data);
+      ok++;
+    } catch(e) {
+      fail++;
+      failMsgs.push('Q' + (i + 1) + ': ' + (e.message || 'unknown error'));
+    }
+  }
+
+  label.textContent = 'Done!';
+  fill.style.width  = '100%';
+  result.innerHTML  = '<strong style="color:#10b981;">' + ok + ' uploaded</strong>' +
+    (fail ? ' · <span style="color:#f87171;">' + fail + ' failed</span>' : '') +
+    (failMsgs.length ? '<br><span style="font-size:10.5px;opacity:.7;">' + failMsgs.slice(0,3).join(' | ') + '</span>' : '');
+  submitBtn.disabled = false;
+
+  if (ok) {
+    toast(ok + ' question' + (ok !== 1 ? 's' : '') + ' added!', 'success');
+    /* Always go to the questions list when done */
+    setTimeout(function(){
+      location.href = 'questions.html' + (fallbackExamId ? '?examId=' + fallbackExamId : '');
+    }, 1400);
+  }
+  if (fail) toast(fail + ' failed — see details below.', 'error');
+};
+</script>
+</body>
+</html>
+

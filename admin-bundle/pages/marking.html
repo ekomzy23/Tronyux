@@ -1,0 +1,154 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Theory Marking &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Theory Marking</span>
+    </div>
+
+    <div class="app__body">
+
+      <div class="stat-grid mb-4">
+        <div class="stat"><div class="stat__n" id="kPending">&mdash;</div><div class="stat__l">Pending</div></div>
+        <div class="stat stat--accent"><div class="stat__n" id="kMarked">&mdash;</div><div class="stat__l">Marked</div></div>
+        <div class="stat"><div class="stat__n" id="kTotal">&mdash;</div><div class="stat__l">Total</div></div>
+      </div>
+
+      <div class="section-hd"><h3>Pending Submissions</h3></div>
+      <div id="attemptList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+
+    </div>
+
+    <button class="fab" id="markNextFab" onclick="markNext()" style="display:none;">✏</button>
+
+    <!-- Bottom Sheet -->
+    <div class="sheet-overlay" id="overlay" onclick="closeSheet()"></div>
+    <div class="sheet" id="markSheet">
+      <div class="sheet__handle"></div>
+      <div class="sheet__title">Mark Submission</div>
+      <div class="mark-card">
+        <div class="mark-card__q" id="markQ">Question placeholder</div>
+        <div class="mark-card__a" id="markA">Student answer will appear here.</div>
+        <div class="mark-score">
+          <div class="field" style="flex:1;margin-bottom:0;">
+            <label class="field__label">Score (0&rdquo;“10)</label>
+            <input class="input" type="number" id="scoreInput" min="0" max="10" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="field mb-4">
+        <label class="field__label">Remarks (optional)</label>
+        <textarea class="input" id="remarksInput" rows="3" placeholder="Add feedback for student&hellip;"></textarea>
+      </div>
+      <button class="btn btn--primary" style="width:100%;" onclick="saveScore()">Save Score</button>
+      <button class="btn btn--ghost mt-2" style="width:100%;" onclick="closeSheet()">Cancel</button>
+    </div>
+
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let attempts = [], activeAttemptId = '';
+
+    function openSheet(id) {
+      activeAttemptId = id;
+      const a = attempts.find(x => x.$id === id);
+      document.getElementById('markQ').textContent = a ? (a.questionText || 'Theory Question') : 'Question';
+      document.getElementById('markA').textContent = a ? (a.answer || a.theoryAnswer || 'No answer recorded.') : 'No answer.';
+      document.getElementById('scoreInput').value = a ? (a.score || 0) : 0;
+      document.getElementById('remarksInput').value = a ? (a.remarks || '') : '';
+      document.getElementById('overlay').classList.add('is-open');
+      document.getElementById('markSheet').classList.add('is-open');
+    }
+    function closeSheet() {
+      document.getElementById('overlay').classList.remove('is-open');
+      document.getElementById('markSheet').classList.remove('is-open');
+    }
+
+    async function saveScore() {
+      if (!RONYX.CONFIGURED) { toast('Not configured'); return; }
+      const score = parseInt(document.getElementById('scoreInput').value) || 0;
+      const remarks = document.getElementById('remarksInput').value;
+      try {
+        await RonyxAdmin.updateAttempt(activeAttemptId, { score, remarks, marked: true });
+        toast('Score saved!');
+        closeSheet();
+        load();
+      } catch(e) { toast('Error: ' + e.message); }
+    }
+
+    function markNext() {
+      const pending = attempts.filter(a => !a.marked && a.status === 'submitted');
+      if (!pending.length) { toast('No pending submissions'); return; }
+      openSheet(pending[0].$id);
+    }
+
+    async function load() {
+      if (!RONYX.CONFIGURED) {
+        document.getElementById('attemptList').innerHTML = '<div class="empty"><div class="empty__icon">⚙️</div><p>Appwrite not configured.</p></div>';
+        return;
+      }
+      try {
+        attempts = await RonyxAdmin.listAttempts();
+        const submitted = attempts.filter(a => a.status === 'submitted');
+        const marked = submitted.filter(a => a.marked);
+        const pending = submitted.filter(a => !a.marked);
+        document.getElementById('kPending').textContent = pending.length;
+        document.getElementById('kMarked').textContent = marked.length;
+        document.getElementById('kTotal').textContent = submitted.length;
+        document.getElementById('markNextFab').style.display = pending.length ? 'grid' : 'none';
+
+        const el = document.getElementById('attemptList');
+        if (!submitted.length) {
+          el.innerHTML = '<div class="empty"><div class="empty__icon">✏</div><p>No theory submissions yet.</p></div>';
+          return;
+        }
+        el.innerHTML = submitted.map(a => {
+          const date = a.$createdAt ? new Date(a.$createdAt).toLocaleDateString() : 'Unknown date';
+          const badgeCls = a.marked ? 'badge--green' : 'badge--yellow';
+          const badgeLabel = a.marked ? 'Marked' : 'Pending';
+          return `<div class="row-card">
+            <div style="width:40px;height:40px;border-radius:14px;background:var(--color-surface);border:1px solid var(--color-stroke);display:grid;place-items:center;font-size:18px;flex-shrink:0;">✏</div>
+            <div class="row-card__meta" style="flex:1;">
+              <h4>${a.userId ? a.userId.slice(0,12)+'&hellip;' : 'Unknown Student'}</h4>
+              <p>${a.examId ? 'Exam: '+a.examId.slice(0,10)+'&hellip;' : 'Unknown Exam'} &middot; ${date}</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="badge ${badgeCls}">${badgeLabel}</span>
+              ${!a.marked ? `<button class="btn btn--sm btn--primary" onclick="openSheet('${a.$id}')">Mark</button>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      } catch(e) {
+        document.getElementById('attemptList').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Failed to load.</p></div>';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
+
+
+

@@ -10,5 +10,10 @@ Thumbs.db
 # Vercel
 .vercel
 
-# Dependencies (if you ever add any)
+# Dependencies
 node_modules/
+
+# Obfuscation backups (build.js creates these — never deploy originals over them)
+js/*.orig.js
+
+.vercel

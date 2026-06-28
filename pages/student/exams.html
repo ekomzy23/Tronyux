@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Exams — Runyx</title>
+  <title>Exams — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,67 +11,364 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    /* ── Search bar ── */
+    .search-wrap { position:relative; margin-bottom:12px; }
+    .search-wrap__icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:15px; pointer-events:none; }
+    .search-wrap .input { padding-left:40px; }
+
+    /* ── Filter rows ── */
+    .filter-row { display:flex; overflow-x:auto; gap:6px; scrollbar-width:none; padding-bottom:4px; margin-bottom:6px; }
+    .filter-row::-webkit-scrollbar { display:none; }
+    .fchip {
+      flex-shrink:0; padding:5px 13px; border-radius:20px; font-size:11px; font-weight:700;
+      border:1px solid var(--color-stroke); background:var(--color-surface); color:var(--color-muted);
+      cursor:pointer; transition:.12s; white-space:nowrap;
+    }
+    .fchip.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.45); }
+    .fchip.active.sem1 { background:rgba(96,165,250,.12); color:#60a5fa; border-color:rgba(96,165,250,.4); }
+    .fchip.active.sem2 { background:rgba(52,211,153,.12); color:#34d399; border-color:rgba(52,211,153,.35); }
+    .fchip.active.type-final  { background:rgba(167,139,250,.15); color:#a78bfa; border-color:rgba(167,139,250,.4); }
+    .fchip.active.type-mid    { background:rgba(251,191,36,.12);  color:#fbbf24; border-color:rgba(251,191,36,.35); }
+    .fchip.active.type-ca     { background:rgba(244,114,182,.12); color:#f472b6; border-color:rgba(244,114,182,.4); }
+    .fchip.active.type-quiz   { background:rgba(52,211,153,.12);  color:#34d399; border-color:rgba(52,211,153,.35); }
+    .fchip.active.type-practice { background:rgba(110,231,183,.12); color:#6ee7b7; border-color:rgba(110,231,183,.35); }
+
+    /* ── Section group header ── */
+    .group-hd {
+      display:flex; align-items:center; gap:8px;
+      font-size:10px; font-weight:800; text-transform:uppercase;
+      letter-spacing:.07em; color:var(--color-muted-2);
+      margin:16px 0 8px;
+    }
+    .group-hd::before { content:''; flex:1; height:1px; background:var(--color-stroke); }
+    .group-hd::after  { content:''; flex:1; height:1px; background:var(--color-stroke); }
+
+    /* ── Exam card ── */
+    .exam-card {
+      display:block; text-decoration:none; color:inherit;
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      border-radius:16px; padding:14px 16px; margin-bottom:10px;
+      transition:border-color .15s, box-shadow .15s;
+      position:relative; overflow:hidden;
+    }
+    .exam-card:hover { border-color:rgba(109,94,252,.4); box-shadow:0 4px 20px rgba(109,94,252,.12); }
+    .exam-card__accent {
+      position:absolute; left:0; top:0; bottom:0; width:3px;
+      border-radius:16px 0 0 16px;
+    }
+    .exam-card__top { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+    .exam-card__icon { font-size:26px; flex-shrink:0; }
+    .exam-card__info { flex:1; min-width:0; }
+    .exam-card__title { font-size:14px; font-weight:700; line-height:1.3; margin-bottom:3px; }
+    .exam-card__course { font-size:12px; color:var(--color-muted); }
+    .exam-card__badges { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+    .ebadge {
+      display:inline-flex; align-items:center; gap:3px;
+      padding:2px 8px; border-radius:6px; font-size:9px; font-weight:800;
+      letter-spacing:.04em; text-transform:uppercase;
+    }
+    .eb--year     { background:rgba(109,94,252,.14); color:#a89bff; }
+    .eb--sem1     { background:rgba(96,165,250,.12);  color:#60a5fa; }
+    .eb--sem2     { background:rgba(52,211,153,.12);  color:#34d399; }
+    .eb--final    { background:rgba(167,139,250,.15); color:#a78bfa; }
+    .eb--mid      { background:rgba(251,191,36,.12);  color:#fbbf24; }
+    .eb--ca       { background:rgba(244,114,182,.12); color:#f472b6; }
+    .eb--quiz     { background:rgba(52,211,153,.12);  color:#34d399; }
+    .eb--practice { background:rgba(110,231,183,.12); color:#6ee7b7; }
+    .eb--mixed    { background:rgba(156,163,175,.1);  color:#9ca3af; }
+    .eb--obj      { background:rgba(34,197,94,.1);    color:#4ade80; }
+    .eb--theory   { background:rgba(251,191,36,.1);   color:#fbbf24; }
+    .exam-card__meta { display:flex; gap:14px; font-size:11px; color:var(--color-muted); flex-wrap:wrap; }
+    .exam-card__meta span { display:flex; align-items:center; gap:4px; }
+
+    /* ── Stats mini row ── */
+    .stats-row { display:flex; gap:8px; margin-bottom:14px; }
+    .stat-mini { flex:1; padding:8px 10px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; text-align:center; }
+    .stat-mini__n { font-size:18px; font-weight:800; font-family:var(--font-display); }
+    .stat-mini__l { font-size:9px; color:var(--color-muted); }
+
+    /* ── Active filter summary ── */
+    .filter-summary { font-size:11px; color:var(--color-muted); margin-bottom:10px; }
+    .filter-summary strong { color:var(--color-primary-2); }
+  </style>
 </head>
 <body>
   <div class="app">
-
     <div class="appbar">
       <a href="/pages/student/dashboard.html" class="iconbtn">&larr;</a>
-      <span class="appbar__title">Exams</span>
-      <a href="/pages/student/search.html" class="iconbtn">&#128269;</a>
+      <span class="appbar__title">Exam Bank</span>
+      <button class="iconbtn" id="resetBtn" title="Clear filters" style="display:none;">&#10005;</button>
     </div>
 
     <div class="app__body">
-      <div class="chips mb-4">
-        <div class="chip is-active">All</div>
-        <div class="chip">Upcoming</div>
-        <div class="chip">Ongoing</div>
-        <div class="chip">Completed</div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <span class="search-wrap__icon">&#128269;</span>
+        <input class="input" id="searchInput" placeholder="Search by course, title, topic…" oninput="onSearch()">
       </div>
 
-      <div class="chips mb-4" id="yearChips">
-        <div class="chip" data-level="1">Year 1</div>
-        <div class="chip" data-level="2">Year 2</div>
-        <div class="chip" data-level="3">Year 3</div>
-        <div class="chip" data-level="4">Year 4</div>
-        <div class="chip" data-level="5">Year 5</div>
+      <!-- Year filter -->
+      <div class="filter-row" id="yearRow">
+        <div class="fchip active" data-year="0">All years</div>
+        <div class="fchip" data-year="1">Year 1 · 100L</div>
+        <div class="fchip" data-year="2">Year 2 · 200L</div>
+        <div class="fchip" data-year="3">Year 3 · 300L</div>
+        <div class="fchip" data-year="4">Year 4 · 400L</div>
+        <div class="fchip" data-year="5">Year 5 · 500L</div>
       </div>
 
+      <!-- Semester filter -->
+      <div class="filter-row" id="semRow">
+        <div class="fchip active" data-sem="0">All semesters</div>
+        <div class="fchip sem1" data-sem="1">1st Semester</div>
+        <div class="fchip sem2" data-sem="2">2nd Semester</div>
+      </div>
+
+      <!-- Type filter -->
+      <div class="filter-row" id="typeRow">
+        <div class="fchip active" data-type="">All types</div>
+        <div class="fchip type-final"    data-type="final">Final</div>
+        <div class="fchip type-mid"      data-type="mid">Mid Semester</div>
+        <div class="fchip type-ca"       data-type="ca">CA</div>
+        <div class="fchip type-quiz"     data-type="quiz">Quiz</div>
+        <div class="fchip type-practice" data-type="practice">Practice</div>
+      </div>
+
+      <!-- Format filter -->
+      <div class="filter-row" id="fmtRow">
+        <div class="fchip active" data-fmt="">All formats</div>
+        <div class="fchip" data-fmt="objective">Objective (MCQ)</div>
+        <div class="fchip" data-fmt="theory">Theory / Essay</div>
+        <div class="fchip" data-fmt="mixed">Mixed</div>
+      </div>
+
+      <!-- Active filter summary + count -->
+      <div class="filter-summary" id="filterSummary" style="display:none;"></div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="statsRow" style="display:none;">
+        <div class="stat-mini"><div class="stat-mini__n" id="stCount">—</div><div class="stat-mini__l">Showing</div></div>
+        <div class="stat-mini"><div class="stat-mini__n" id="stCourses">—</div><div class="stat-mini__l">Courses</div></div>
+        <div class="stat-mini"><div class="stat-mini__n" id="stTotal">—</div><div class="stat-mini__l">Total</div></div>
+      </div>
+
+      <!-- Exam list -->
       <div id="examList">
-        <div class="empty"><div class="empty__icon">📭</div><p>No exams yet. They appear here once published in Appwrite.</p></div>
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading exams…</p></div>
       </div>
-    </div>
 
+    </div>
     <nav class="tabbar" data-nav="exams"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
-  <script src="/js/data.js"></script>
-  <script src="/js/ui.js"></script>
-  <script src="/js/render.js"></script>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
+  <script src="/js/data.js?v=mqye4cj4"></script>
+  <script src="/js/ui.js?v=mqye4cj4"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
   <script>
-    (async function () {
-      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED) return;
-      let level = await RunyxData.getLevel();
-      const chips = document.getElementById('yearChips');
-      const listEl = document.getElementById('examList');
-      function markYear(l){ [...chips.children].forEach(c => c.classList.toggle('is-active', +c.dataset.level === l)); }
-      async function load(l) {
-        listEl.innerHTML = '<div class="empty"><div class="empty__icon">⏳</div><p>Loading…</p></div>';
-        const exams = await RunyxData.listExams(l);
-        listEl.innerHTML = exams.length
-          ? exams.map(renderExamCard).join('')
-          : '<div class="empty"><div class="empty__icon">📭</div><p>No exams for Year ' + l + ' yet.</p></div>';
+  (async function () {
+    if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) {
+      document.getElementById('examList').innerHTML =
+        '<div class="empty"><div class="empty__icon">🔌</div><p>Connect Appwrite to see exams.</p></div>';
+      return;
+    }
+
+    let allExams = [];
+    let filterYear = 0, filterSem = 0, filterType = '', filterFmt = '', filterSearch = '';
+
+    /* ── Load all published exams ── */
+    async function loadAll() {
+      try {
+        allExams = await RonyxData.listExams(0); /* 0 = all years, filter client-side */
+        document.getElementById('stTotal').textContent = allExams.length;
+        document.getElementById('statsRow').style.display = 'flex';
+        /* Show all exams by default — student can tap a year chip to narrow */
+        draw();
+      } catch (e) {
+        document.getElementById('examList').innerHTML =
+          '<div class="empty"><div class="empty__icon">⚠️</div><p>Could not load exams. Check your connection.</p></div>';
       }
-      markYear(level); load(level);
-      chips.addEventListener('click', e => {
-        const chip = e.target.closest('.chip'); if (!chip) return;
-        level = +chip.dataset.level; markYear(level); load(level);
+    }
+
+    /* ── Filter + render ── */
+    function draw() {
+      const q = filterSearch.toLowerCase();
+      let list = allExams.filter(e => {
+        if (filterYear && (e.level || 0) !== filterYear && (e.level || 0) !== 0) return false;
+        if (filterSem  && (e.semester || 0) !== filterSem)  return false;
+        if (filterType && e.type  !== filterType) return false;
+        if (filterFmt  && e.format !== filterFmt) return false;
+        if (q && !(
+          (e.title||'').toLowerCase().includes(q) ||
+          (e.courseCode||'').toLowerCase().includes(q) ||
+          (e.subject||'').toLowerCase().includes(q) ||
+          (e.department||'').toLowerCase().includes(q) ||
+          (e.faculty||'').toLowerCase().includes(q)
+        )) return false;
+        return true;
       });
-    })();
+
+      /* Update stats */
+      document.getElementById('stCount').textContent = list.length;
+      const courses = new Set(list.map(e => e.courseCode).filter(Boolean));
+      document.getElementById('stCourses').textContent = courses.size;
+
+      /* Filter summary */
+      const active = [];
+      if (filterYear) active.push('Year ' + filterYear);
+      if (filterSem)  active.push(filterSem === 1 ? '1st Sem' : '2nd Sem');
+      if (filterType) active.push(TYPE_LABEL[filterType] || filterType);
+      if (filterFmt)  active.push(FMT_LABEL[filterFmt]  || filterFmt);
+      if (q)          active.push('"' + filterSearch + '"');
+      const sumEl = document.getElementById('filterSummary');
+      const resetBtn = document.getElementById('resetBtn');
+      if (active.length) {
+        sumEl.style.display = 'block';
+        sumEl.innerHTML = 'Filtered by: <strong>' + active.join(' · ') + '</strong> — ' + list.length + ' exam' + (list.length !== 1 ? 's' : '');
+        resetBtn.style.display = 'flex';
+      } else {
+        sumEl.style.display = 'none';
+        resetBtn.style.display = 'none';
+      }
+
+      /* Empty state */
+      if (!list.length) {
+        document.getElementById('examList').innerHTML =
+          '<div class="empty"><div class="empty__icon">🔍</div><p>No exams match your filters.<br><small>Try removing a filter above.</small></p></div>';
+        return;
+      }
+
+      /* Group by Year then Semester */
+      const groups = {};
+      list.forEach(e => {
+        const yr  = e.level    || 0;
+        const sem = e.semester || 0;
+        const key = yr + '|' + sem;
+        if (!groups[key]) groups[key] = { yr, sem, items: [] };
+        groups[key].items.push(e);
+      });
+
+      /* Sort groups: Year asc, Semester asc */
+      const sorted = Object.values(groups).sort((a, b) =>
+        a.yr !== b.yr ? a.yr - b.yr : a.sem - b.sem
+      );
+
+      let html = '';
+      sorted.forEach(g => {
+        const yearLabel = g.yr  ? 'Year ' + g.yr + ' · ' + (g.yr * 100) + 'L' : 'All years';
+        const semLabel  = g.sem ? (g.sem === 1 ? '1st Semester' : '2nd Semester') : '';
+        const groupTitle = semLabel ? yearLabel + ' — ' + semLabel : yearLabel;
+        if (sorted.length > 1 || filterYear === 0) {
+          html += '<div class="group-hd">' + groupTitle + '</div>';
+        }
+        g.items.forEach(e => { html += buildCard(e); });
+      });
+
+      document.getElementById('examList').innerHTML = html;
+    }
+
+    /* ── Build one exam card ── */
+    const TYPE_ICON  = { final:'📘', mid:'⚙️', ca:'📋', quiz:'🗄️', practice:'📝' };
+    const TYPE_LABEL = { final:'Final Exam', mid:'Mid Semester', ca:'CA', quiz:'Quiz', practice:'Practice' };
+    const TYPE_CLASS = { final:'eb--final', mid:'eb--mid', ca:'eb--ca', quiz:'eb--quiz', practice:'eb--practice' };
+    const TYPE_ACCENT = { final:'#a78bfa', mid:'#fbbf24', ca:'#f472b6', quiz:'#34d399', practice:'#6ee7b7' };
+    const FMT_LABEL  = { mixed:'Mixed', objective:'Objective', theory:'Theory' };
+    const FMT_CLASS  = { mixed:'eb--mixed', objective:'eb--obj', theory:'eb--theory' };
+
+    function buildCard(e) {
+      const icon    = TYPE_ICON[e.type]  || '📄';
+      const tClass  = TYPE_CLASS[e.type] || 'eb--quiz';
+      const tLabel  = TYPE_LABEL[e.type] || e.type;
+      const accent  = TYPE_ACCENT[e.type] || 'var(--color-primary-2)';
+      const fClass  = FMT_CLASS[e.format]  || '';
+      const fLabel  = FMT_LABEL[e.format]  || '';
+
+      const badges = [];
+      if (e.level)    badges.push(`<span class="ebadge eb--year">Year ${e.level} · ${e.level*100}L</span>`);
+      if (e.semester) badges.push(`<span class="ebadge ${e.semester===1?'eb--sem1':'eb--sem2'}">${e.semester===1?'1st Sem':'2nd Sem'}</span>`);
+      badges.push(`<span class="ebadge ${tClass}">${tLabel}</span>`);
+      if (fLabel)     badges.push(`<span class="ebadge ${fClass}">${fLabel}</span>`);
+
+      const meta = [];
+      if (e.durationMinutes) meta.push(`<span>⏱ ${e.durationMinutes} min</span>`);
+      if (e.questionsCount)  meta.push(`<span>📝 ${e.questionsCount} Q</span>`);
+      if (e.totalMarks)      meta.push(`<span>🎯 ${e.totalMarks} marks</span>`);
+      if (e.passMark)        meta.push(`<span>✅ Pass: ${e.passMark}%</span>`);
+      if (e.academicYear)    meta.push(`<span>📅 ${e.academicYear}</span>`);
+
+      const subtitle = [e.courseCode, e.subject || e.department].filter(Boolean).join(' · ');
+
+      return `
+        <a href="/pages/student/instructions.html?exam=${e.$id}" class="exam-card">
+          <div class="exam-card__accent" style="background:${accent};"></div>
+          <div class="exam-card__top">
+            <div class="exam-card__icon">${icon}</div>
+            <div class="exam-card__info">
+              <div class="exam-card__title">${e.title}</div>
+              ${subtitle ? `<div class="exam-card__course">${subtitle}</div>` : ''}
+            </div>
+          </div>
+          ${badges.length ? `<div class="exam-card__badges">${badges.join('')}</div>` : ''}
+          ${e.description ? `<p style="font-size:12px;color:var(--color-muted);margin-bottom:8px;line-height:1.5;">${e.description}</p>` : ''}
+          ${meta.length ? `<div class="exam-card__meta">${meta.join('')}</div>` : ''}
+        </a>`;
+    }
+
+    /* ── Chip filter helpers ── */
+    function setActive(rowId, attr, val) {
+      document.getElementById(rowId).querySelectorAll('.fchip').forEach(c => {
+        c.classList.toggle('active', c.getAttribute(attr) === val);
+      });
+    }
+
+    document.getElementById('yearRow').addEventListener('click', e => {
+      const c = e.target.closest('.fchip'); if (!c) return;
+      filterYear = parseInt(c.dataset.year);
+      setActive('yearRow', 'data-year', c.dataset.year);
+      draw();
+    });
+    document.getElementById('semRow').addEventListener('click', e => {
+      const c = e.target.closest('.fchip'); if (!c) return;
+      filterSem = parseInt(c.dataset.sem);
+      setActive('semRow', 'data-sem', c.dataset.sem);
+      draw();
+    });
+    document.getElementById('typeRow').addEventListener('click', e => {
+      const c = e.target.closest('.fchip'); if (!c) return;
+      filterType = c.dataset.type;
+      setActive('typeRow', 'data-type', c.dataset.type);
+      draw();
+    });
+    document.getElementById('fmtRow').addEventListener('click', e => {
+      const c = e.target.closest('.fchip'); if (!c) return;
+      filterFmt = c.dataset.fmt;
+      setActive('fmtRow', 'data-fmt', c.dataset.fmt);
+      draw();
+    });
+
+    window.onSearch = function() {
+      filterSearch = document.getElementById('searchInput').value.trim();
+      draw();
+    };
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      filterYear = 0; filterSem = 0; filterType = ''; filterFmt = ''; filterSearch = '';
+      document.getElementById('searchInput').value = '';
+      setActive('yearRow', 'data-year', '0');
+      setActive('semRow',  'data-sem',  '0');
+      setActive('typeRow', 'data-type', '');
+      setActive('fmtRow',  'data-fmt',  '');
+      draw();
+    });
+
+    loadAll();
+  })();
   </script>
-  <script src="/js/theme.js"></script>
 </body>
 </html>
+
+

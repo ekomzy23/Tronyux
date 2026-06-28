@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Roles &amp; Permissions &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .matrix-check { width:20px; height:20px; border-radius:6px; border:1.5px solid var(--color-stroke-2);
+      display:grid; place-items:center; cursor:pointer; flex-shrink:0; font-size:11px; color:#fff; }
+    .matrix-check.on { background:var(--color-primary-2); border-color:var(--color-primary-2); }
+    .matrix-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--color-stroke); }
+    .matrix-row:last-child { border-bottom:none; }
+    .matrix-row__label { flex:1; font-size:13px; color:var(--color-text); }
+    .matrix-hd { display:flex; gap:12px; padding:8px 0; margin-bottom:4px; }
+    .matrix-hd__label { flex:1; font-size:11px; color:var(--color-muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+    .matrix-col-labels { display:flex; gap:12px; justify-content:flex-end; }
+    .matrix-col-labels span { width:20px; font-size:10px; color:var(--color-muted); text-align:center; }
+    .category-label { font-family:var(--font-display); font-size:13px; font-weight:700; color:var(--color-primary-2); padding:12px 0 6px; border-bottom:1px solid var(--color-stroke); margin-bottom:4px; display:flex; justify-content:space-between; align-items:center; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Roles &amp; Permissions</span>
+    </div>
+
+    <div class="app__body">
+
+      <p class="text-muted mb-4" style="font-size:13px;">Select a role to view and edit its permission matrix.</p>
+
+      <!-- Role chips -->
+      <div class="chips mb-4" style="overflow-x:auto;flex-wrap:nowrap;" id="roleChips">
+        <button class="chip is-active" onclick="setRole(this,'super_admin')">Super Admin</button>
+        <button class="chip" onclick="setRole(this,'dept_admin')">Dept Admin</button>
+        <button class="chip" onclick="setRole(this,'examiner')">Examiner</button>
+        <button class="chip" onclick="setRole(this,'moderator')">Moderator</button>
+        <button class="chip" onclick="setRole(this,'invigilator')">Invigilator</button>
+        <button class="chip" onclick="setRole(this,'lecturer')">Lecturer</button>
+        <button class="chip" onclick="setRole(this,'student')">Student</button>
+      </div>
+
+      <div id="activeRoleLabel" class="eyebrow mb-2" style="color:var(--color-primary-2);">SUPER ADMIN</div>
+
+      <!-- Permission matrix -->
+      <div class="card mb-4">
+        <div class="matrix-col-labels" style="padding-right:0;margin-bottom:4px;">
+          <div style="flex:1;"></div>
+          <span>View</span><span>Create</span><span>Edit</span><span>Delete</span>
+        </div>
+
+        <!-- Exams -->
+        <div class="category-label">Exams</div>
+        <div id="matrix"></div>
+      </div>
+
+      <button class="btn btn--primary" style="width:100%;" onclick="savePermissions()">Save Permissions</button>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    const CATEGORIES = [
+      { label: 'Exams', perms: ['View Exams', 'Create Exams', 'Edit Exams', 'Delete Exams'] },
+      { label: 'Questions', perms: ['View Questions', 'Create Questions', 'Edit Questions', 'Delete Questions'] },
+      { label: 'Results', perms: ['View Results', 'Publish Results', 'Edit Results', 'Delete Results'] },
+      { label: 'Users', perms: ['View Users', 'Create Users', 'Edit Users', 'Delete Users'] },
+      { label: 'Settings', perms: ['View Settings', 'Edit Settings', 'Backup Data', 'Restore Data'] },
+    ];
+
+    const DEFAULTS = {
+      super_admin: true, dept_admin: true, examiner: false,
+      moderator: false, invigilator: false, lecturer: false, student: false
+    };
+
+    let activeRole = 'super_admin';
+    // Store per-role state
+    const state = {};
+    Object.keys(DEFAULTS).forEach(r => { state[r] = {}; });
+
+    function buildKey(cat, perm) { return cat + '__' + perm; }
+
+    function initRole(role) {
+      if (!state[role].__init) {
+        CATEGORIES.forEach(cat => {
+          cat.perms.forEach((p, pi) => {
+            const key = buildKey(cat.label, p);
+            // Super admin has everything, student has only view
+            if (role === 'super_admin') state[role][key] = true;
+            else if (role === 'student') state[role][key] = pi === 0 && cat.label !== 'Settings' && cat.label !== 'Users';
+            else if (role === 'lecturer') state[role][key] = pi <= 1 && cat.label !== 'Users' && cat.label !== 'Settings';
+            else if (role === 'examiner') state[role][key] = pi <= 2 && (cat.label === 'Exams' || cat.label === 'Questions' || cat.label === 'Results');
+            else state[role][key] = pi === 0;
+          });
+        });
+        state[role].__init = true;
+      }
+    }
+
+    function setRole(btn, role) {
+      activeRole = role;
+      document.querySelectorAll('#roleChips .chip').forEach(c => c.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      document.getElementById('activeRoleLabel').textContent = btn.textContent.toUpperCase();
+      renderMatrix();
+    }
+
+    function renderMatrix() {
+      initRole(activeRole);
+      const el = document.getElementById('matrix');
+      el.innerHTML = CATEGORIES.map(cat => `
+        <div class="category-label">${cat.label}</div>
+        ${cat.perms.map(p => {
+          const key = buildKey(cat.label, p);
+          const on = state[activeRole][key] ? 'on' : '';
+          const action = p.split(' ')[0]; // View / Create / Edit / Delete
+          return `<div class="matrix-row">
+            <span class="matrix-row__label">${action}</span>
+            <div class="matrix-check ${on}" onclick="togglePerm('${key}',this)"><span>${on ? 'œ“' : ''}</span></div>
+          </div>`;
+        }).join('')}
+      `).join('');
+    }
+
+    function togglePerm(key, el) {
+      const cur = el.classList.contains('on');
+      el.classList.toggle('on', !cur);
+      el.innerHTML = `<span>${!cur ? 'œ“' : ''}</span>`;
+      state[activeRole][key] = !cur;
+    }
+
+    function savePermissions() {
+      toast('Permissions saved for ' + activeRole + ' (mock)');
+    }
+
+    renderMatrix();
+  </script>
+</body>
+</html>
+
+
+

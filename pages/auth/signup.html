@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sign up — Runyx</title>
+  <title>Sign up — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,11 +26,25 @@
 
       <div class="field">
         <label class="field__label">Full name</label>
-        <input class="input" id="name" placeholder="John Dave">
+        <input class="input" id="name" placeholder="Your full name" oninput="saveField('name',this.value)">
       </div>
       <div class="field">
         <label class="field__label">Email address</label>
-        <input class="input" id="email" type="email" placeholder="john.dave@gmail.com">
+        <input class="input" id="email" type="email" placeholder="you@example.com" oninput="saveField('email',this.value)">
+      </div>
+      <div class="field">
+        <label class="field__label">Department / Programme</label>
+        <input class="input" id="department" placeholder="e.g. Computer Science" oninput="saveField('dept',this.value)">
+      </div>
+      <div class="field">
+        <label class="field__label">Year / Level</label>
+        <select class="input" id="level" onchange="saveField('level',this.value)">
+          <option value="1">Year 1</option>
+          <option value="2">Year 2</option>
+          <option value="3">Year 3</option>
+          <option value="4">Year 4</option>
+          <option value="5">Year 5</option>
+        </select>
       </div>
       <div class="field">
         <label class="field__label">Password</label>
@@ -43,10 +57,10 @@
 
       <label class="feature" style="font-size: 13px; margin: 6px 0 16px;">
         <input type="checkbox" class="checkbox" id="agree">&nbsp;
-        I agree to the <a href="/pages/auth/terms.html" target="_blank" class="link">Terms &amp; Privacy Policy</a>
+        I agree to the <a href="/pages/auth/terms.html" target="_blank" rel="noopener" class="link">Terms &amp; Privacy Policy</a>
       </label>
 
-      <button class="btn btn--primary" id="signupBtn" data-label="Create account">Create account</button>
+      <button class="btn btn--primary" id="signupBtn" onclick="doSignup()">Create account</button>
 
       <p class="text-center text-muted mt-4">
         Already have an account? <a href="/pages/auth/login.html" class="link">Log in</a>
@@ -54,27 +68,79 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
   <script>
-    document.getElementById('signupBtn').addEventListener('click', () => {
-      const name     = document.getElementById('name').value.trim();
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const confirm  = document.getElementById('confirm').value;
-      const agree    = document.getElementById('agree').checked;
-      const emailOk  = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+    /* ── Restore form fields after coming back from Terms page ── */
+    function saveField(key, val) {
+      try { sessionStorage.setItem('su_' + key, val); } catch(e) {}
+    }
+    (function restoreFields() {
+      [['name','name'],['email','email'],['dept','department'],['level','level']].forEach(function(f) {
+        var val = sessionStorage.getItem('su_' + f[0]);
+        if (val !== null) { var el = document.getElementById(f[1]); if (el) el.value = val; }
+      });
+    })();
 
-      if (!name)                return toast('Enter your full name.');
-      if (!emailOk)             return toast('Enter a valid email address.');
-      if (password.length < 8)  return toast('Password must be at least 8 characters.');
-      if (password !== confirm) return toast('Passwords do not match.');
-      if (!agree)               return toast('Please accept the terms.');
+    /* ── Signup ── */
+    async function doSignup() {
+      var name       = document.getElementById('name').value.trim();
+      var email      = document.getElementById('email').value.trim();
+      var department = document.getElementById('department').value.trim();
+      var level      = parseInt(document.getElementById('level').value) || 1;
+      var password   = document.getElementById('password').value;
+      var confirm    = document.getElementById('confirm').value;
+      var agree      = document.getElementById('agree').checked;
 
-      runyxSignup(name, email, password);
-    });
+      if (!name)               return showErr('Enter your full name.');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showErr('Enter a valid email address.');
+      if (!department)         return showErr('Enter your department or programme.');
+      if (password.length < 8) return showErr('Password must be at least 8 characters.');
+      if (password !== confirm) return showErr('Passwords do not match.');
+      if (!agree)              return showErr('Please accept the terms to continue.');
+
+      var btn = document.getElementById('signupBtn');
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        var cfg = window.RONYX_CONFIG;
+        var client = new Appwrite.Client()
+          .setEndpoint(cfg.ENDPOINT)
+          .setProject(cfg.PROJECT_ID);
+        var acc = new Appwrite.Account(client);
+        try { await acc.deleteSession('current'); } catch(e) {}
+
+        await acc.create(Appwrite.ID.unique(), email, password, name);
+        var token = await acc.createEmailToken(Appwrite.ID.unique(), email);
+
+        sessionStorage.setItem('ronyx_email',      email);
+        sessionStorage.setItem('ronyx_userId',     token.userId);
+        sessionStorage.setItem('ronyx_name',       name);
+        sessionStorage.setItem('ronyx_department', department);
+        sessionStorage.setItem('ronyx_level',      String(level));
+        ['su_name','su_email','su_dept','su_level'].forEach(function(k){ try{sessionStorage.removeItem(k);}catch(e){} });
+        window.location.href = '/pages/auth/otp.html';
+
+      } catch(err) {
+        console.error('[Ronyx signup error]', err);
+        btn.disabled = false;
+        btn.textContent = 'Create account';
+        var map = {
+          'user_already_exists':         'An account with this email already exists. Try logging in.',
+          'general_rate_limit_exceeded': 'Too many attempts — wait a moment and try again.',
+          'general_argument_invalid':    'Invalid input — check your details and try again.',
+        };
+        showErr(map[err.type] || err.message || 'Signup failed. Check your internet connection and try again.');
+      }
+    }
+
+    function showErr(msg) {
+      if (typeof toast === 'function') return toast(msg);
+      alert(msg);
+    }
   </script>
-  <script src="/js/theme.js"></script>
 </body>
 </html>

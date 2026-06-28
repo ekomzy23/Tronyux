@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Departments ” Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Departments</span>
+    </div>
+
+    <div class="app__body">
+
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search departments.." oninput="render()">
+      </div>
+
+      <div id="deptList"></div>
+
+    </div>
+
+    <button class="fab" onclick="toast('Add department &mdash; coming soon')">＋</button>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    function render() {
+      document.getElementById('deptList').innerHTML =
+        '<div class="empty"><div class="empty__icon">🏢</div><p>No departments added yet.<br><span class="text-tiny">Department management coming soon.</span></p></div>';
+    }
+
+    render();
+  </script>
+</body>
+</html>
+
+
+

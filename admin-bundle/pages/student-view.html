@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Student Profile &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .profile-hero { text-align:center; padding:24px 0 20px; }
+    .profile-hero .avatar--lg { margin:0 auto 12px; }
+    .profile-hero__name { font-family:var(--font-display); font-size:20px; font-weight:700; color:var(--color-text); }
+    .profile-hero__email { font-size:13px; color:var(--color-muted); margin-top:4px; }
+    .danger-zone { background:rgba(251,113,133,.06); border:1px solid rgba(251,113,133,.2); border-radius:18px; padding:16px; margin-top:8px; }
+    .danger-zone h4 { font-family:var(--font-display); font-size:14px; font-weight:700; color:var(--color-danger); margin-bottom:10px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="students.html" class="iconbtn">←</a>
+      <span class="appbar__title">Student Profile</span>
+    </div>
+
+    <div class="app__body" id="content">
+      <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+    </div>
+    <nav class="tabbar" data-nav-admin="students"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    const id = new URLSearchParams(location.search).get('id');
+    let user = null;
+
+    async function load() {
+      if (!id || !RONYX.CONFIGURED) {
+        document.getElementById('content').innerHTML = '<div class="empty"><div class="empty__icon">⚙️</div><p>Not configured or no ID provided.</p></div>';
+        return;
+      }
+      try {
+        user = await RonyxAdmin.getUser(id);
+        render();
+      } catch(e) {
+        document.getElementById('content').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>User not found.</p></div>';
+      }
+    }
+
+    function render() {
+      if (!user) return;
+      const initial = (user.name || user.email || '?')[0].toUpperCase();
+      const joined = user.$createdAt ? new Date(user.$createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : 'Unknown';
+      document.getElementById('content').innerHTML = `
+        <div class="profile-hero">
+          <div class="avatar avatar--lg" style="background:var(--gradient-brand);margin:0 auto 12px;">${initial}</div>
+          <div class="profile-hero__name">${user.name || 'Unnamed Student'}</div>
+          <div class="profile-hero__email">${user.email || 'No email'}</div>
+          <div style="margin-top:10px;display:flex;justify-content:center;gap:8px;">
+            <span class="badge badge--violet">${user.role || 'student'}</span>
+            ${user.level ? `<span class="badge badge--green">Year ${user.level}</span>` : ''}
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="info-row"><span class="info-row__label">Email</span><span class="info-row__value">${user.email || '&mdash;'}</span></div>
+          <div class="info-row"><span class="info-row__label">Year / Level</span><span class="info-row__value">${user.level ? 'Year ' + user.level : '&mdash;'}</span></div>
+          <div class="info-row"><span class="info-row__label">Role</span><span class="info-row__value">${user.role || 'student'}</span></div>
+          <div class="info-row"><span class="info-row__label">Department</span><span class="info-row__value">${user.department || '&mdash;'}</span></div>
+          <div class="info-row"><span class="info-row__label">Member since</span><span class="info-row__value">${joined}</span></div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="section-hd" style="margin-bottom:14px;"><h3>Edit Profile</h3></div>
+          <div class="field mb-2"><label class="field__label">Full Name</label>
+            <input class="input" id="editName" value="${user.name || ''}"></div>
+          <div class="field mb-2"><label class="field__label">Year / Level</label>
+            <select class="input" id="editLevel">
+              <option value="">&mdash; Select year &mdash;</option>
+              ${[1,2,3,4,5].map(y => `<option value="${y}" ${user.level == y ? 'selected' : ''}>Year ${y}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field mb-4"><label class="field__label">Department</label>
+            <input class="input" id="editDept" value="${user.department || ''}"></div>
+          <button class="btn btn--primary" onclick="saveChanges()" style="width:100%;">Save Changes</button>
+        </div>
+
+        <div class="danger-zone">
+          <h4>Danger Zone</h4>
+          <p class="text-muted" style="font-size:13px;margin-bottom:12px;">Deleting this account is permanent and cannot be undone.</p>
+          <button class="btn btn--danger" onclick="deleteUser()" style="width:100%;">Delete Account</button>
+        </div>
+      `;
+    }
+
+    async function saveChanges() {
+      if (!RONYX.CONFIGURED) { toast('Not configured'); return; }
+      const name = document.getElementById('editName').value.trim();
+      const level = document.getElementById('editLevel').value;
+      const department = document.getElementById('editDept').value.trim();
+      try {
+        await RonyxAdmin.updateUser(id, { name, level: level ? parseInt(level) : null, department });
+        toast('Profile updated!');
+        user = { ...user, name, level, department };
+      } catch(e) { toast('Error: ' + e.message); }
+    }
+
+    async function deleteUser() {
+      if (!confirm('Delete this student account permanently?')) return;
+      if (!RONYX.CONFIGURED) { toast('Not configured'); return; }
+      try {
+        await RonyxAdmin.deleteUser(id);
+        toast('Student deleted');
+        location.href = 'students.html';
+      } catch(e) { toast('Error: ' + e.message); }
+    }
+
+    load();
+  </script>
+</body>
+</html>
+
+
+

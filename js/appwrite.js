@@ -1,5 +1,5 @@
 /* ============================================================
-   RUNYX · appwrite.js
+   RONYX · appwrite.js
    Backend config + auth helpers (Appwrite Web SDK).
 
    Load order:
@@ -8,14 +8,14 @@
      <script src="/js/appwrite.js"></script>
    ============================================================ */
 
-const RUNYX = window.RUNYX_CONFIG || { CONFIGURED: false };
+const RONYX = window.RONYX_CONFIG || { CONFIGURED: false };
 
 // ---- Appwrite client ----
 window.account = null;
-if (RUNYX.CONFIGURED && window.Appwrite) {
+if (RONYX.CONFIGURED && window.Appwrite) {
   const client = new Appwrite.Client()
-    .setEndpoint(RUNYX.ENDPOINT)
-    .setProject(RUNYX.PROJECT_ID);
+    .setEndpoint(RONYX.ENDPOINT)
+    .setProject(RONYX.PROJECT_ID);
   window.account = new Appwrite.Account(client);
 }
 
@@ -27,10 +27,10 @@ function toast(msg, type = 'error', title = '') {
   const icons  = { error: '⚠️', success: '✅', info: 'ℹ️' };
   const titles = { error: 'Error', success: 'Success', info: 'Info' };
 
-  let stack = document.getElementById('runyx-toasts');
+  let stack = document.getElementById('ronyx-toasts');
   if (!stack) {
     stack = document.createElement('div');
-    stack.id = 'runyx-toasts';
+    stack.id = 'ronyx-toasts';
     stack.className = 'toast-stack';
     document.body.appendChild(stack);
   }
@@ -55,7 +55,7 @@ function toast(msg, type = 'error', title = '') {
 
 // ---- Appwrite → human-readable error ----
 function appwriteError(err) {
-  console.error('[Runyx]', err); // always log full error to console
+  console.error('[Ronyx]', err); // always log full error to console
   const map = {
     'user_already_exists':          'An account with this email already exists.',
     'user_invalid_credentials':     'Wrong email or password.',
@@ -80,14 +80,17 @@ function setBusy(btnId, busy) {
 }
 
 /* ---- SIGN UP ---- */
-async function runyxSignup(name, email, password) {
-  if (!RUNYX.CONFIGURED) return goTo('/pages/auth/otp.html');
+async function ronyxSignup(name, email, password, department, level) {
+  if (!RONYX.CONFIGURED) return goTo('/pages/auth/otp.html');
   setBusy('signupBtn', true);
   try {
     await window.account.create(Appwrite.ID.unique(), email, password, name);
     const token = await window.account.createEmailToken(Appwrite.ID.unique(), email);
-    sessionStorage.setItem('runyx_email',  email);
-    sessionStorage.setItem('runyx_userId', token.userId);
+    sessionStorage.setItem('ronyx_email',      email);
+    sessionStorage.setItem('ronyx_userId',     token.userId);
+    sessionStorage.setItem('ronyx_name',       name);
+    sessionStorage.setItem('ronyx_department', department || '');
+    sessionStorage.setItem('ronyx_level',      String(level || 1));
     goTo('/pages/auth/otp.html');
   } catch (err) {
     toast(appwriteError(err));
@@ -96,14 +99,14 @@ async function runyxSignup(name, email, password) {
 }
 
 /* ---- VERIFY OTP ---- */
-async function runyxVerifyOtp(code) {
-  if (!RUNYX.CONFIGURED) return goTo('/pages/student/dashboard.html');
+async function ronyxVerifyOtp(code) {
+  if (!RONYX.CONFIGURED) return goTo('/pages/student/dashboard.html');
   if (code.length !== 6 || !/^\d+$/.test(code)) {
     return toast('Enter the full 6-digit code from your email.');
   }
   setBusy('verifyBtn', true);
   try {
-    const userId = sessionStorage.getItem('runyx_userId');
+    const userId = sessionStorage.getItem('ronyx_userId');
     if (!userId) {
       toast('Session expired. Please sign up again.');
       return goTo('/pages/auth/signup.html');
@@ -117,13 +120,13 @@ async function runyxVerifyOtp(code) {
 }
 
 /* ---- RESEND OTP ---- */
-async function runyxResendOtp() {
-  if (!RUNYX.CONFIGURED) { toast('Resend not available in demo mode.', 'info'); return; }
-  const email = sessionStorage.getItem('runyx_email');
+async function ronyxResendOtp() {
+  if (!RONYX.CONFIGURED) { toast('Resend not available in demo mode.', 'info'); return; }
+  const email = sessionStorage.getItem('ronyx_email');
   if (!email) { toast('Session expired. Please sign up again.'); return goTo('/pages/auth/signup.html'); }
   try {
     const token = await window.account.createEmailToken(Appwrite.ID.unique(), email);
-    sessionStorage.setItem('runyx_userId', token.userId);
+    sessionStorage.setItem('ronyx_userId', token.userId);
     toast('A new code has been sent to ' + email, 'success', 'Code sent');
   } catch (err) {
     toast(appwriteError(err));
@@ -131,8 +134,8 @@ async function runyxResendOtp() {
 }
 
 /* ---- LOGIN ---- */
-async function runyxLogin(email, password) {
-  if (!RUNYX.CONFIGURED) return goTo('/pages/student/dashboard.html');
+async function ronyxLogin(email, password) {
+  if (!RONYX.CONFIGURED) return goTo('/pages/student/dashboard.html');
   setBusy('loginBtn', true);
   try {
     await window.account.createEmailPasswordSession(email, password);
@@ -144,8 +147,8 @@ async function runyxLogin(email, password) {
 }
 
 /* ---- FORGOT PASSWORD ---- */
-async function runyxForgot(email) {
-  if (!RUNYX.CONFIGURED) {
+async function ronyxForgot(email) {
+  if (!RONYX.CONFIGURED) {
     toast('Reset link sent! (demo mode)', 'success');
     return goTo('/pages/auth/login.html');
   }
@@ -162,8 +165,8 @@ async function runyxForgot(email) {
 }
 
 /* ---- LOGOUT ---- */
-async function runyxLogout() {
-  if (RUNYX.CONFIGURED && window.account) {
+async function ronyxLogout() {
+  if (RONYX.CONFIGURED && window.account) {
     try { await window.account.deleteSession('current'); } catch (e) {}
   }
   goTo('/pages/auth/welcome.html');

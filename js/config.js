@@ -1,5 +1,5 @@
 /* ============================================================
-   RUNYX · config.js
+   RONYX · config.js
    YOUR FRONTEND "ENV" FILE — this is the one place you edit.
 
    These values are PUBLIC by design and safe to expose in the browser.
@@ -15,7 +15,7 @@
      <script src="/js/config.js"></script>
    ============================================================ */
 
-window.RUNYX_CONFIG = {
+window.RONYX_CONFIG = {
 
   // Flip to true once ENDPOINT + PROJECT_ID are filled in.
   CONFIGURED: true,

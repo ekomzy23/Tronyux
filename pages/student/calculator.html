@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Calculator — Runyx</title>
+  <title>Calculator &#8212; Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,132 +11,1240 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    /* ---------- mode tabs ---------- */
+    .ctabs {
+      display:flex; overflow-x:auto; scrollbar-width:none;
+      gap:5px; padding:6px 12px; border-bottom:1px solid var(--color-stroke); flex-shrink:0;
+    }
+    .ctabs::-webkit-scrollbar { display:none; }
+    .ctab {
+      flex-shrink:0; padding:5px 13px; border-radius:20px; font-size:11px; font-weight:700;
+      color:var(--color-muted); border:1px solid transparent; background:transparent; cursor:pointer; transition:.15s;
+    }
+    .ctab.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.4); }
+
+    /* ---------- display ---------- */
+    .cdisp {
+      padding:10px 16px 8px; border-bottom:1px solid var(--color-stroke);
+      flex-shrink:0;
+      background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.18) 100%);
+      position:relative; user-select:all;
+    }
+    .cdisp__mem  { font-size:10px; color:var(--color-warning); font-weight:800;
+                   min-height:14px; letter-spacing:.05em; }
+    /* Scrollable mini-history above the expression */
+    .cdisp__hist { max-height:30px; overflow:hidden; margin-bottom:2px; }
+    .cdisp__hist-entry { font-family:ui-monospace,monospace; font-size:10px;
+                         color:rgba(255,255,255,.22); text-align:right; white-space:nowrap;
+                         overflow:hidden; text-overflow:ellipsis; }
+    .cdisp__expr { font-family:ui-monospace,monospace; font-size:12px;
+                   color:rgba(255,255,255,.45); min-height:18px;
+                   word-break:break-all; text-align:right; }
+    .cdisp__res  { font-family:var(--font-display); font-size:44px; font-weight:800;
+                   line-height:1.05; word-break:break-all; letter-spacing:-.03em;
+                   text-align:right; color:var(--color-text);
+                   text-shadow:0 1px 12px rgba(109,94,252,.35); }
+    .cdisp__res.is-error { color:var(--color-danger); font-size:22px; }
+    /* Inline math-input panel (replaces prompt dialogs) */
+    .mathpanel {
+      position:absolute; inset:0; z-index:50;
+      background:var(--color-bg-2); padding:14px 14px 10px;
+      display:none; flex-direction:column; gap:8px;
+      border-bottom:2px solid rgba(109,94,252,.5);
+    }
+    .mathpanel.open { display:flex; }
+    .mathpanel__title { font-size:16px; font-weight:800; margin-bottom:2px; }
+    .mathpanel__math  { font-size:26px; text-align:center; padding:4px 0; color:var(--color-primary-2); }
+    .mathpanel__row   { display:flex; gap:8px; }
+    .mathpanel__row .input { flex:1; }
+    .mathpanel__btns  { display:flex; gap:6px; margin-top:2px; }
+    .mathpanel__btns .btn { flex:1; font-size:13px; padding:10px 4px; }
+
+    /* ---------- status row (DEG/RAD, 2ND, history) ---------- */
+    .cstatus { display:flex; align-items:center; gap:5px; padding:3px 10px;
+               border-bottom:1px solid var(--color-stroke); flex-shrink:0; }
+    .cpill {
+      padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700;
+      letter-spacing:.05em; cursor:pointer; border:1px solid var(--color-stroke);
+      background:var(--color-surface); color:var(--color-muted); transition:.15s; flex-shrink:0;
+    }
+    .cpill.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.4); }
+    .cpill--2nd.active { background:rgba(52,211,153,.12); color:var(--color-success); border-color:rgba(52,211,153,.35); }
+    .cstatus__spacer { flex:1; }
+    .chist-link { font-size:11px; color:var(--color-muted-2); cursor:pointer; flex-shrink:0; }
+    .chist-link:hover { color:var(--color-primary-2); }
+
+    /* ---------- panels host ---------- */
+    .cpanels { flex:1; position:relative; overflow:hidden; }
+    .cpanel  { position:absolute; inset:0; display:none; flex-direction:column; }
+    .cpanel.active { display:flex; }
+
+    /* ---------- button grid ---------- */
+    .ckgrid {
+      flex:1; min-height:0;
+      display:grid; grid-template-columns:repeat(5,1fr); grid-auto-rows:1fr;
+      gap:5px; padding:5px;
+    }
+    .ck {
+      border-radius:10px; border:1px solid var(--color-stroke); background:var(--color-surface);
+      color:var(--color-text); font-family:var(--font-body); font-size:13px; font-weight:600;
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+      -webkit-tap-highlight-color:transparent; user-select:none; transition:transform .07s;
+      position:relative; text-align:center; padding:2px;
+    }
+    .ck:active { transform:scale(.90); }
+    .ck--num   { font-size:16px; }
+    .ck--op    { background:var(--color-primary-soft); color:var(--color-primary-2); }
+    .ck--eq    { background:var(--gradient-brand); color:#fff; border-color:transparent; font-size:18px;
+                 box-shadow:0 4px 14px rgba(109,94,252,.35); }
+    .ck--fn    { font-size:11px; color:var(--color-muted); }
+    .ck--mem   { font-size:10px; background:rgba(251,191,36,.1); color:var(--color-warning); border-color:rgba(251,191,36,.2); }
+    .ck--clr   { background:rgba(251,113,133,.1); color:var(--color-danger); border-color:rgba(251,113,133,.2); }
+    .ck--shift { background:rgba(245,158,11,.15); color:#f59e0b; border-color:rgba(245,158,11,.3); font-weight:800; font-size:11px; letter-spacing:.04em; }
+    .ck--shift.active { background:rgba(245,158,11,.28); border-color:rgba(245,158,11,.6); box-shadow:0 0 8px rgba(245,158,11,.35); }
+    .ck[data-sl]::after {
+      content:attr(data-sl); position:absolute; top:2px; right:4px;
+      font-size:8px; color:var(--color-success); font-weight:800; pointer-events:none;
+    }
+
+    /* ---------- matrix panel ---------- */
+    .mat-top { padding:6px 10px; flex-shrink:0; }
+    .mat-srow { display:flex; gap:6px; margin-bottom:6px; }
+    .mat-sbtn { padding:4px 14px; border-radius:20px; font-size:11px; font-weight:700;
+                border:1px solid var(--color-stroke); background:var(--color-surface); color:var(--color-muted); cursor:pointer; }
+    .mat-sbtn.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.4); }
+    .mat-grids { display:flex; gap:8px; padding:0 10px 5px; flex-shrink:0; }
+    .mat-gl { font-size:10px; color:var(--color-muted-2); font-weight:700; margin-bottom:4px; }
+    .mat-grid { display:grid; gap:3px; flex:1; }
+    .mcel { border:1px solid var(--color-stroke); background:var(--color-surface-2); border-radius:6px;
+            text-align:center; font-family:ui-monospace,monospace; font-size:13px; color:var(--color-text);
+            width:100%; height:30px; padding:0 4px; }
+    .mat-ops { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; padding:4px 10px; flex-shrink:0; }
+    .mat-op { border-radius:8px; border:1px solid var(--color-stroke); background:var(--color-surface);
+               color:var(--color-muted); font-size:11px; font-weight:700; padding:8px 2px; cursor:pointer; }
+    .mat-op:active { background:var(--color-surface-2); }
+    .mat-res { flex:1; overflow-y:auto; padding:5px 10px; font-family:ui-monospace,monospace;
+               font-size:11px; color:var(--color-text); }
+
+    /* ---------- stats panel ---------- */
+    .stats-inner { display:flex; flex-direction:column; height:100%; padding:6px 10px; }
+    .slabel { font-size:10px; color:var(--color-muted-2); font-weight:700; text-transform:uppercase;
+              letter-spacing:.06em; margin-bottom:4px; }
+    .stats-data { width:100%; border:1px solid var(--color-stroke); background:var(--color-surface-2);
+                  border-radius:10px; padding:7px 10px; font-family:ui-monospace,monospace;
+                  font-size:13px; color:var(--color-text); resize:none; height:56px; flex-shrink:0; }
+    .stats-ops { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-top:6px; flex-shrink:0; }
+    .sop { border-radius:8px; border:1px solid var(--color-stroke); background:var(--color-surface);
+            color:var(--color-muted); font-size:10px; font-weight:700; padding:7px 2px; cursor:pointer; }
+    .sop:active { background:var(--color-surface-2); }
+    .stats-res { flex:1; overflow-y:auto; margin-top:6px; }
+    .srow { display:flex; justify-content:space-between; padding:5px 8px; border-radius:8px; }
+    .srow:nth-child(odd) { background:var(--color-surface); }
+    .srow__l { font-size:11px; color:var(--color-muted); }
+    .srow__v { font-size:12px; font-weight:700; font-family:ui-monospace,monospace; }
+
+    /* ---------- programmer panel ---------- */
+    .prog-top { padding:6px 10px; flex-shrink:0; }
+    .prog-bases { display:flex; gap:4px; margin-bottom:6px; }
+    .pbtn { flex:1; padding:4px; border-radius:8px; font-size:10px; font-weight:700;
+             letter-spacing:.04em; border:1px solid var(--color-stroke); background:var(--color-surface);
+             color:var(--color-muted); cursor:pointer; }
+    .pbtn.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.4); }
+    .prog-repr { display:grid; gap:2px; }
+    .pr { display:flex; gap:8px; font-family:ui-monospace,monospace; font-size:10px; }
+    .pr__l { color:var(--color-muted-2); width:28px; font-weight:700; flex-shrink:0; }
+    .pr__v { color:var(--color-text); word-break:break-all; }
+
+    /* ---------- financial panel ---------- */
+    .fin-inner { display:flex; flex-direction:column; height:100%; padding:6px 10px; overflow-y:auto; }
+    .fin-f { margin-bottom:5px; }
+    .fin-l { font-size:10px; color:var(--color-muted-2); font-weight:700; margin-bottom:2px; text-transform:uppercase; letter-spacing:.05em; }
+    .fin-i { width:100%; border:1px solid var(--color-stroke); background:var(--color-surface-2);
+              border-radius:8px; padding:6px 10px; font-size:14px; font-weight:700; color:var(--color-text);
+              font-family:ui-monospace,monospace; }
+    .fin-ops { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-top:6px; flex-shrink:0; }
+    .fop { border-radius:8px; border:1px solid var(--color-stroke); background:var(--color-surface);
+             color:var(--color-muted); font-size:11px; font-weight:700; padding:10px 4px; cursor:pointer; }
+    .fop:active { background:var(--color-surface-2); }
+    .fin-res { margin-top:8px; padding:10px; background:var(--color-primary-soft); border-radius:10px;
+               font-family:ui-monospace,monospace; font-size:13px; color:var(--color-primary-2);
+               font-weight:700; min-height:34px; }
+
+    /* ---------- history overlay ---------- */
+    .hist-ov { position:absolute; inset:0; background:var(--color-bg-2); z-index:20;
+               display:none; flex-direction:column; }
+    .hist-ov.open { display:flex; }
+    .hist-head { display:flex; align-items:center; padding:10px 14px; border-bottom:1px solid var(--color-stroke); }
+    .hist-head span { flex:1; font-size:14px; font-weight:700; }
+    .hist-list { flex:1; overflow-y:auto; padding:8px; }
+    .hist-item { padding:10px 12px; border-radius:10px; background:var(--color-surface); margin-bottom:5px; cursor:pointer; }
+    .hist-item:active { background:var(--color-surface-2); }
+    .hist-e { font-family:ui-monospace,monospace; font-size:11px; color:var(--color-muted); }
+    .hist-r { font-family:var(--font-display); font-size:17px; font-weight:700; }
+  </style>
 </head>
 <body>
-  <div class="app">
-    <div class="appbar">
-      <button class="iconbtn" onclick="history.back()">&larr;</button>
-      <span class="appbar__title">Scientific calculator</span>
-    </div>
+<div class="app">
 
-    <div class="app__body">
-      <div class="calc-display">
-        <div class="calc-expr" id="expr">&nbsp;</div>
-        <div class="calc-result" id="result">0</div>
-      </div>
-
-      <input class="input mt-4" id="manual" placeholder="…or type, e.g. det([1,2;3,4]) or 2+3i" autocomplete="off">
-
-      <div class="calc-grid">
-        <button class="calc-key calc-key--fn" data-i="sin(">sin</button>
-        <button class="calc-key calc-key--fn" data-i="cos(">cos</button>
-        <button class="calc-key calc-key--fn" data-i="tan(">tan</button>
-        <button class="calc-key calc-key--fn" data-i="log(">log</button>
-        <button class="calc-key calc-key--fn" data-i="log(">ln</button>
-
-        <button class="calc-key calc-key--fn" data-i="asin(">sin⁻¹</button>
-        <button class="calc-key calc-key--fn" data-i="acos(">cos⁻¹</button>
-        <button class="calc-key calc-key--fn" data-i="atan(">tan⁻¹</button>
-        <button class="calc-key calc-key--fn" data-i="sqrt(">√</button>
-        <button class="calc-key calc-key--fn" data-i="^">xʸ</button>
-
-        <button class="calc-key calc-key--fn" data-i="pi">π</button>
-        <button class="calc-key calc-key--fn" data-i="e">e</button>
-        <button class="calc-key calc-key--fn" data-i="!">n!</button>
-        <button class="calc-key calc-key--fn" data-i="i">i</button>
-        <button class="calc-key calc-key--fn" data-i="abs(">|x|</button>
-
-        <button class="calc-key calc-key--fn" data-i="det([1,2;3,4])">det</button>
-        <button class="calc-key calc-key--fn" data-i="inv([1,2;3,4])">inv</button>
-        <button class="calc-key calc-key--fn" data-i="[1,2;3,4]">matrix</button>
-        <button class="calc-key calc-key--fn" data-i='integrate("x^2",0,1)'>∫dx</button>
-        <button class="calc-key calc-key--fn" data-i='derivative("x^2","x")'>d/dx</button>
-      </div>
-
-      <div class="calc-grid">
-        <button class="calc-key" data-i="7">7</button>
-        <button class="calc-key" data-i="8">8</button>
-        <button class="calc-key" data-i="9">9</button>
-        <button class="calc-key calc-key--op" data-i="/">÷</button>
-        <button class="calc-key calc-key--op" id="clear">C</button>
-
-        <button class="calc-key" data-i="4">4</button>
-        <button class="calc-key" data-i="5">5</button>
-        <button class="calc-key" data-i="6">6</button>
-        <button class="calc-key calc-key--op" data-i="*">×</button>
-        <button class="calc-key calc-key--op" id="back">⌫</button>
-
-        <button class="calc-key" data-i="1">1</button>
-        <button class="calc-key" data-i="2">2</button>
-        <button class="calc-key" data-i="3">3</button>
-        <button class="calc-key calc-key--op" data-i="-">−</button>
-        <button class="calc-key calc-key--op" data-i="(">(</button>
-
-        <button class="calc-key" data-i="0">0</button>
-        <button class="calc-key" data-i=".">.</button>
-        <button class="calc-key calc-key--op" data-i=",">,</button>
-        <button class="calc-key calc-key--op" data-i="+">+</button>
-        <button class="calc-key calc-key--op" data-i=")">)</button>
-
-        <button class="calc-key calc-key--eq calc-key--wide" id="equals">=</button>
-        <button class="calc-key calc-key--op calc-key--wide" id="ans">Ans</button>
-        <button class="calc-key calc-key--op" data-i=";">;</button>
-      </div>
-    </div>
+  <!-- Appbar -->
+  <div class="appbar">
+    <button class="iconbtn" onclick="history.back()">&#8592;</button>
+    <span class="appbar__title" id="calcTitle">Scientific</span>
+    <button class="iconbtn" onclick="location.reload()" title="Reload for latest updates" style="font-size:18px;">&#8635;</button>
+    <button class="iconbtn" id="histBtn" title="History">&#9776;</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/mathjs@13.2.0/lib/browser/math.js"></script>
-  <script src="/js/theme.js"></script>
-  <script>
-    const exprEl = document.getElementById('expr');
-    const resEl  = document.getElementById('result');
-    const manual = document.getElementById('manual');
-    let expr = '', ans = 0, mathReady = (typeof math !== 'undefined');
+  <!-- Mode tabs -->
+  <div class="ctabs" id="ctabs">
+    <button class="ctab active" data-mode="sci">Scientific</button>
+    <button class="ctab" data-mode="basic">Basic</button>
+    <button class="ctab" data-mode="matrix">Matrix</button>
+    <button class="ctab" data-mode="stats">Statistics</button>
+    <button class="ctab" data-mode="prog">Programmer</button>
+    <button class="ctab" data-mode="finance">Financial</button>
+  </div>
 
-    if (mathReady) {
-      math.import({
-        integrate: function (fStr, a, b) {
-          const f = math.compile(fStr);
-          const n = 1000, h = (b - a) / n;
-          let s = f.evaluate({ x: a }) + f.evaluate({ x: b });
-          for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * f.evaluate({ x: a + i * h });
-          return (h / 3) * s;
-        },
-        derivative: function (fStr, v) { return math.derivative(fStr, v).toString(); },
-      }, { override: true });
+  <!-- Display -->
+  <div class="cdisp">
+    <!-- Inline math input panel (integral / derivative) -->
+    <div class="mathpanel" id="mathPanel">
+      <div class="between">
+        <div class="mathpanel__title" id="mpTitle">&#8747; Integral</div>
+        <button class="iconbtn" onclick="closeMathPanel()" style="font-size:18px;">&times;</button>
+      </div>
+      <div class="mathpanel__math" id="mpMath">&#8747;<sub id="mpSubA">a</sub><sup id="mpSubB">b</sup> f(x) dx</div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field__label" id="mpLbl1">f(x) =</label>
+        <input class="input" id="mp1" placeholder="e.g. x^2 + sin(x)" autocomplete="off">
+      </div>
+      <div class="mathpanel__row" id="mpRowAB">
+        <div class="field" style="margin-bottom:0;flex:1;">
+          <label class="field__label">Lower a</label>
+          <input class="input" id="mp2" type="text" value="0" autocomplete="off">
+        </div>
+        <div class="field" style="margin-bottom:0;flex:1;">
+          <label class="field__label">Upper b</label>
+          <input class="input" id="mp3" type="text" value="1" autocomplete="off">
+        </div>
+      </div>
+      <div class="mathpanel__btns">
+        <button class="btn btn--primary" onclick="calcMathPanel()">Calculate</button>
+        <button class="btn" onclick="closeMathPanel()">Cancel</button>
+      </div>
+    </div>
+    <div class="cdisp__mem" id="memInd"></div>
+    <div class="cdisp__hist" id="dHist"></div>
+    <div class="cdisp__expr" id="dExpr">&nbsp;</div>
+    <div class="cdisp__res" id="dRes">0</div>
+  </div>
+
+  <!-- Status row -->
+  <div class="cstatus">
+    <button class="cpill active" id="degBtn">DEG</button>
+    <button class="cpill" id="radBtn">RAD</button>
+    <div class="cstatus__spacer"></div>
+    <span class="chist-link" id="histLink">History &#9660;</span>
+  </div>
+
+  <!-- Panels host -->
+  <div class="cpanels">
+
+    <!-- History overlay -->
+    <div class="hist-ov" id="histOv">
+      <div class="hist-head">
+        <span>Calculation History</span>
+        <button class="iconbtn" id="histClose">&times;</button>
+      </div>
+      <div class="hist-list" id="histList">
+        <div style="padding:24px;text-align:center;color:var(--color-muted);font-size:13px;">No history yet</div>
+      </div>
+    </div>
+
+    <!-- ===== SCIENTIFIC panel ===== -->
+    <div class="cpanel active" id="panel-sci">
+      <div class="ckgrid">
+        <!-- Row 1: SHIFT + Memory (SHIFT replaces MS) -->
+        <button class="ck ck--shift" id="sndBtn" data-a="SHIFT">SHIFT</button>
+        <button class="ck ck--mem" data-a="MC">MC</button>
+        <button class="ck ck--mem" data-a="MR">MR</button>
+        <button class="ck ck--mem" data-a="M+">M+</button>
+        <button class="ck ck--mem" data-a="M-">M&#8722;</button>
+        <!-- Row 2: Trig — SHIFT gives inverses -->
+        <button class="ck ck--fn" data-a="sin(" data-sa="asin(" data-sl="sin&#8315;&#185;">sin</button>
+        <button class="ck ck--fn" data-a="cos(" data-sa="acos(" data-sl="cos&#8315;&#185;">cos</button>
+        <button class="ck ck--fn" data-a="tan(" data-sa="atan(" data-sl="tan&#8315;&#185;">tan</button>
+        <button class="ck ck--fn" data-a="log(" data-sa="10^(" data-sl="10&#x02E3;">log</button>
+        <button class="ck ck--fn" data-a="ln(" data-sa="exp(" data-sl="e&#x02E3;">ln</button>
+        <!-- Row 3: Powers & roots — SHIFT gives higher orders -->
+        <button class="ck ck--fn" data-a="sqrt(" data-sa="cbrt(" data-sl="&#x221B;">&#x221A;</button>
+        <button class="ck ck--fn" data-a="^2" data-sa="^3" data-sl="x&#179;">x&#178;</button>
+        <button class="ck ck--fn" data-a="^(" data-sa="nthRoot(" data-sl="&#x207F;&#x221A;">x&#x028F;</button>
+        <button class="ck ck--fn" data-a="pi" data-sa="tau" data-sl="&#x3C4;">&#x3C0;</button>
+        <button class="ck ck--fn" data-a="e" data-sa="phi" data-sl="&#x3C6;">e</button>
+        <!-- Row 4: Combinatorics & misc — SHIFT gives related functions -->
+        <button class="ck ck--fn" data-a="FACT" data-sa="round(" data-sl="rnd">x!</button>
+        <button class="ck ck--fn" data-a="nCr(" data-sa="nPr(" data-sl="nPr">&#x207F;C&#x1D63;</button>
+        <button class="ck ck--fn" data-a="nPr(" data-sa="gcd(" data-sl="gcd">&#x207F;P&#x1D63;</button>
+        <button class="ck ck--fn" data-a="abs(" data-sa="sign(" data-sl="sgn">|x|</button>
+        <button class="ck ck--fn" data-a="*10^(" data-sa="log2(" data-sl="log&#x2082;">EXP</button>
+        <!-- Row 5: Brackets + ops + clear -->
+        <button class="ck ck--fn" data-a="(">(</button>
+        <button class="ck ck--fn" data-a=")">)</button>
+        <button class="ck ck--fn" data-a=",">,</button>
+        <button class="ck ck--op" data-a="/">&#247;</button>
+        <button class="ck ck--clr" data-a="C">C</button>
+        <!-- Row 6 -->
+        <button class="ck ck--num" data-a="7">7</button>
+        <button class="ck ck--num" data-a="8">8</button>
+        <button class="ck ck--num" data-a="9">9</button>
+        <button class="ck ck--op" data-a="*">&#215;</button>
+        <button class="ck ck--clr" data-a="DEL">&#9003;</button>
+        <!-- Row 7 -->
+        <button class="ck ck--num" data-a="4">4</button>
+        <button class="ck ck--num" data-a="5">5</button>
+        <button class="ck ck--num" data-a="6">6</button>
+        <button class="ck ck--op" data-a="-">&#8722;</button>
+        <button class="ck ck--fn" data-a="ANS">Ans</button>
+        <!-- Row 8 -->
+        <button class="ck ck--num" data-a="1">1</button>
+        <button class="ck ck--num" data-a="2">2</button>
+        <button class="ck ck--num" data-a="3">3</button>
+        <button class="ck ck--op" data-a="+">+</button>
+        <button class="ck ck--eq" data-a="=">=</button>
+        <!-- Row 9: % and DRG mode toggle (replaces ∫dx / d/dx) -->
+        <button class="ck ck--fn" data-a="NEG">&#177;</button>
+        <button class="ck ck--num" data-a="0">0</button>
+        <button class="ck ck--fn" data-a=".">.</button>
+        <button class="ck ck--fn" data-a="%" data-sa="mod(" data-sl="mod">%</button>
+        <button class="ck ck--fn" data-a="DRG" id="drgBtn">DEG</button>
+      </div>
+    </div>
+
+    <!-- ===== BASIC panel ===== -->
+    <div class="cpanel" id="panel-basic">
+      <div class="ckgrid">
+        <!-- Row 1: Memory -->
+        <button class="ck ck--mem" data-a="MC">MC</button>
+        <button class="ck ck--mem" data-a="MR">MR</button>
+        <button class="ck ck--mem" data-a="MS">MS</button>
+        <button class="ck ck--mem" data-a="M+">M+</button>
+        <button class="ck ck--mem" data-a="M-">M&#8722;</button>
+        <!-- Row 2: Extras -->
+        <button class="ck ck--fn" data-a="%">%</button>
+        <button class="ck ck--fn" data-a="sqrt(">&#x221A;</button>
+        <button class="ck ck--fn" data-a="^2">x&#178;</button>
+        <button class="ck ck--fn" data-a="(">(</button>
+        <button class="ck ck--fn" data-a=")">)</button>
+        <!-- Row 3 -->
+        <button class="ck ck--num" data-a="7">7</button>
+        <button class="ck ck--num" data-a="8">8</button>
+        <button class="ck ck--num" data-a="9">9</button>
+        <button class="ck ck--op" data-a="/">&#247;</button>
+        <button class="ck ck--clr" data-a="C">C</button>
+        <!-- Row 4 -->
+        <button class="ck ck--num" data-a="4">4</button>
+        <button class="ck ck--num" data-a="5">5</button>
+        <button class="ck ck--num" data-a="6">6</button>
+        <button class="ck ck--op" data-a="*">&#215;</button>
+        <button class="ck ck--clr" data-a="DEL">&#9003;</button>
+        <!-- Row 5 -->
+        <button class="ck ck--num" data-a="1">1</button>
+        <button class="ck ck--num" data-a="2">2</button>
+        <button class="ck ck--num" data-a="3">3</button>
+        <button class="ck ck--op" data-a="-">&#8722;</button>
+        <button class="ck ck--fn" data-a="ANS">Ans</button>
+        <!-- Row 6 -->
+        <button class="ck ck--fn" data-a="NEG">&#177;</button>
+        <button class="ck ck--num" data-a="0">0</button>
+        <button class="ck ck--fn" data-a=".">.</button>
+        <button class="ck ck--op" data-a="+">+</button>
+        <button class="ck ck--eq" data-a="=">=</button>
+      </div>
+    </div>
+
+    <!-- ===== MATRIX panel ===== -->
+    <div class="cpanel" id="panel-matrix">
+      <div class="mat-top">
+        <div class="mat-srow">
+          <button class="mat-sbtn active" data-sz="2" onclick="setMatSz(2)">2&#215;2</button>
+          <button class="mat-sbtn" data-sz="3" onclick="setMatSz(3)">3&#215;3</button>
+        </div>
+      </div>
+      <div class="mat-grids" id="matGrids"></div>
+      <div class="mat-ops">
+        <button class="mat-op" onclick="matOp('add')">A + B</button>
+        <button class="mat-op" onclick="matOp('sub')">A &#8722; B</button>
+        <button class="mat-op" onclick="matOp('mul')">A &#215; B</button>
+        <button class="mat-op" onclick="matOp('trA')">Aᵀ</button>
+        <button class="mat-op" onclick="matOp('detA')">det(A)</button>
+        <button class="mat-op" onclick="matOp('invA')">A&#8315;&#185;</button>
+        <button class="mat-op" onclick="matOp('adjA')">adj(A)</button>
+        <button class="mat-op" onclick="matOp('trcA')">tr(A)</button>
+        <button class="mat-op" onclick="matOp('normA')">&#8214;A&#8214;</button>
+        <button class="mat-op" onclick="matOp('eigA')">eigen</button>
+        <button class="mat-op" onclick="matOp('sqA')">A&#178;</button>
+        <button class="mat-op" onclick="matOp('clr')">Clear</button>
+      </div>
+      <div class="mat-res" id="matRes">Tap an operation above</div>
+    </div>
+
+    <!-- ===== STATISTICS panel ===== -->
+    <div class="cpanel" id="panel-stats">
+      <div class="stats-inner">
+        <div class="slabel">Data values (comma or space separated)</div>
+        <textarea class="stats-data" id="statsData" placeholder="e.g.  2, 4, 6, 8, 10"></textarea>
+        <div class="stats-ops">
+          <button class="sop" onclick="sc('n')">Count n</button>
+          <button class="sop" onclick="sc('sum')">&Sigma; Sum</button>
+          <button class="sop" onclick="sc('mean')">&mu; Mean</button>
+          <button class="sop" onclick="sc('median')">Median</button>
+          <button class="sop" onclick="sc('mode')">Mode</button>
+          <button class="sop" onclick="sc('min')">Min</button>
+          <button class="sop" onclick="sc('max')">Max</button>
+          <button class="sop" onclick="sc('range')">Range</button>
+          <button class="sop" onclick="sc('var')">Var &sigma;&#178;</button>
+          <button class="sop" onclick="sc('std')">Std &sigma;</button>
+          <button class="sop" onclick="sc('q1')">Q1</button>
+          <button class="sop" onclick="sc('q3')">Q3</button>
+          <button class="sop" onclick="sc('iqr')">IQR</button>
+          <button class="sop" onclick="sc('all')">All Stats</button>
+          <button class="sop" onclick="sc('freq')">Frequency</button>
+          <button class="sop" onclick="document.getElementById('sRes').innerHTML=''">Clear</button>
+        </div>
+        <div class="stats-res" id="sRes"></div>
+      </div>
+    </div>
+
+    <!-- ===== PROGRAMMER panel ===== -->
+    <div class="cpanel" id="panel-prog">
+      <div class="prog-top">
+        <div class="prog-bases">
+          <button class="pbtn" data-b="16" onclick="setBase(16)">HEX</button>
+          <button class="pbtn active" data-b="10" onclick="setBase(10)">DEC</button>
+          <button class="pbtn" data-b="8" onclick="setBase(8)">OCT</button>
+          <button class="pbtn" data-b="2" onclick="setBase(2)">BIN</button>
+        </div>
+        <div class="prog-repr" id="progRepr">
+          <div class="pr"><span class="pr__l">HEX</span><span class="pr__v" id="pr-hex">0</span></div>
+          <div class="pr"><span class="pr__l">DEC</span><span class="pr__v" id="pr-dec">0</span></div>
+          <div class="pr"><span class="pr__l">OCT</span><span class="pr__v" id="pr-oct">0</span></div>
+          <div class="pr"><span class="pr__l">BIN</span><span class="pr__v" id="pr-bin">0</span></div>
+        </div>
+      </div>
+      <div class="ckgrid" id="progGrid"></div>
+    </div>
+
+    <!-- ===== FINANCIAL panel ===== -->
+    <div class="cpanel" id="panel-finance">
+      <div class="fin-inner">
+        <div class="fin-f"><div class="fin-l">Present Value (PV)</div><input class="fin-i" id="f-pv" type="number" placeholder="0" step="any"></div>
+        <div class="fin-f"><div class="fin-l">Future Value (FV)</div><input class="fin-i" id="f-fv" type="number" placeholder="0" step="any"></div>
+        <div class="fin-f"><div class="fin-l">Payment per period (PMT)</div><input class="fin-i" id="f-pmt" type="number" placeholder="0" step="any"></div>
+        <div class="fin-f"><div class="fin-l">Annual interest rate % (r)</div><input class="fin-i" id="f-r" type="number" placeholder="5" step="any"></div>
+        <div class="fin-f"><div class="fin-l">Number of periods (n)</div><input class="fin-i" id="f-n" type="number" placeholder="12" step="any"></div>
+        <div class="fin-f"><div class="fin-l">Periods per year</div><input class="fin-i" id="f-py" type="number" placeholder="12" step="any"></div>
+        <div class="fin-ops">
+          <button class="fop" onclick="finCalc('fv')">Solve FV</button>
+          <button class="fop" onclick="finCalc('pv')">Solve PV</button>
+          <button class="fop" onclick="finCalc('pmt')">Solve PMT</button>
+          <button class="fop" onclick="finCalc('n')">Solve n</button>
+          <button class="fop" onclick="finCalc('r')">Solve r %</button>
+          <button class="fop" onclick="finCalc('roi')">ROI %</button>
+        </div>
+        <div class="fin-res" id="finRes">Enter values and tap Solve</div>
+      </div>
+    </div>
+
+  </div><!-- .cpanels -->
+</div><!-- .app -->
+
+<script src="https://cdn.jsdelivr.net/npm/mathjs@13.2.0/lib/browser/math.js"></script>
+<script src="/js/theme.js?v=mqye4cj4"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---- State ---- */
+  var expr    = '';
+  var ans     = 0;
+  var mem     = 0;
+  var hasMem  = false;
+  var isDeg   = true;
+  var is2nd   = false;
+  var mode    = 'sci';
+  var pBase   = 10;
+  var matSz   = 2;
+  var hist    = [];
+  var progVal = 0;
+
+  /* ---- DOM ---- */
+  var dExpr = document.getElementById('dExpr');
+  var dRes  = document.getElementById('dRes');
+  var memInd= document.getElementById('memInd');
+
+  /* ---- math.js ---- */
+  var mjs = window.math;
+  if (!mjs) { dRes.textContent = 'math.js failed to load'; }
+
+  /* ---- Number formatting ---- */
+  /* fmtN: ALWAYS check isNaN before !isFinite.
+     NaN is also !isFinite, so the old order made
+     (NaN > 0) === false → every domain error showed '-∞' */
+  function fmtN(v) {
+    if (typeof v !== 'number') return String(v);
+    if (isNaN(v)) return 'Math Error';
+    if (!isFinite(v)) return v > 0 ? '∞' : '-∞';
+    /* Remove floating-point noise: cos(90°) = 6.12e-17 → 0 */
+    if (v !== 0 && Math.abs(v) < 1e-10) return '0';
+    var nearInt = Math.round(v);
+    if (Math.abs(v - nearInt) < 1e-9) v = nearInt;
+    else v = parseFloat(v.toPrecision(10));
+    return v.toString();
+  }
+  
+  function fmt(v) {
+    if (v === null || v === undefined) return 'Math Error';
+    try {
+      if (mjs && v && v.isMatrix) {
+        var arr = v.toArray();
+        return arr.map(function(row) {
+          return Array.isArray(row) ? '[' + row.map(fmtN).join(', ') + ']' : fmtN(row);
+        }).join('\n');
+      }
+      if (typeof v === 'object' && mjs) return mjs.format(v, {precision:10});
+      return fmtN(v);
+    } catch(e) { return String(v); }
+  }
+
+  /* ---- Scope (rebuilt each eval) ---- */
+  function scope() {
+    var toR = isDeg ? function(x){return x*Math.PI/180;} : function(x){return x;};
+    var toD = isDeg ? function(x){return x*180/Math.PI;} : function(x){return x;};
+    function fact(n) {
+      n = Math.round(n);
+      if (n < 0) return NaN;
+      if (n > 170) return Infinity;
+      var r = 1; for (var i = 2; i <= n; i++) r *= i; return r;
+    }
+    function gcd(a, b) {
+      a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+      while (b) { var t = b; b = a % b; a = t; } return a;
+    }
+    return {
+      /* ── Trigonometry (respects DEG/RAD mode) ── */
+      sin:   function(x){return Math.sin(toR(x));},
+      cos:   function(x){return Math.cos(toR(x));},
+      tan:   function(x){return Math.tan(toR(x));},
+      asin:  function(x){return toD(Math.asin(x));},
+      acos:  function(x){return toD(Math.acos(x));},
+      atan:  function(x){return toD(Math.atan(x));},
+      atan2: function(y,x){return toD(Math.atan2(y,x));},
+      csc:   function(x){return 1/Math.sin(toR(x));},
+      sec:   function(x){return 1/Math.cos(toR(x));},
+      cot:   function(x){return 1/Math.tan(toR(x));},
+      /* ── Hyperbolic (always radians internally) ── */
+      sinh:  function(x){return Math.sinh(x);},
+      cosh:  function(x){return Math.cosh(x);},
+      tanh:  function(x){return Math.tanh(x);},
+      asinh: function(x){return Math.asinh(x);},
+      acosh: function(x){return Math.acosh(x);},
+      atanh: function(x){return Math.atanh(x);},
+      /* ── Logarithms & exponentials ── */
+      log:   function(x){return Math.log10(x);},
+      log10: function(x){return Math.log10(x);},
+      log2:  function(x){return Math.log2(x);},
+      ln:    function(x){return Math.log(x);},
+      logb:  function(x,b){return Math.log(x)/Math.log(b);},  /* log base b of x */
+      exp:   function(x){return Math.exp(x);},
+      /* ── Powers & roots ── */
+      sqrt:    function(x){return Math.sqrt(x);},
+      cbrt:    function(x){return Math.cbrt(x);},
+      nthRoot: function(x,n){return Math.pow(x,1/n);},
+      pow:     function(x,n){return Math.pow(x,n);},
+      /* ── Number functions ── */
+      abs:   Math.abs,
+      round: Math.round,
+      floor: Math.floor,
+      ceil:  Math.ceil,
+      trunc: Math.trunc,
+      sign:  function(x){return x>0?1:x<0?-1:0;},
+      frac:  function(x){return x - Math.trunc(x);},
+      min:   Math.min,
+      max:   Math.max,
+      /* ── Combinatorics ── */
+      factorial: fact,
+      nCr: function(n,k){return fact(n)/(fact(k)*fact(n-k));},
+      nPr: function(n,k){return fact(n)/fact(n-k);},
+      /* ── Number theory ── */
+      gcd: gcd,
+      lcm: function(a,b){return Math.abs(a*b)/gcd(a,b);},
+      mod: function(a,b){return ((a%b)+Math.abs(b))%Math.abs(b);},  /* true math mod, always ≥ 0 */
+      rem: function(a,b){return a%b;},
+      /* ── Complex ── */
+      conj: function(z){return mjs ? mjs.conj(z) : z;},
+      re:   function(z){return mjs ? mjs.re(z) : z;},
+      im:   function(z){return mjs ? mjs.im(z) : 0;},
+      /* ── Constants ── */
+      pi:  Math.PI,
+      tau: 2*Math.PI,
+      e:   Math.E,
+      phi: (1+Math.sqrt(5))/2,  /* golden ratio */
+      /* ── Previous answer & imaginary ── */
+      ans: ans, Ans: ans,
+      i: mjs ? mjs.complex(0,1) : 0,
+    };
+  }
+
+  /* ---- Evaluate expression ----
+     autoClose=true: fills missing ')' so cos(30 evaluates like cos(30)  */
+  function evalExpr(src, autoClose) {
+    if (!mjs || !src.trim()) return null;
+    if (autoClose) {
+      var open = (src.match(/\(/g)||[]).length, close = (src.match(/\)/g)||[]).length;
+      if (open > close) src += ')'.repeat(open - close);
+    }
+    src = src
+      .replace(/\xd7/g,'*').replace(/\xf7/g,'/').replace(/\u2212/g,'-').replace(/−/g,'-')
+      .replace(/²/g,'^2').replace(/³/g,'^3')
+      .replace(/\(([^()]+)\)!/g, function(_,g){ return 'factorial('+g+')'; })
+      .replace(/(\d+(?:\.\d+)?)!/g,  function(_,n){ return 'factorial('+n+')'; })
+      .replace(/FACT\(/g,'factorial(').replace(/FACT(\d)/g,'factorial($1)')
+      .replace(/π/g,'pi').replace(/τ/g,'tau')
+      /* Implicit multiply: digit before constant */
+      .replace(/(\d)(pi|tau|phi)\b/g,'$1*$2')
+      .replace(/(\d)e\b/g,'$1*e')
+      /* Implicit multiply: digit before any named math function */
+      .replace(/(\d)(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|asinh|acosh|atanh|sqrt|cbrt|log|ln|abs|exp|round|floor|ceil|trunc|sign|factorial|nCr|nPr|gcd|lcm|mod)\b/g,'$1*$2')
+      /* Implicit multiply: digit before ( and ) before ( or digit */
+      .replace(/(\d)\(/g,'$1*(')
+      .replace(/\)\(/g,')*(')
+      .replace(/\)(\d)/g,')*$1');
+    try { return mjs.evaluate(src, scope()); }
+    catch(e) { return undefined; }
+  }
+
+
+  function upd(preview) {
+    dExpr.textContent = expr || ' ';
+    dRes.classList.remove('is-error');
+    if (preview && expr) {
+      /* Auto-close so typing 'cos(30' shows 0.866… live */
+      var r = evalExpr(expr, true);
+      if (r !== null && r !== undefined) {
+        var s = fmt(r);
+        if (s !== 'Math Error') {
+          dRes.textContent = s;
+          dRes.style.fontSize = s.length > 20 ? '16px' : s.length > 14 ? '22px' : s.length > 9 ? '32px' : '44px';
+        }
+      }
+    }
+    memInd.textContent = hasMem ? 'M = ' + fmtN(mem) : '';
+  }
+  
+    function refreshHist() {
+    var el = document.getElementById('dHist'); if (!el) return;
+    el.innerHTML = hist.slice(0,3).map(function(h){
+      return '<div class="cdisp__hist-entry">'+h.e+' = '+h.r+'</div>';
+    }).join('');
+  }
+
+  /* ---- Handle button press ---- */
+  function press(a) {
+    switch(a) {
+      case 'C':    expr=''; dRes.textContent='0'; upd(false); return;
+      case 'DEL':  expr=expr.slice(0,-1); upd(true); return;
+      case '=':    doEval(); return;
+      case 'NEG':
+        if (!expr && ans !== 0) expr = '(' + (-ans) + ')';
+        else if (expr) expr = '-(' + expr + ')';
+        upd(true); return;
+      case 'ANS':  expr += fmtN(ans); upd(true); return;
+      case 'MC':   mem=0; hasMem=false; upd(false); return;
+      case 'MR':   expr += fmtN(mem); upd(true); return;
+      case 'MS':   { var rv=evalExpr(expr,true); if (rv!=null&&rv!==undefined&&typeof rv==='number'&&isFinite(rv)){mem=rv;hasMem=true;} upd(false); return; }
+      case 'M+':   { var rv=evalExpr(expr,true); if (rv!=null&&rv!==undefined&&typeof rv==='number'&&isFinite(rv)){mem+=rv;hasMem=true;} upd(false); return; }
+      case 'M-':   { var rv=evalExpr(expr,true); if (rv!=null&&rv!==undefined&&typeof rv==='number'&&isFinite(rv)){mem-=rv;hasMem=true;} upd(false); return; }
+      case 'FACT':
+        /* Postfix when expression ends with a digit or closing paren; prefix otherwise */
+        if (expr && /[\d\)]$/.test(expr)) { expr += '!'; }
+        else { expr += 'factorial('; }
+        upd(true); return;
+      case 'SHIFT': set2nd(!is2nd); return;
+      case 'DRG':
+        isDeg = !isDeg;
+        document.getElementById('degBtn').classList.toggle('active', isDeg);
+        document.getElementById('radBtn').classList.toggle('active', !isDeg);
+        var drgEl = document.getElementById('drgBtn');
+        if (drgEl) drgEl.textContent = isDeg ? 'DEG' : 'RAD';
+        dExpr.textContent = isDeg ? 'Degree mode' : 'Radian mode';
+        dRes.textContent = '';
+        return;
+      default:     expr += a; upd(true);
+    }
+  }
+
+  function doEval() {
+    if (!expr.trim()) return;
+    /* Auto-close: cos(30  →  cos(30)  so users don't have to type ) */
+    var open = (expr.match(/\(/g)||[]).length, close = (expr.match(/\)/g)||[]).length;
+    var src = open > close ? expr + ')'.repeat(open - close) : expr;
+    var r = evalExpr(src, false);
+    if (r === undefined) {
+      dRes.textContent = 'Syntax Error';
+      dRes.style.fontSize = '24px';
+      dRes.classList.add('is-error');
+      return;
+    }
+    var res = fmt(r);
+    dRes.textContent = res;
+    dRes.style.fontSize = res.length > 20 ? '16px' : res.length > 14 ? '22px' : res.length > 9 ? '32px' : '44px';
+    dRes.classList.remove('is-error');
+    if (typeof r === 'number' && isFinite(r)) ans = r;
+    dExpr.textContent = src + ' =';
+    hist.unshift({e: src, r: res});
+    if (hist.length > 80) hist.pop();
+    expr = '';
+    refreshHist();
+  }
+
+  /* ---- Inline math panel (replaces prompt() dialogs) ---- */
+  var _mpMode = 'integral';
+  function openMathPanel(mode) {
+    _mpMode = mode;
+    var panel = document.getElementById('mathPanel');
+    var title = document.getElementById('mpTitle');
+    var math  = document.getElementById('mpMath');
+    var lbl1  = document.getElementById('mpLbl1');
+    var rowAB = document.getElementById('mpRowAB');
+    var mp1   = document.getElementById('mp1');
+    var mp2   = document.getElementById('mp2');
+    var mp3   = document.getElementById('mp3');
+    if (mode === 'integral') {
+title.textContent = 'Definite Integral';
+      /* Textbook notation: large ∫ with b on top, a on bottom */
+      math.innerHTML = '<span style="display:inline-flex;align-items:center;gap:2px;">'
+        + '<span style="font-size:32px;line-height:1">∫</span>'
+        + '<span style="display:inline-flex;flex-direction:column;font-size:11px;line-height:1.2;color:#a78bfa">'
+        + '<sup id="mpSubB" style="font-weight:700">b</sup>'
+        + '<sub id="mpSubA" style="font-weight:700">a</sub></span>'
+        + '<span style="font-size:16px;margin-left:4px"> f(x) dx</span></span>';
+      lbl1.textContent = 'f(x)';
+      mp1.placeholder = 'e.g. x^2 + sin(x)';
+      mp1.value = '';
+      mp2.value = '0'; mp3.value = '1';
+      rowAB.style.display = 'flex';
+    } else if (mode === 'deriv') {
+      title.textContent = 'd/dx Derivative';
+      math.innerHTML = '<span style="font-size:18px;">d/dx</span> f(x)';
+      lbl1.textContent = 'f(x)';
+      mp1.placeholder = 'e.g. x^3 + 2*x';
+      mp1.value = '';
+      rowAB.style.display = 'none';
+    }
+    panel.classList.add('open');
+    setTimeout(function(){ mp1.focus(); }, 80);
+  }
+  window.closeMathPanel = function () {
+    document.getElementById('mathPanel').classList.remove('open');
+  };
+  /* ---- 10-point Gauss-Legendre quadrature (composite, n sub-intervals) ---- */
+  /* Achieves 19th-order exactness per sub-interval — far more accurate than Simpson's */
+  var _GL_X = [
+    -0.9739065285171717,-0.8650633666889845,-0.6794095682990244,
+    -0.4333953941292472,-0.1488743389816312, 0.1488743389816312,
+     0.4333953941292472, 0.6794095682990244, 0.8650633666889845,
+     0.9739065285171717
+  ];
+  var _GL_W = [
+    0.0666713443086881, 0.1494513491505806, 0.2190863625159821,
+    0.2692667193099964, 0.2955242247147529, 0.2955242247147529,
+    0.2692667193099964, 0.2190863625159821, 0.1494513491505806,
+    0.0666713443086881
+  ];
+  function gaussIntegrate(f, a, b, n) {
+    n = n || 200;
+    var h = (b-a)/n, total = 0;
+    for (var k = 0; k < n; k++) {
+      var x0=a+k*h, x1=x0+h, m=(x0+x1)/2, r=(x1-x0)/2, sub=0;
+      for (var j=0; j<10; j++) sub += _GL_W[j] * f(m + r*_GL_X[j]);
+      total += r * sub;
+    }
+    return total;
+  }
+
+  window.calcMathPanel = function () {
+    var fn  = document.getElementById('mp1').value.trim();
+    if (!fn) return;
+    if (_mpMode === 'integral') {
+      var aVal = document.getElementById('mp2').value.trim() || '0';
+      var bVal = document.getElementById('mp3').value.trim() || '1';
+      document.getElementById('mpSubA').textContent = aVal;
+      document.getElementById('mpSubB').textContent = bVal;
+      if (!mjs) { closeMathPanel(); return; }
+      try {
+        var sc = scope();
+        var comp = mjs.compile(fn);
+        var lo = parseFloat(mjs.evaluate(aVal, sc));
+        var hi = parseFloat(mjs.evaluate(bVal, sc));
+        if (isNaN(lo) || isNaN(hi)) throw new Error('bad limits');
+        var result = gaussIntegrate(function(xv) {
+          return parseFloat(comp.evaluate(Object.assign({}, sc, {x: xv})));
+        }, lo, hi, 200);
+        var res = fmtN(result);
+        ans = result;
+        dRes.textContent = res;
+        dRes.style.fontSize = res.length > 14 ? '24px' : res.length > 9 ? '34px' : '44px';
+        dRes.classList.remove('is-error');
+        /* Textbook-style display: ∫₀¹ f(x) dx = using Unicode sub/superscript */
+        var SUB = {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','-':'₋','π':'π','e':'ₑ','.':'.'};
+        var SUP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','π':'ᵖ','e':'ᵉ','.':'·'};
+        function limSub(s){return String(s).split('').map(function(c){return SUB[c]!==undefined?SUB[c]:c;}).join('');}
+        function limSup(s){return String(s).split('').map(function(c){return SUP[c]!==undefined?SUP[c]:c;}).join('');}
+        dExpr.textContent = '∫' + limSub(aVal) + limSup(bVal) + ' (' + fn + ') dx =';
+        hist.unshift({e:'∫['+aVal+'→'+bVal+']('+fn+')', r:res});
+        refreshHist();
+      } catch(e){ dRes.textContent='Error'; dRes.classList.add('is-error'); }
+    } else if (_mpMode === 'deriv') {
+      if (!mjs) { closeMathPanel(); return; }
+      try {
+        var d = mjs.derivative(fn,'x').toString();
+        /* Simplify output — remove extra whitespace from math.js */
+        var ds = d.replace(/\s+/g,' ').trim();
+        dRes.textContent = ds;
+        dRes.style.fontSize = ds.length > 20 ? '18px' : ds.length > 10 ? '26px' : '36px';
+        dRes.classList.remove('is-error');
+        dExpr.textContent = 'd/dx (' + fn + ') =';
+        ans = 0;
+        hist.unshift({e:'d/dx('+fn+')', r:ds});
+        refreshHist();
+      } catch(e){ dRes.textContent='Error'; dRes.classList.add('is-error'); }
+    }
+    closeMathPanel();
+  };
+
+  function doIntegral() { openMathPanel('integral'); }
+  function doDeriv()    { openMathPanel('deriv'); }
+
+  /* ---- Wire ck buttons ---- */
+  function wireGrid(el) {
+    el.querySelectorAll('.ck[data-a]').forEach(function(b) {
+      b.addEventListener('click', function() {
+        var a = b.getAttribute('data-a');
+        if (is2nd && b.hasAttribute('data-sa')) {
+          a = b.getAttribute('data-sa');
+          set2nd(false);
+        }
+        press(a);
+      });
+    });
+  }
+  wireGrid(document.getElementById('panel-sci'));
+  wireGrid(document.getElementById('panel-basic'));
+
+  /* ---- DEG/RAD ---- */
+  document.getElementById('degBtn').addEventListener('click', function(){
+    isDeg=true;
+    document.getElementById('degBtn').classList.add('active');
+    document.getElementById('radBtn').classList.remove('active');
+  });
+  document.getElementById('radBtn').addEventListener('click', function(){
+    isDeg=false;
+    document.getElementById('radBtn').classList.add('active');
+    document.getElementById('degBtn').classList.remove('active');
+  });
+
+  /* ---- 2nd/Shift ---- */
+  function set2nd(v) {
+    is2nd = v;
+    document.getElementById('sndBtn').classList.toggle('active', v);
+    document.querySelectorAll('.ck[data-sl]').forEach(function(b){
+      if (v) {
+        if (!b._ot) b._ot = b.innerHTML;
+        var sl = b.getAttribute('data-sl');
+        b.innerHTML = sl;
+        b.style.color = 'var(--color-success)';
+      } else {
+        if (b._ot) { b.innerHTML = b._ot; b._ot = null; b.style.color = ''; }
+      }
+    });
+  }
+
+  /* ---- Mode switch ---- */
+  var modeNames = {sci:'Scientific',basic:'Basic',matrix:'Matrix',stats:'Statistics',prog:'Programmer',finance:'Financial'};
+  function switchMode(m) {
+    mode = m;
+    document.querySelectorAll('.ctab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode===m); });
+    document.querySelectorAll('.cpanel').forEach(function(p){ p.classList.toggle('active', p.id==='panel-'+m); });
+    document.getElementById('calcTitle').textContent = modeNames[m] || m;
+    if (m==='matrix') initMat();
+    if (m==='prog') renderProgGrid();
+  }
+  document.querySelectorAll('.ctab').forEach(function(t){
+    t.addEventListener('click', function(){ switchMode(t.dataset.mode); });
+  });
+
+  /* ---- History ---- */
+  function openHist() {
+    var el = document.getElementById('histList');
+    if (!hist.length) { el.innerHTML='<div style="padding:20px;text-align:center;color:var(--color-muted);font-size:13px;">No history yet</div>'; }
+    else el.innerHTML = hist.map(function(h,i){
+      return '<div class="hist-item" onclick="useHist('+i+')"><div class="hist-e">'+h.e+'</div><div class="hist-r">'+h.r+'</div></div>';
+    }).join('');
+    document.getElementById('histOv').classList.add('open');
+  }
+  window.useHist = function(i) {
+    var h = hist[i]; if (!h) return;
+    expr = h.e; dRes.textContent = h.r; dExpr.textContent = h.e;
+    document.getElementById('histOv').classList.remove('open');
+  };
+  document.getElementById('histBtn').addEventListener('click', openHist);
+  document.getElementById('histLink').addEventListener('click', openHist);
+  document.getElementById('histClose').addEventListener('click', function(){
+    document.getElementById('histOv').classList.remove('open');
+  });
+
+  /* ===== MATRIX ===== */
+  function initMat() {
+    var n = matSz;
+    var c = document.getElementById('matGrids');
+    c.innerHTML = ['A','B'].map(function(nm){
+      var cells = '';
+      for (var r=0;r<n;r++) for (var k=0;k<n;k++)
+        cells += '<input class="mcel" id="m'+nm+'_'+r+'_'+k+'" value="0">';
+      return '<div style="flex:1"><div class="mat-gl">Matrix '+nm+'</div><div class="mat-grid" style="grid-template-columns:repeat('+n+',1fr);grid-template-rows:repeat('+n+',1fr);">'+cells+'</div></div>';
+    }).join('');
+  }
+  window.setMatSz = function(sz) {
+    matSz = sz;
+    document.querySelectorAll('.mat-sbtn').forEach(function(b){ b.classList.toggle('active', +b.dataset.sz===sz); });
+    initMat();
+  };
+  function readMat(nm) {
+    var n=matSz, arr=[];
+    for (var r=0;r<n;r++){ arr.push([]); for(var k=0;k<n;k++) arr[r].push(parseFloat(document.getElementById('m'+nm+'_'+r+'_'+k).value)||0); }
+    return arr;
+  }
+  /* Push any result to the main display + add to history */
+  function showMainDisplay(exprText, resultText) {
+    dExpr.textContent = exprText;
+    dRes.textContent  = resultText;
+    dRes.classList.remove('is-error');
+    var len = resultText.length;
+    dRes.style.fontSize = len > 20 ? '16px' : len > 14 ? '22px' : len > 9 ? '32px' : '44px';
+    hist.unshift({e: exprText.replace(/ =$/, ''), r: resultText});
+    if (hist.length > 80) hist.pop();
+    refreshHist();
+  }
+
+  function showMat(label, v) {
+    var el = document.getElementById('matRes');
+    if (typeof v === 'number') {
+      var txt = fmtN(v);
+      el.textContent = label + ': ' + txt;
+      showMainDisplay(label + ' =', txt);
+      if (typeof v === 'number') ans = v;
+      return;
+    }
+    var arr = (v && v.toArray) ? v.toArray() : v;
+    if (Array.isArray(arr) && Array.isArray(arr[0])) {
+      var rows = arr.map(function(row){ return '[ ' + row.map(fmtN).join('  ') + ' ]'; });
+      el.innerHTML = '<b>'+label+':</b><br>' + rows.join('<br>');
+      /* Show first row in main display so user sees it */
+      var preview = rows.length <= 3 ? rows.join('  ') : rows[0]+'  …'+arr.length+' rows';
+      showMainDisplay(label + ' =', preview);
     } else {
-      resEl.textContent = 'Loading…';
+      el.textContent = label + ': ' + String(v);
+      showMainDisplay(label + ' =', String(v));
+    }
+  }
+  window.matOp = function(op) {
+    if (!mjs) return;
+    try {
+      var A = mjs.matrix(readMat('A'));
+      var B = mjs.matrix(readMat('B'));
+      switch(op) {
+        case 'add':  showMat('A+B', mjs.add(A,B).toArray()); break;
+        case 'sub':  showMat('A−B', mjs.subtract(A,B).toArray()); break;
+        case 'mul':  showMat('A×B', mjs.multiply(A,B).toArray()); break;
+        case 'trA':  showMat('Aᵀ', mjs.transpose(A).toArray()); break;
+        case 'detA': { var dv=mjs.det(A); showMat('det(A)', dv); ans=dv; break; }
+        case 'invA': showMat('A⁻¹', mjs.inv(A).toArray()); break;
+        case 'adjA': { var dd=mjs.det(A); showMat('adj(A)', mjs.multiply(dd,mjs.inv(A)).toArray()); break; }
+        case 'trcA': { var tv=mjs.trace(A); showMat('tr(A)', tv); ans=tv; break; }
+        case 'normA':{ var nv=mjs.norm(A); showMat('‖A‖', nv); ans=nv; break; }
+        case 'sqA':  showMat('A²', mjs.multiply(A,A).toArray()); break;
+        case 'eigA': try { var eg=mjs.eigs(A); showMat('eigenvalues', eg.values.toArray()); } catch(e){ document.getElementById('matRes').textContent='Eigenvalue error: '+e.message; } break;
+        case 'clr':  document.querySelectorAll('.mcel').forEach(function(c){c.value='0';}); document.getElementById('matRes').textContent='Cleared'; break;
+      }
+    } catch(e){ document.getElementById('matRes').textContent='Error: '+e.message; }
+  };
+  initMat();
+
+  /* ===== STATISTICS ===== */
+  function parseData() {
+    var raw = document.getElementById('statsData').value;
+    if (!raw.trim()) return [];
+    return raw.split(/[\s,;]+/).map(Number).filter(function(v){ return !isNaN(v); });
+  }
+  function srow(l, v) {
+    return '<div class="srow"><span class="srow__l">'+l+'</span><span class="srow__v">'+(typeof v==='number'?fmtN(v):v)+'</span></div>';
+  }
+  function med(arr) {
+    var n=arr.length;
+    return n%2===0 ? (arr[n/2-1]+arr[n/2])/2 : arr[(n-1)/2];
+  }
+  function modeVal(data) {
+    var freq={};
+    data.forEach(function(v){ freq[v]=(freq[v]||0)+1; });
+    var max=Math.max.apply(null,Object.values(freq));
+    var modes=Object.keys(freq).filter(function(k){return freq[k]===max;}).map(Number);
+    return modes.length===data.length ? 'None (all values unique)' : modes.join(', ');
+  }
+  window.sc = function(type) {
+    var data = parseData();
+    var el = document.getElementById('sRes');
+    if (!data.length) { el.innerHTML=srow('Error','Enter valid numbers'); return; }
+    var sorted = data.slice().sort(function(a,b){return a-b;});
+    var n=data.length, sum=data.reduce(function(a,b){return a+b;},0);
+    var mean=sum/n, vr=data.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/n;
+    var std=Math.sqrt(vr);
+    var q1=med(sorted.slice(0,Math.floor(n/2))), q3=med(sorted.slice(Math.ceil(n/2)));
+
+    /* Scalar results: push to main display and set ans */
+    var SCALARS = {
+      n:      {label:'Count (n)',      val:n},
+      sum:    {label:'Σ Sum',          val:sum},
+      mean:   {label:'Mean (μ)',       val:mean},
+      median: {label:'Median',         val:med(sorted)},
+      min:    {label:'Min',            val:sorted[0]},
+      max:    {label:'Max',            val:sorted[n-1]},
+      range:  {label:'Range',          val:sorted[n-1]-sorted[0]},
+      var:    {label:'Variance (σ²)',  val:vr},
+      std:    {label:'Std Dev (σ)',    val:std},
+      q1:     {label:'Q1',             val:q1},
+      q3:     {label:'Q3',             val:q3},
+      iqr:    {label:'IQR',            val:q3-q1},
+    };
+    if (SCALARS[type]) {
+      var s = SCALARS[type];
+      ans = s.val;
+      showMainDisplay(s.label + ' =', fmtN(s.val));
     }
 
-    function fmt(v) { try { return math.format(v, { precision: 10 }); } catch (e) { return String(v); } }
+    var results = {
+      n:      [srow('Count (n)',n)],
+      sum:    [srow('Sum',sum)],
+      mean:   [srow('Mean (μ)',mean)],
+      median: [srow('Median',med(sorted))],
+      mode:   [srow('Mode',modeVal(data))],
+      min:    [srow('Min',sorted[0])],
+      max:    [srow('Max',sorted[n-1])],
+      range:  [srow('Range',sorted[n-1]-sorted[0])],
+      var:    [srow('Variance (σ²)',vr)],
+      std:    [srow('Std Dev (σ)',std)],
+      q1:     [srow('Q1',q1)],
+      q3:     [srow('Q3',q3)],
+      iqr:    [srow('IQR',q3-q1)],
+      freq: (function(){
+        var freq={};
+        data.forEach(function(v){freq[v]=(freq[v]||0)+1;});
+        return Object.keys(freq).sort(function(a,b){return a-b;}).map(function(k){
+          return srow(k, 'freq = '+freq[k]+' ('+(freq[k]/n*100).toFixed(1)+'%)');
+        });
+      })(),
+      all: [
+        srow('Count (n)',n), srow('Sum',sum), srow('Mean (μ)',mean),
+        srow('Median',med(sorted)), srow('Mode',modeVal(data)),
+        srow('Min',sorted[0]), srow('Max',sorted[n-1]), srow('Range',sorted[n-1]-sorted[0]),
+        srow('Variance (σ²)',vr), srow('Std Dev (σ)',std),
+        srow('Q1',q1), srow('Q3',q3), srow('IQR',q3-q1),
+      ],
+    };
+    el.innerHTML = (results[type] || []).join('');
+    if (type === 'all') showMainDisplay('All Stats — Mean =', fmtN(mean));
+    if (type === 'mode') showMainDisplay('Mode =', modeVal(data));
+    if (type === 'freq') showMainDisplay('Freq table — n =', String(n));
+  };
 
-    // live evaluate — never flash an error while typing
-    function tryEval() {
-      const src = manual.value;
-      if (!src) { resEl.textContent = '0'; return; }
-      if (!mathReady) return;
-      try { const out = math.evaluate(src); ans = out; resEl.textContent = fmt(out); } catch (e) {}
-    }
-    // final evaluate — show error if invalid
-    function finalEval() {
-      const src = manual.value;
-      if (!src || !mathReady) return;
-      try { const out = math.evaluate(src); ans = out; resEl.textContent = fmt(out); }
-      catch (e) { resEl.textContent = 'Error'; }
-    }
+  /* ===== PROGRAMMER ===== */
+  window.setBase = function(b) {
+    pBase = b;
+    document.querySelectorAll('.pbtn').forEach(function(btn){ btn.classList.toggle('active', +btn.dataset.b===b); });
+    renderProgGrid();
+  };
+  function updateProgRepr(n) {
+    progVal = Math.trunc(n) || 0;
+    var v = progVal;
+    var hex = v>=0 ? v.toString(16).toUpperCase() : '-'+(-v).toString(16).toUpperCase();
+    document.getElementById('pr-hex').textContent = hex || '0';
+    document.getElementById('pr-dec').textContent = v;
+    document.getElementById('pr-oct').textContent = v>=0?v.toString(8):'-'+(-v).toString(8);
+    document.getElementById('pr-bin').textContent = v>=0?v.toString(2):'-'+(-v).toString(2);
+  }
+  var pExpr = '';
+  function renderProgGrid() {
+    var g = document.getElementById('progGrid');
+    var hexDisabled = pBase !== 16;
+    var octDisabled = pBase === 2;
+    var binOnly     = pBase === 2;
+    function dis(d) { return (binOnly && !['0','1'].includes(d)) || (pBase===8 && !['0','1','2','3','4','5','6','7'].includes(d)); }
+    var hd = function(lbl, v) {
+      var off = hexDisabled ? ' style="opacity:.3;pointer-events:none;"' : '';
+      return '<button class="ck ck--fn"'+off+' onclick="pPress(\''+v+'\')">'+lbl+'</button>';
+    };
+    g.innerHTML = [
+      hd('A','A'), hd('B','B'), hd('C','C'), hd('D','D'), hd('E','E'),
+      hd('F','F'),
+      '<button class="ck ck--fn" onclick="pPress(\'AND\')">AND</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'OR\')">OR</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'XOR\')">XOR</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'NOT\')">NOT</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'LSH\')">LSH</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'RSH\')">RSH</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'MOD\')">MOD</button>',
+      '<button class="ck ck--clr" onclick="pPress(\'CLR\')">CLR</button>',
+      '<button class="ck ck--clr" onclick="pPress(\'DEL\')">⌧</button>',
+      ['7','8','9','/'].map(function(k){
+        var off = dis(k) ? ' style="opacity:.3;pointer-events:none;"':'';
+        var lbl = k==='/'?'÷':k;
+        return '<button class="ck '+(k==='/'?'ck--op':'ck--num')+'"'+off+' onclick="pPress(\''+k+'\')">' + lbl + '</button>';
+      }).join(''),
+      ['4','5','6','*'].map(function(k){
+        var off = dis(k) ? ' style="opacity:.3;pointer-events:none;"':'';
+        var lbl = k==='*'?'×':k;
+        return '<button class="ck '+(k==='*'?'ck--op':'ck--num')+'"'+off+' onclick="pPress(\''+k+'\')">' + lbl + '</button>';
+      }).join(''),
+      '<button class="ck ck--fn" onclick="pPress(\'(\')"> ( </button>',
+      ['1','2','3','-'].map(function(k){
+        var off = dis(k) ? ' style="opacity:.3;pointer-events:none;"':'';
+        var lbl = k==='-'?'−':k;
+        return '<button class="ck '+(k==='-'?'ck--op':'ck--num')+'"'+off+' onclick="pPress(\''+k+'\')">' + lbl + '</button>';
+      }).join(''),
+      '<button class="ck ck--fn" onclick="pPress(\')\')"> ) </button>',
+      '<button class="ck ck--num '+(dis('0')?'"style="opacity:.3;pointer-events:none;"':'""')+' onclick="pPress(\'0\')">0</button>',
+      '<button class="ck ck--fn" onclick="pPress(\'.\')">.</button>',
+      '<button class="ck ck--op" onclick="pPress(\'+\')">+</button>',
+      '<button class="ck ck--eq" onclick="pPress(\'=\')" style="grid-column:span 2;">=</button>',
+    ].join('');
+    updateProgRepr(pExpr ? evalProg(pExpr) : 0);
+  }
+  window.pPress = function(k) {
+    if (k==='CLR') { pExpr=''; dExpr.textContent=' '; dRes.textContent='0'; updateProgRepr(0); return; }
+    if (k==='DEL') { pExpr=pExpr.slice(0,-1); pUpdate(); return; }
+    if (k==='=')   { var r=evalProg(pExpr); dExpr.textContent=pExpr+' ='; dRes.textContent=r.toString(pBase).toUpperCase(); updateProgRepr(r); hist.unshift({e:pExpr, r:r.toString(pBase).toUpperCase()}); pExpr=''; return; }
+    if (['AND','OR','XOR','MOD','LSH','RSH'].includes(k)) { pExpr+=' '+k+' '; pUpdate(); return; }
+    if (k==='NOT') { pExpr='~('+pExpr; pUpdate(); return; }
+    pExpr += k; pUpdate();
+  };
+  function pUpdate() {
+    dExpr.textContent = pExpr || ' ';
+    var r = evalProg(pExpr);
+    dRes.textContent = isNaN(r) ? pExpr : r.toString(pBase).toUpperCase();
+    updateProgRepr(isNaN(r)?0:r);
+  }
+  function evalProg(src) {
+    if (!src.trim()) return 0;
+    try {
+      var clean = src
+        .replace(/AND/g,'&').replace(/\bOR\b/g,'|').replace(/XOR/g,'^')
+        .replace(/MOD/g,'%').replace(/LSH/g,'<<').replace(/RSH/g,'>>');
+      // eslint-disable-next-line no-new-func
+      var r = Function('"use strict"; return ('+clean+')')();
+      return typeof r === 'number' ? Math.trunc(r) : 0;
+    } catch(e){ return NaN; }
+  }
 
-    function sync() { exprEl.textContent = expr || '\u00A0'; manual.value = expr; }
+  /* ===== FINANCIAL ===== */
+  window.finCalc = function(solve) {
+    var pv  = parseFloat(document.getElementById('f-pv').value)  || 0;
+    var fv  = parseFloat(document.getElementById('f-fv').value)  || 0;
+    var pmt = parseFloat(document.getElementById('f-pmt').value) || 0;
+    var r   = (parseFloat(document.getElementById('f-r').value)  || 0) / 100;
+    var n   = parseFloat(document.getElementById('f-n').value)   || 0;
+    var py  = parseFloat(document.getElementById('f-py').value)  || 12;
+    var rp  = r / py; // rate per period
+    var el  = document.getElementById('finRes');
+    var res;
+    try {
+      switch(solve) {
+        case 'fv':
+          res = rp===0 ? (-pv - pmt*n) : (-pv*Math.pow(1+rp,n) - pmt*(Math.pow(1+rp,n)-1)/rp);
+          el.textContent = 'FV = ' + fmtN(res);
+          document.getElementById('f-fv').value = fmtN(res);
+          showMainDisplay('FV =', fmtN(res)); ans=res;
+          break;
+        case 'pv':
+          res = rp===0 ? (-fv - pmt*n) : ((-fv - pmt*(Math.pow(1+rp,n)-1)/rp) / Math.pow(1+rp,n));
+          el.textContent = 'PV = ' + fmtN(res);
+          document.getElementById('f-pv').value = fmtN(res);
+          showMainDisplay('PV =', fmtN(res)); ans=res;
+          break;
+        case 'pmt':
+          res = rp===0 ? (-(fv+pv)/n) : (-(fv + pv*Math.pow(1+rp,n))*rp / (Math.pow(1+rp,n)-1));
+          el.textContent = 'PMT = ' + fmtN(res);
+          document.getElementById('f-pmt').value = fmtN(res);
+          showMainDisplay('PMT =', fmtN(res)); ans=res;
+          break;
+        case 'n':
+          res = rp===0 ? (-(pv+fv)/pmt) : (Math.log((-fv*rp+pmt)/(pv*rp+pmt))/Math.log(1+rp));
+          el.textContent = 'n = ' + fmtN(res) + ' periods';
+          document.getElementById('f-n').value = fmtN(res);
+          showMainDisplay('n (periods) =', fmtN(res)); ans=res;
+          break;
+        case 'r':
+          var rate=0.05/py, prev=0;
+          for (var i=0;i<1000;i++){
+            var fn2=pv*Math.pow(1+rate,n)+pmt*(Math.pow(1+rate,n)-1)/rate+fv;
+            var fn2p=n*pv*Math.pow(1+rate,n-1)+pmt*(n*Math.pow(1+rate,n-1)*rate-(Math.pow(1+rate,n)-1))/(rate*rate);
+            prev=rate; rate=rate-fn2/fn2p;
+            if (Math.abs(rate-prev)<1e-10) break;
+          }
+          res = rate*py*100;
+          el.textContent = 'r = ' + fmtN(res) + '% per year';
+          document.getElementById('f-r').value = fmtN(res);
+          showMainDisplay('r (% p.a.) =', fmtN(res)); ans=res;
+          break;
+        case 'roi':
+          res = pv!==0 ? (fv-pv)/Math.abs(pv)*100 : 0;
+          el.textContent = 'ROI = ' + fmtN(res) + '%';
+          showMainDisplay('ROI % =', fmtN(res)); ans=res;
+          break;
+      }
+    } catch(e) { el.textContent = 'Calculation error: ' + e.message; }
+  };
 
-    document.querySelectorAll('[data-i]').forEach(b =>
-      b.addEventListener('click', () => { expr = manual.value + b.getAttribute('data-i'); sync(); tryEval(); }));
+  /* ---- Physical keyboard support ---- */
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (mode === 'matrix' || mode === 'stats' || mode === 'finance') return;
+    var k = e.key;
+    var acted = true;
+    if ('0123456789'.includes(k)) press(k);
+    else if (k === '+') press('+');
+    else if (k === '-') press('-');
+    else if (k === '*') press('*');
+    else if (k === '/') { e.preventDefault(); press('/'); }
+    else if (k === '.') press('.');
+    else if (k === 'Enter' || k === '=') press('=');
+    else if (k === 'Backspace') press('DEL');
+    else if (k === 'Escape') press('C');
+    else if (k === '(') press('(');
+    else if (k === ')') press(')');
+    else if (k === '^') press('^(');
+    else if (k === '%') press('%');
+    else if (k === 's') press('sin(');
+    else if (k === 'c') press('cos(');
+    else if (k === 't') press('tan(');
+    else if (k === 'l') press('log(');
+    else if (k === 'r') press('sqrt(');
+    else acted = false;
+    if (acted) e.preventDefault();
+  });
 
-    document.getElementById('clear').onclick  = () => { expr = ''; sync(); resEl.textContent = '0'; };
-    document.getElementById('back').onclick   = () => { expr = manual.value.slice(0, -1); sync(); tryEval(); };
-    document.getElementById('equals').onclick = finalEval;
-    document.getElementById('ans').onclick    = () => { expr = manual.value + fmt(ans); sync(); };
-
-    manual.addEventListener('input', () => { expr = manual.value; exprEl.textContent = expr || '\u00A0'; tryEval(); });
-    manual.addEventListener('keydown', e => { if (e.key === 'Enter') finalEval(); });
-  </script>
+  /* ---- Init ---- */
+  upd(false);
+})();
+</script>
 </body>
 </html>

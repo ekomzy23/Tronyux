@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin — Ronyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    /* ── Screen system ── */
+    .screen { display: none; }
+    .screen.active {
+      display: flex;
+      animation: screenIn .38s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Login screen ── */
+    #loginScreen {
+      opacity: 0; pointer-events: none;
+      transition: opacity .4s ease, transform .4s ease;
+      transform: translateY(18px);
+    }
+    #loginScreen.visible {
+      opacity: 1; pointer-events: auto; transform: translateY(0);
+    }
+
+    .email-locked {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(109,94,252,.08);
+      border: 1px solid rgba(109,94,252,.25);
+      border-radius: 14px; padding: 14px 16px;
+      margin-bottom: 6px;
+    }
+    .email-locked__icon { font-size: 18px; flex-shrink: 0; }
+    .email-locked__text { flex: 1; overflow: hidden; }
+    .email-locked__label {
+      font-size: 10px; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: rgba(109,94,252,.8);
+      margin-bottom: 2px;
+    }
+    .email-locked__value {
+      font-size: 14px; font-weight: 600;
+      color: var(--color-text, #f3f3fb);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── OTP screen ── */
+    #otpScreen {
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: fixed; inset: 0; z-index: 50;
+      background: var(--color-bg, #08081a);
+      padding: 32px 24px;
+    }
+    #otpScreen.active { display: flex; animation: screenIn .38s ease forwards; }
+
+    .otp-icon {
+      width: 72px; height: 72px; border-radius: 24px;
+      background: rgba(109,94,252,.12);
+      border: 1px solid rgba(109,94,252,.3);
+      display: grid; place-items: center;
+      font-size: 32px; margin: 0 auto 24px;
+    }
+    .otp-title {
+      font-family: 'Sora', sans-serif; font-size: 22px;
+      font-weight: 700; text-align: center; margin-bottom: 10px;
+    }
+    .otp-sub {
+      font-size: 14px; color: var(--color-muted, #9aa0bd);
+      text-align: center; max-width: 290px;
+      line-height: 1.6; margin: 0 auto 32px;
+    }
+    .otp-email-chip {
+      display: inline-block;
+      background: rgba(109,94,252,.12);
+      border: 1px solid rgba(109,94,252,.3);
+      border-radius: 40px; padding: 2px 10px;
+      font-size: 13px; font-weight: 600;
+      color: rgba(167,139,250,.95); margin-top: 6px;
+    }
+
+    /* 6 digit boxes */
+    .otp-boxes {
+      display: flex; gap: 10px; justify-content: center;
+      margin-bottom: 28px;
+    }
+    .otp-box {
+      width: 46px; height: 58px;
+      background: rgba(255,255,255,.05);
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      font-family: 'Sora', sans-serif;
+      font-size: 22px; font-weight: 700;
+      text-align: center; color: #fff;
+      outline: none; caret-color: transparent;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .otp-box:focus {
+      border-color: rgba(109,94,252,.8);
+      background: rgba(109,94,252,.1);
+      box-shadow: 0 0 0 3px rgba(109,94,252,.18);
+    }
+    .otp-box.filled {
+      border-color: rgba(109,94,252,.5);
+      background: rgba(109,94,252,.07);
+    }
+    .otp-box.shake {
+      animation: boxShake .35s ease;
+    }
+    @keyframes boxShake {
+      0%,100%{ transform:translateX(0); }
+      20%    { transform:translateX(-5px); }
+      60%    { transform:translateX(5px); }
+      80%    { transform:translateX(-3px); }
+    }
+
+    .otp-actions { width: 100%; max-width: 290px; }
+    .otp-resend { font-size: 13px; text-align: center; color: var(--color-muted); margin-top: 14px; }
+    .otp-resend button {
+      background: none; border: none; cursor: pointer;
+      color: var(--color-primary, #6d5efc);
+      font-size: 13px; font-weight: 600;
+      padding: 0; font-family: inherit;
+    }
+    .otp-back {
+      background: none; border: none; cursor: pointer;
+      color: var(--color-muted); font-size: 13px;
+      font-family: inherit; text-align: center;
+      width: 100%; padding: 12px 0 0; display: block;
+    }
+    .otp-back:hover { color: #fff; }
+
+    /* ══════════════════════════════
+       SPLASH OVERLAY
+    ══════════════════════════════ */
+    #adminSplash {
+      position: fixed; inset: 0; z-index: 100;
+      background: #07070d;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-family: 'Sora', sans-serif;
+    }
+    #adminSplash canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    .s-burst {
+      position: absolute; width: 340px; height: 340px; border-radius: 50%;
+      background: radial-gradient(circle,rgba(109,94,252,.92) 0%,rgba(109,94,252,.52) 18%,rgba(80,40,160,.26) 45%,transparent 70%);
+      top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+      opacity: 0; filter: blur(18px);
+      animation: sBurstIn .38s cubic-bezier(.1,.85,.15,1) .05s forwards; z-index: 1;
+    }
+    @keyframes sBurstIn {
+      0%  { opacity:0;  transform:translate(-50%,-50%) scale(0); }
+      55% { opacity:1;  transform:translate(-50%,-50%) scale(1.25); }
+      100%{ opacity:.7; transform:translate(-50%,-50%) scale(1); }
+    }
+    .s-logo-wrap { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; }
+    .s-logo {
+      width: 210px; height: 210px; object-fit: contain;
+      opacity: 0; transform: scale(2.4);
+      filter: blur(48px) brightness(5) saturate(2);
+      animation: sLogoMat .95s cubic-bezier(.08,.88,.12,1) .28s forwards;
+      position: relative; z-index: 3;
+    }
+    @keyframes sLogoMat {
+      0%  { opacity:.08; transform:scale(2.4);  filter:blur(48px) brightness(5) saturate(2); }
+      40% { opacity:.75; transform:scale(1.1);  filter:blur(8px)  brightness(2) saturate(1.5); }
+      70% { opacity:.95; transform:scale(.98);  filter:blur(1px)  brightness(1.1); }
+      100%{ opacity:1;   transform:scale(1);
+            filter:blur(0) brightness(1)
+              drop-shadow(0 0 55px rgba(109,94,252,.75))
+              drop-shadow(0 0 22px rgba(167,139,250,.5))
+              drop-shadow(0 0  8px rgba(255,255,255,.2)); }
+    }
+    .s-scan {
+      position: absolute; top:0; left:-15%; right:-15%; height:38%;
+      background: linear-gradient(180deg,transparent 0%,rgba(167,139,250,.08) 35%,rgba(255,255,255,.22) 50%,rgba(167,139,250,.08) 65%,transparent 100%);
+      transform: translateY(-130%);
+      animation: sScanDown .85s cubic-bezier(.4,0,.55,1) 1.05s forwards;
+      z-index: 4; pointer-events: none;
+    }
+    @keyframes sScanDown {
+      0%  { transform:translateY(-130%); opacity:1; }
+      75% { opacity:.8; }
+      100%{ transform:translateY(330%); opacity:0; }
+    }
+    .s-ring {
+      position: absolute; border-radius: 50%;
+      border: 1.5px solid rgba(109,94,252,.6);
+      top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.3);
+      opacity: 0; pointer-events: none; z-index: 1;
+    }
+    .sr1 { width:260px; height:260px; animation:sRingExp 1.05s ease .82s forwards; }
+    .sr2 { width:330px; height:330px; animation:sRingExp 1.05s ease 1.01s forwards; border-color:rgba(109,94,252,.38); }
+    .sr3 { width:430px; height:430px; animation:sRingExp 1.15s ease 1.22s forwards; border-color:rgba(109,94,252,.18); }
+    @keyframes sRingExp {
+      0%  { opacity:0; transform:translate(-50%,-50%) scale(.3); }
+      12% { opacity:1; }
+      100%{ opacity:0; transform:translate(-50%,-50%) scale(1); }
+    }
+    .s-badge {
+      margin-top: 30px; position: relative; z-index: 2;
+      display: flex; align-items: center; gap: 8px;
+      opacity: 0; transform: translateY(10px);
+      animation: sBadgeIn .3s ease 1.3s forwards;
+    }
+    @keyframes sBadgeIn { to { opacity:1; transform:translateY(0); } }
+    .s-badge-pill {
+      padding: 5px 14px; border-radius: 40px;
+      border: 1px solid rgba(109,94,252,.5);
+      background: rgba(109,94,252,.12);
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: .24em; text-transform: uppercase;
+      color: rgba(167,139,250,.9);
+    }
+    .s-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.8);
+      animation: blink 1.2s ease-in-out 1.4s infinite;
+    }
+    @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
+    #adminSplash.s-exit {
+      animation: sPageFlip .44s cubic-bezier(.75,0,.9,.3) forwards !important;
+    }
+    @keyframes sPageFlip {
+      0%  { clip-path:inset(0 0 0 0); opacity:1; }
+      100%{ clip-path:inset(0 0 100% 0); opacity:.2; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ LOGIN SCREEN ══ -->
+  <div class="app" id="loginScreen">
+    <div class="app__body col" style="justify-content: center;">
+      <div class="center" style="gap: var(--space-4); margin-bottom: var(--space-6);">
+        <img src="/assets/images/ronyx-logo.png" alt="Ronyx"
+             style="width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(109,94,252,.5));">
+        <span class="badge badge--violet">Admin Console</span>
+        <h1 class="title-lg">Admin Access</h1>
+        <p class="text-muted" style="max-width: 270px;">
+          A one-time code will be sent to your admin email.
+        </p>
+      </div>
+
+      <div class="email-locked">
+        <div class="email-locked__icon">&#128274;</div>
+        <div class="email-locked__text">
+          <div class="email-locked__label">Admin email</div>
+          <div class="email-locked__value" id="emailDisplay"></div>
+        </div>
+      </div>
+
+      <button class="btn btn--primary" id="sendBtn" style="margin-top: 8px;">
+        Send verification code
+      </button>
+      <p class="text-center text-muted mt-4" style="font-size:13px;">
+        Student? <a href="https://tronyux.vercel.app" class="link">Go to student app</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ══ OTP SCREEN ══ -->
+  <div id="otpScreen">
+    <div class="otp-icon">✉️</div>
+    <h2 class="otp-title">Check your email</h2>
+    <p class="otp-sub">
+      We sent a 6-digit code to<br>
+      <span class="otp-email-chip" id="otpEmailChip"></span>
+    </p>
+
+    <div class="otp-boxes" id="otpBoxes">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    </div>
+
+    <div class="otp-actions">
+      <button class="btn btn--primary" id="otpBtn">Verify &amp; Sign in</button>
+      <p class="otp-resend">
+        Didn't receive it? <button id="resendBtn">Resend code</button>
+      </p>
+      <button class="otp-back" id="backBtn">← Back</button>
+    </div>
+  </div>
+
+  <!-- ══ SPLASH ══ -->
+  <div id="adminSplash">
+    <canvas id="cv"></canvas>
+    <div class="s-burst"></div>
+    <div class="s-logo-wrap">
+      <img class="s-logo" src="/assets/images/ronyx-logo.png" alt="Ronyx">
+      <div class="s-scan"></div>
+      <div class="s-ring sr1"></div>
+      <div class="s-ring sr2"></div>
+      <div class="s-ring sr3"></div>
+    </div>
+    <div class="s-badge">
+      <div class="s-badge-dot"></div>
+      <div class="s-badge-pill">Admin Console</div>
+    </div>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+
+  <script>
+    /* ── Particles ── */
+    const cv  = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
+    function mkPt(s) {
+      return { x:Math.random()*innerWidth, y:s?Math.random()*innerHeight:innerHeight+6,
+               r:Math.random()*1.6+.3, vx:(Math.random()-.5)*.22, vy:-(Math.random()*.45+.1),
+               a:Math.random()*.3+.04, pulse:Math.random()*Math.PI*2, pv:Math.random()*.02+.005 };
+    }
+    const pts = Array.from({length:60},()=>mkPt(true));
+    let pRun = true;
+    (function loop() {
+      if (!pRun) return;
+      ctx.clearRect(0,0,cv.width,cv.height);
+      pts.forEach(p => {
+        p.x+=p.vx; p.y+=p.vy; p.pulse+=p.pv;
+        if(p.y<-5) Object.assign(p,mkPt(false));
+        if(p.x<-4||p.x>cv.width+4) p.x=Math.random()*cv.width;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(167,139,250,${p.a*(.65+.35*Math.sin(p.pulse))})`; ctx.fill();
+      });
+      requestAnimationFrame(loop);
+    })();
+
+    /* ── Config ── */
+    const cfg       = window.RONYX_CONFIG || {};
+    const adminEmail = cfg.ADMIN_EMAIL || '';
+    document.getElementById('emailDisplay').textContent  = adminEmail;
+    document.getElementById('otpEmailChip').textContent  = adminEmail;
+
+    /* ── Reveal login after splash ── */
+    function revealLogin() {
+      const overlay = document.getElementById('adminSplash');
+      overlay.classList.add('s-exit');
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        pRun = false;
+        document.getElementById('loginScreen').classList.add('visible');
+      }, 430);
+    }
+    setTimeout(revealLogin, 3400);
+
+    /* ── Screen switch ── */
+    function showOtp()   { document.getElementById('otpScreen').classList.add('active'); boxes[0].focus(); }
+    function showLogin() {
+      document.getElementById('otpScreen').classList.remove('active');
+      document.getElementById('loginScreen').classList.add('visible');
+    }
+
+    /* ── Send OTP ── */
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.addEventListener('click', async () => {
+      if (!adminEmail) return toast('Admin email not configured.', 'error');
+      sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
+      await adminSendOtp(adminEmail, () => { showOtp(); });
+      sendBtn.disabled = false; sendBtn.textContent = 'Send verification code';
+    });
+
+    /* ── OTP boxes ── */
+    const boxes = Array.from(document.querySelectorAll('.otp-box'));
+    boxes.forEach((box, i) => {
+      box.addEventListener('input', e => {
+        const v = e.target.value.replace(/\D/g,'');
+        e.target.value = v.slice(-1);
+        e.target.classList.toggle('filled', !!e.target.value);
+        if (e.target.value && i < boxes.length-1) boxes[i+1].focus();
+        if (boxes.every(b=>b.value)) doVerify();
+      });
+      box.addEventListener('keydown', e => {
+        if (e.key==='Backspace' && !e.target.value && i>0) {
+          boxes[i-1].value=''; boxes[i-1].classList.remove('filled'); boxes[i-1].focus();
+        }
+        if (e.key==='Enter') doVerify();
+      });
+      box.addEventListener('paste', e => {
+        e.preventDefault();
+        const text = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+        if (!text) return;
+        boxes.forEach((b,j)=>{ b.value=text[j]||''; b.classList.toggle('filled',!!b.value); });
+        boxes[Math.min(text.length, boxes.length-1)].focus();
+        if (text.length >= 6) doVerify();
+      });
+    });
+
+    /* ── Verify OTP ── */
+    document.getElementById('otpBtn').addEventListener('click', doVerify);
+
+    async function doVerify() {
+      const code = boxes.map(b=>b.value).join('');
+      if (code.length < 6) return;
+      const btn = document.getElementById('otpBtn');
+      btn.disabled = true; btn.textContent = 'Verifying…';
+      await adminVerifyOtp(code);
+      btn.disabled = false; btn.textContent = 'Verify & Sign in';
+      /* shake on error (toast already shown by appwrite.js) */
+      if (boxes[0].value) boxes.forEach(b=>{b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),400);});
+      boxes.forEach(b=>{b.value=''; b.classList.remove('filled');});
+      if (boxes[0]) boxes[0].focus();
+    }
+
+    /* ── Resend + back ── */
+    document.getElementById('resendBtn').addEventListener('click', () => {
+      adminSendOtp(adminEmail, () => toast('New code sent.', 'success'));
+    });
+    document.getElementById('backBtn').addEventListener('click', () => {
+      boxes.forEach(b=>{b.value='';b.classList.remove('filled');});
+      showLogin();
+    });
+  </script>
+</body>
+</html>

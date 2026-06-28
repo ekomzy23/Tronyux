@@ -1,11 +1,11 @@
-# RUNYX — AI Examination Platform (Frontend)
+# RONYX — AI Examination Platform (Frontend)
 
 Plain HTML / CSS / JS. Multi-page, mobile-first. Static-hosted on Vercel.
 
 ## Folder structure
 
 ```
-runyx/
+ronyx/
 ├── index.html          Entry point (redirects to splash)
 ├── vercel.json         Static hosting config
 ├── README.md

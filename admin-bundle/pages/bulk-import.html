@@ -1,0 +1,430 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bulk Import — Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .upload-zone {
+      border: 2px dashed rgba(109,94,252,.35);
+      border-radius: 18px;
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s ease;
+      background: rgba(109,94,252,.04);
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: rgba(109,94,252,.7);
+      background: rgba(109,94,252,.1);
+    }
+    .upload-zone__icon { font-size: 40px; margin-bottom: 10px; }
+    .upload-zone__label { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .upload-zone__sub { font-size: 13px; color: var(--color-muted); }
+
+    .schema-block {
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+      color: #a3e635;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .schema-key   { color: #93c5fd; }
+    .schema-str   { color: #a3e635; }
+    .schema-num   { color: #fbbf24; }
+    .schema-comment { color: rgba(255,255,255,.3); font-style: italic; }
+
+    .q-preview-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-stroke);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+    .q-preview-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; line-height: 1.4; }
+    .q-preview-card p  { font-size: 12px; color: var(--color-muted); }
+
+    .progress-bar {
+      height: 4px; background: rgba(255,255,255,.08);
+      border-radius: 4px; overflow: hidden; margin: 8px 0;
+    }
+    .progress-bar__fill {
+      height: 100%; background: var(--gradient-brand);
+      border-radius: 4px; width: 0;
+      transition: width .3s ease;
+    }
+
+    .result-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 13px;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .result-dot--ok  { background: var(--color-success); }
+    .result-dot--err { background: var(--color-danger); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Bulk Import Questions</span>
+      <button class="btn btn--sm" id="dlTemplate">⬇ Template</button>
+    </div>
+
+    <div class="app__body">
+
+      <!-- Step 1: select exam -->
+      <div class="section-hd mb-2"><h3>Step 1 — Select exam</h3></div>
+      <div class="field mb-4">
+        <label class="field__label">Target exam</label>
+        <select class="input" id="examSel">
+          <option value="">Loading exams…</option>
+        </select>
+        <p class="text-muted" style="font-size:12px;margin-top:6px;">Questions in your JSON without an examId will go into this exam.</p>
+      </div>
+
+      <!-- Step 2: JSON format -->
+      <div class="section-hd mb-2"><h3>Step 2 — JSON format</h3></div>
+      <div class="card mb-4">
+        <p class="text-muted mb-3" style="font-size:13px;">
+          Each question object supports these fields. Only <strong>type</strong> and <strong>text</strong> are required.
+          Download the template above for a ready-to-fill file.
+        </p>
+        <div class="schema-block" id="schemaBlock"></div>
+      </div>
+
+      <!-- Step 3: upload -->
+      <div class="section-hd mb-2"><h3>Step 3 — Upload JSON file</h3></div>
+      <div class="upload-zone mb-4" id="uploadZone"
+           onclick="document.getElementById('fileIn').click()"
+           ondragover="ev.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="onDrop(event)">
+        <input type="file" id="fileIn" accept=".json" style="display:none" onchange="onFile(this.files[0])">
+        <div class="upload-zone__icon">📂</div>
+        <div class="upload-zone__label">Tap or drag a JSON file here</div>
+        <div class="upload-zone__sub" id="fileLabel">questions.json · max 5 MB</div>
+      </div>
+
+      <!-- Preview -->
+      <div id="previewSection" style="display:none;">
+        <div class="between mb-2">
+          <h3 class="section-hd" style="margin:0;">Preview (<span id="previewCount">0</span> questions)</h3>
+          <button class="btn btn--sm btn--danger" onclick="clearFile()">Clear</button>
+        </div>
+        <div id="previewList" class="mb-4"></div>
+
+        <button class="btn btn--primary" style="width:100%;" id="importBtn">
+          Upload all questions to Appwrite
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div id="progressSection" style="display:none;" class="card mb-4">
+        <div class="between mb-2">
+          <h4 id="progressLabel">Uploading…</h4>
+          <span id="progressCount" class="text-muted" style="font-size:13px;">0 / 0</span>
+        </div>
+        <div class="progress-bar"><div class="progress-bar__fill" id="pFill"></div></div>
+      </div>
+
+      <!-- Results -->
+      <div id="resultsSection" style="display:none;" class="card">
+        <h4 class="mb-3" id="resultHeading"></h4>
+        <div id="resultsList"></div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    /* ── Schema display ── */
+    document.getElementById('schemaBlock').innerHTML = [
+      '<span class="schema-comment">// questions.json — top-level format</span>',
+      '{',
+      '  <span class="schema-key">"examId"</span>: <span class="schema-str">"abc123"</span>,  <span class="schema-comment">// optional — overridden by Step 1 selector</span>',
+      '  <span class="schema-key">"questions"</span>: [',
+      '    {',
+      '      <span class="schema-key">"type"</span>:         <span class="schema-str">"mcq"</span>,       <span class="schema-comment">// mcq | multi | truefalse | theory | fill</span>',
+      '      <span class="schema-key">"text"</span>:         <span class="schema-str">"Question text here"</span>,',
+      '      <span class="schema-key">"options"</span>: [',
+      '        { <span class="schema-key">"text"</span>: <span class="schema-str">"Option A"</span>, <span class="schema-key">"explain"</span>: <span class="schema-str">"Why A is correct/wrong"</span> },',
+      '        { <span class="schema-key">"text"</span>: <span class="schema-str">"Option B"</span>, <span class="schema-key">"explain"</span>: <span class="schema-str">"Explanation for B"</span> }',
+      '      ],',
+      '      <span class="schema-key">"correctAnswer"</span>: <span class="schema-str">"A"</span>,  <span class="schema-comment">// letter of correct option</span>',
+      '      <span class="schema-key">"marks"</span>:         <span class="schema-num">1</span>,',
+      '      <span class="schema-key">"difficulty"</span>:   <span class="schema-str">"medium"</span>,  <span class="schema-comment">// easy | medium | hard</span>',
+      '      <span class="schema-key">"topic"</span>:        <span class="schema-str">"Recursion"</span>,',
+      '      <span class="schema-key">"subject"</span>:      <span class="schema-str">"CSC 201"</span>,',
+      '      <span class="schema-key">"outcome"</span>:      <span class="schema-str">"LO3"</span>,',
+      '      <span class="schema-key">"explanation"</span>: <span class="schema-str">"General explanation shown after exam"</span>',
+      '    }',
+      '  ]',
+      '}',
+    ].join('\n');
+
+    /* ── Load exams into selector ── */
+    async function loadExams() {
+      try {
+        const exams = await RonyxAdmin.listExams();
+        const sel = document.getElementById('examSel');
+        if (!exams.length) {
+          sel.innerHTML = '<option value="">No exams found — create one first</option>';
+          return;
+        }
+        sel.innerHTML = '<option value="">— Select exam —</option>' +
+          exams.map(e => `<option value="${e.$id}">${e.title}${e.courseCode ? ' · ' + e.courseCode : ''}</option>`).join('');
+      } catch {
+        document.getElementById('examSel').innerHTML = '<option value="">Failed to load exams</option>';
+      }
+    }
+    loadExams();
+
+    /* ── Template download ── */
+    document.getElementById('dlTemplate').addEventListener('click', () => {
+      const template = {
+        examId: "PASTE_EXAM_ID_HERE",
+        questions: [
+          {
+            type: "mcq",
+            text: "What is the time complexity of binary search?",
+            options: [
+              { text: "O(n)", explain: "This is linear search complexity." },
+              { text: "O(log n)", explain: "Correct — divides search space each step." },
+              { text: "O(n²)", explain: "This is bubble sort complexity." },
+              { text: "O(1)", explain: "This is constant time access." }
+            ],
+            correctAnswer: "B",
+            marks: 1,
+            difficulty: "medium",
+            topic: "Algorithm Analysis",
+            subject: "Data Structures",
+            outcome: "LO2",
+            explanation: "Binary search halves the problem space each iteration, giving O(log n)."
+          },
+          {
+            type: "theory",
+            text: "Explain the concept of polymorphism in object-oriented programming.",
+            marks: 5,
+            difficulty: "hard",
+            topic: "OOP Principles",
+            subject: "Object-Oriented Programming",
+            outcome: "LO4",
+            explanation: "Polymorphism allows objects of different classes to be treated as a common supertype."
+          },
+          {
+            type: "truefalse",
+            text: "Python is a statically typed programming language.",
+            correctAnswer: "False",
+            marks: 1,
+            difficulty: "easy",
+            topic: "Python Basics",
+            explanation: "Python is dynamically typed — types are checked at runtime."
+          },
+          {
+            type: "multi",
+            text: "Which of the following are NoSQL databases? (Select all that apply)",
+            options: [
+              { text: "MongoDB", explain: "Yes, MongoDB is a NoSQL document database." },
+              { text: "MySQL", explain: "No, MySQL is a relational (SQL) database." },
+              { text: "Redis", explain: "Yes, Redis is a NoSQL key-value store." },
+              { text: "PostgreSQL", explain: "No, PostgreSQL is a relational database." }
+            ],
+            correctAnswer: "A,C",
+            marks: 2,
+            difficulty: "medium",
+            topic: "Database Types"
+          }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ronyx_questions_template.json';
+      a.click();
+    });
+
+    /* ── File handling ── */
+    let parsedQuestions = [], topExamId = '';
+
+    function onDrop(e) {
+      e.preventDefault();
+      document.getElementById('uploadZone').classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) onFile(f);
+    }
+
+    function onFile(file) {
+      if (!file || !file.name.endsWith('.json')) {
+        return toast('Please upload a .json file.', 'error');
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        return toast('File is too large. Max 5 MB.', 'error');
+      }
+      document.getElementById('fileLabel').textContent = file.name + ' · ' + (file.size / 1024).toFixed(1) + ' KB';
+      const reader = new FileReader();
+      reader.onload = e => parseJSON(e.target.result);
+      reader.readAsText(file);
+    }
+
+    function parseJSON(text) {
+      let data;
+      try { data = JSON.parse(text); }
+      catch { return toast('Invalid JSON — check your file for syntax errors.', 'error'); }
+
+      /* Support both { questions: [...] } and top-level array */
+      const raw = Array.isArray(data) ? data : (data.questions || []);
+      topExamId = (!Array.isArray(data) && data.examId) ? data.examId : '';
+
+      if (!raw.length) return toast('No questions found in this file.', 'error');
+
+      const valid = [], errors = [];
+      raw.forEach((q, i) => {
+        if (!q.type || !q.text) {
+          errors.push(`Question ${i + 1}: missing "type" or "text".`);
+        } else {
+          valid.push(q);
+        }
+      });
+      if (errors.length) toast(errors.slice(0, 3).join('\n') + (errors.length > 3 ? `\n+${errors.length - 3} more` : ''), 'error');
+      if (!valid.length) return;
+
+      parsedQuestions = valid;
+      showPreview(valid);
+    }
+
+    function showPreview(qs) {
+      const TYPES = { mcq:'MCQ', multi:'Multi-select', truefalse:'True/False', theory:'Theory', fill:'Fill blank', upload:'Upload' };
+      document.getElementById('previewCount').textContent = qs.length;
+      document.getElementById('previewList').innerHTML = qs.slice(0, 8).map((q, i) => `
+        <div class="q-preview-card">
+          <h4>${i + 1}. ${q.text.length > 90 ? q.text.slice(0, 90) + '…' : q.text}</h4>
+          <p>
+            <span class="badge badge--violet" style="font-size:10px;">${TYPES[q.type] || q.type}</span>
+            ${q.marks ? '· ' + q.marks + ' mark' + (q.marks > 1 ? 's' : '') : ''}
+            ${q.difficulty ? '· ' + q.difficulty : ''}
+            ${q.topic ? '· ' + q.topic : ''}
+          </p>
+        </div>
+      `).join('') + (qs.length > 8 ? `<p class="text-muted" style="font-size:13px;text-align:center;padding:8px 0;">…and ${qs.length - 8} more</p>` : '');
+
+      document.getElementById('previewSection').style.display = 'block';
+      document.getElementById('resultsSection').style.display = 'none';
+    }
+
+    function clearFile() {
+      parsedQuestions = []; topExamId = '';
+      document.getElementById('fileIn').value = '';
+      document.getElementById('fileLabel').textContent = 'questions.json · max 5 MB';
+      document.getElementById('previewSection').style.display = 'none';
+      document.getElementById('resultsSection').style.display = 'none';
+    }
+
+    /* ── Import ── */
+    document.getElementById('importBtn').addEventListener('click', runImport);
+
+    async function runImport() {
+      const examId = document.getElementById('examSel').value || topExamId;
+      if (!examId) return toast('Select an exam first (Step 1).', 'error');
+      if (!parsedQuestions.length) return;
+
+      const btn = document.getElementById('importBtn');
+      btn.disabled = true; btn.textContent = 'Uploading…';
+
+      const progSec = document.getElementById('progressSection');
+      const pFill   = document.getElementById('pFill');
+      const pLabel  = document.getElementById('progressLabel');
+      const pCount  = document.getElementById('progressCount');
+      progSec.style.display = 'block';
+
+      const total = parsedQuestions.length;
+      const ok = [], fail = [];
+
+      for (let i = 0; i < total; i++) {
+        const q = parsedQuestions[i];
+        pLabel.textContent = `Uploading question ${i + 1} of ${total}…`;
+        pCount.textContent = `${i + 1} / ${total}`;
+        pFill.style.width = ((i + 1) / total * 100) + '%';
+
+        try {
+          /* Normalise options: accept string[] or object[] */
+          let opts = null;
+          if (q.options && q.options.length) {
+            const norm = q.options.map(o => typeof o === 'string' ? { text: o, explain: '' } : o);
+            opts = JSON.stringify(norm);
+          }
+
+          const data = {
+            examId:        q.examId || examId,
+            type:          q.type          || 'mcq',
+            text:          q.text,
+            options:       opts            || null,
+            correctAnswer: q.correctAnswer || null,
+            marks:         q.marks         != null ? parseFloat(q.marks) : 1,
+            difficulty:    q.difficulty    || 'medium',
+            topic:         q.topic         || null,
+            subject:       q.subject       || null,
+            tags:          q.tags          || null,
+            outcome:       q.outcome       || null,
+            explanation:   q.explanation   || null,
+            status:        q.status        || 'published',
+          };
+
+          /* Strip null fields so Appwrite doesn't complain */
+          Object.keys(data).forEach(k => { if (data[k] === null) delete data[k]; });
+
+          await RonyxAdmin.createQuestion(data);
+          ok.push(q.text.slice(0, 60));
+        } catch (e) {
+          fail.push({ text: q.text.slice(0, 60), err: e.message });
+        }
+      }
+
+      pLabel.textContent = 'Done!';
+      pFill.style.width = '100%';
+      btn.disabled = false; btn.textContent = 'Upload all questions to Appwrite';
+
+      showResults(ok, fail);
+      if (ok.length) toast(`${ok.length} question${ok.length > 1 ? 's' : ''} added!`, 'success');
+      if (fail.length) toast(`${fail.length} failed — see details below.`, 'error');
+    }
+
+    function showResults(ok, fail) {
+      const sec = document.getElementById('resultsSection');
+      document.getElementById('resultHeading').textContent =
+        `${ok.length} uploaded · ${fail.length} failed`;
+      document.getElementById('resultsList').innerHTML =
+        ok.map(t => `<div class="result-row"><div class="result-dot result-dot--ok"></div><span>${t}</span></div>`).join('') +
+        fail.map(f => `<div class="result-row"><div class="result-dot result-dot--err"></div><span>${f.text} <em style="color:var(--color-muted)">(${f.err})</em></span></div>`).join('');
+      sec.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
+
+

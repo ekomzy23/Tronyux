@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard  Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .brand-card { background:var(--gradient-brand); border-radius:22px; padding:20px;
+      margin-bottom:20px; position:relative; overflow:hidden; }
+    .brand-card::after { content:''; position:absolute; right:-20px; top:-20px;
+      width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.08); }
+    .brand-card__title { font-family:var(--font-display); font-size:18px; font-weight:700;
+      color:#fff; margin-bottom:4px; }
+    .brand-card__sub { font-size:13px; color:rgba(255,255,255,.75); }
+    .brand-card__badge { display:inline-flex; align-items:center; gap:6px;
+      background:rgba(255,255,255,.2); color:#fff; font-size:12px; font-weight:600;
+      padding:4px 12px; border-radius:20px; margin-top:12px; }
+    .greeting { margin-bottom:20px; }
+    .greeting__name { font-family:var(--font-display); font-size:22px; font-weight:800;
+      color:var(--color-text); }
+    .greeting__sub { font-size:14px; color:var(--color-muted); margin-top:2px; }
+    .appbar__right { display:flex; gap:8px; align-items:center; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <span class="appbar__title" style="font-family:var(--font-display);font-weight:800;font-size:18px;">Ronyx Admin</span>
+      <div class="appbar__right">
+        <button class="iconbtn" title="Logout" onclick="adminLogout()">🚪</button>
+      </div>
+    </div>
+
+    <div class="app__body">
+
+      <!-- Greeting -->
+      <div class="greeting">
+        <div class="greeting__name" id="greetingText">Good morning!</div>
+        <div class="greeting__sub">Here's what's happening today.</div>
+      </div>
+
+      <!-- Brand card -->
+      <div class="brand-card" id="brandCard">
+        <div class="brand-card__title">Platform Status</div>
+        <div class="brand-card__sub">Everything is running smoothly</div>
+        <div class="brand-card__badge"><span class="live-dot"></span> <span id="liveLabel">Checking...</span></div>
+      </div>
+
+      <!-- Stat row 1 -->
+      <div class="stat-grid" style="margin-bottom:12px;">
+        <div class="stat stat--accent"><div class="stat__n" id="kExams">&mdash;</div><div class="stat__l">Exams</div></div>
+        <div class="stat"><div class="stat__n" id="kQuestions">&mdash;</div><div class="stat__l">Questions</div></div>
+        <div class="stat"><div class="stat__n" id="kUsers">&mdash;</div><div class="stat__l">Users</div></div>
+      </div>
+
+      <!-- Stat row 2 -->
+      <div class="stat-grid" style="margin-bottom:24px;">
+        <div class="stat"><div class="stat__n" id="kAttempts">&mdash;</div><div class="stat__l">Attempts</div></div>
+        <div class="stat"><div class="stat__n" id="kSubmitted">&mdash;</div><div class="stat__l">Submitted</div></div>
+        <div class="stat"><div class="stat__n" id="kPending">&mdash;</div><div class="stat__l">Pending</div></div>
+      </div>
+
+      <!-- Recent Activity (live from Appwrite) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="section-hd" style="margin-bottom:14px;">
+          <h3>Recent Activity</h3>
+          <a href="analytics.html">See all</a>
+        </div>
+        <div id="recentActivity">
+          <div class="empty" style="padding:16px 0;"><div class="empty__icon" style="font-size:24px;">&#128203;</div><p style="margin-top:6px;font-size:13px;">Activity will appear here once students start using the platform.</p></div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="section-hd">
+        <h3>Quick Actions</h3>
+      </div>
+      <div class="menu-grid" style="margin-bottom:24px;">
+        <a href="exam-edit.html?id=" class="menu-card">
+          <div class="menu-card__icon">📝</div>
+          <div class="menu-card__label">New Exam</div>
+          <div class="menu-card__sub">Create & publish</div>
+        </a>
+        <a href="students.html" class="menu-card">
+          <div class="menu-card__icon">👥</div>
+          <div class="menu-card__label">Students</div>
+          <div class="menu-card__sub">Manage accounts</div>
+        </a>
+        <a href="live-monitor.html" class="menu-card">
+          <div class="menu-card__icon">📡</div>
+          <div class="menu-card__label">Live Monitor</div>
+          <div class="menu-card__sub">Watch ongoing exams</div>
+        </a>
+        <a href="marking.html" class="menu-card">
+          <div class="menu-card__icon">✏</div>
+          <div class="menu-card__label">Mark Theory</div>
+          <div class="menu-card__sub">Grade submissions</div>
+        </a>
+        <a href="results.html" class="menu-card">
+          <div class="menu-card__icon">📊</div>
+          <div class="menu-card__label">Results</div>
+          <div class="menu-card__sub">View & publish</div>
+        </a>
+        <a href="more.html" class="menu-card">
+          <div class="menu-card__icon">⚙️</div>
+          <div class="menu-card__label">More</div>
+          <div class="menu-card__sub">All sections</div>
+        </a>
+      </div>
+
+      <!-- Send Announcement -->
+      <div class="section-hd" style="margin-bottom:12px;"><h3>Announce to Students</h3></div>
+      <div class="card" style="margin-bottom:28px;">
+        <div class="field" style="margin-bottom:8px;">
+          <input class="input" id="annTitle" placeholder="Title — e.g. New exam uploaded: MCB 322 Final">
+        </div>
+        <div class="field" style="margin-bottom:8px;">
+          <textarea class="input" id="annBody" rows="3" placeholder="Message to all students..."></textarea>
+        </div>
+        <div class="chips mb-4" id="annTypeChips" style="margin-bottom:10px;">
+          <div class="chip is-active" data-ann="info">ℹ️ Info</div>
+          <div class="chip" data-ann="success">✅ Good news</div>
+          <div class="chip" data-ann="reminder">⏰ Reminder</div>
+          <div class="chip" data-ann="update">⬆️ Update</div>
+        </div>
+        <button class="btn btn--primary" id="annSendBtn" onclick="sendAnn()">📣 Send to all students</button>
+        <div id="annStatus" style="font-size:12px;margin-top:8px;color:var(--color-muted-2);"></div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="overview"></nav>
+  </div>
+
+  <!-- Announcement modal (confirmation) -->
+  <div id="annModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;padding:32px 20px;">
+    <div style="background:var(--color-bg-2);border-radius:20px;padding:24px;border:1px solid var(--color-stroke);">
+      <h3 style="margin-bottom:8px;">Announcement sent ✅</h3>
+      <p class="text-muted" style="margin-bottom:16px;">All students will see this notification when they open the app.</p>
+      <button class="btn btn--primary" onclick="document.getElementById('annModal').style.display='none'">Done</button>
+    </div>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    /* ── Announcement type chip wire ── */
+    var _annType = 'info';
+    document.getElementById('annTypeChips').addEventListener('click', function(e) {
+      var chip = e.target.closest('.chip'); if (!chip) return;
+      [...document.getElementById('annTypeChips').children].forEach(function(c){ c.classList.remove('is-active'); });
+      chip.classList.add('is-active');
+      _annType = chip.getAttribute('data-ann');
+    });
+
+    async function sendAnn() {
+      var title = document.getElementById('annTitle').value.trim();
+      var body  = document.getElementById('annBody').value.trim();
+      var btn   = document.getElementById('annSendBtn');
+      var status= document.getElementById('annStatus');
+      if (!title) { status.textContent = 'Please enter a title.'; return; }
+      if (!body)  { status.textContent = 'Please enter a message.'; return; }
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        await RonyxAdmin.broadcastAnnouncement(title, body, _annType, '');
+        document.getElementById('annTitle').value = '';
+        document.getElementById('annBody').value  = '';
+        btn.textContent = '📣 Send to all students';
+        btn.disabled = false;
+        document.getElementById('annModal').style.display = 'block';
+      } catch(e) {
+        status.textContent = 'Error: ' + (e.message || 'Could not send.');
+        btn.disabled = false; btn.textContent = '📣 Send to all students';
+      }
+    }
+
+    // Greeting
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greetingText').textContent = greet + ', Admin!';
+
+    // Load counts
+    (async function () {
+      const cfg = window.RONYX_CONFIG || {};
+      if (!cfg.CONFIGURED) {
+        document.getElementById('liveLabel').textContent = 'Not configured';
+        ['kExams','kQuestions','kUsers','kAttempts','kSubmitted','kPending'].forEach(id => {
+          document.getElementById(id).textContent = '—';
+        });
+        return;
+      }
+      try {
+        const c = await RonyxAdmin.countAll();
+        document.getElementById('kExams').textContent = c.exams;
+        document.getElementById('kQuestions').textContent = c.questions;
+        document.getElementById('kUsers').textContent = c.users;
+        document.getElementById('kAttempts').textContent = c.attempts;
+        document.getElementById('kSubmitted').textContent = c.submitted;
+        document.getElementById('kPending').textContent = c.pending;
+        if (c.liveExams > 0) {
+          document.getElementById('liveLabel').textContent = c.liveExams + ' exam' + (c.liveExams > 1 ? 's' : '') + ' live now';
+          document.getElementById('brandCard').querySelector('.brand-card__sub').textContent = 'Students are currently taking exams';
+        } else {
+          document.getElementById('liveLabel').textContent = 'All clear — no live exams';
+          document.getElementById('brandCard').querySelector('.brand-card__sub').textContent = 'No exams running right now';
+        }
+
+        // Load recent attempts as activity feed
+        try {
+          const acts = await RonyxAdmin.listAttempts(null, 5);
+          if (acts && acts.length) {
+            document.getElementById('recentActivity').innerHTML = acts.map(function(a) {
+              var dot = a.status === 'submitted' ? 'activity__dot--green' : a.status === 'marked' ? 'activity__dot--yellow' : '';
+              var label = a.status === 'submitted' ? 'Exam submitted' : a.status === 'marked' ? 'Exam marked' : 'Exam in progress';
+              var t = a.$updatedAt ? new Date(a.$updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+              return '<div class="activity"><div class="activity__dot '+dot+'"></div><div class="activity__body"><div class="activity__text"><strong>'+label+'</strong> &mdash; attempt '+a.$id.slice(-6)+'</div><div class="activity__time">'+t+'</div></div></div>';
+            }).join('');
+          }
+        } catch(e2) { /* activity feed is best-effort */ }
+      } catch(e) {
+        console.error(e);
+      }
+    })();
+  </script>
+</body>
+</html>
+
+
+

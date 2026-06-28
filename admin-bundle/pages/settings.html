@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Settings &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .section-title { font-family:var(--font-display); font-size:13px; font-weight:700; color:var(--color-muted); text-transform:uppercase; letter-spacing:.06em; margin:24px 0 10px; }
+    .section-title:first-child { margin-top:0; }
+    .danger-zone { background:rgba(251,113,133,.06); border:1px solid rgba(251,113,133,.2); border-radius:18px; padding:16px; margin-top:8px; }
+    .danger-zone h4 { font-family:var(--font-display); font-size:14px; font-weight:700; color:var(--color-danger); margin-bottom:10px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Settings</span>
+    </div>
+
+    <div class="app__body">
+
+      <!-- General -->
+      <div class="section-title">General</div>
+      <div class="card mb-2">
+        <div class="field mb-2">
+          <label class="field__label">Institution Name</label>
+          <input class="input" id="instName" placeholder="e.g. Kwame Nkrumah University" value="Ronyx Institute">
+        </div>
+        <div class="field mb-2">
+          <label class="field__label">Timezone</label>
+          <select class="input" id="timezone">
+            <option value="Africa/Accra" selected>Africa/Accra (GMT+0)</option>
+            <option value="Africa/Lagos">Africa/Lagos (GMT+1)</option>
+            <option value="Europe/London">Europe/London (GMT+0/+1)</option>
+            <option value="America/New_York">America/New_York (EST)</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+          </select>
+        </div>
+        <div class="field mb-2">
+          <label class="field__label">Language</label>
+          <select class="input" id="lang">
+            <option value="en" selected>English</option>
+            <option value="fr">French</option>
+            <option value="tw">Twi</option>
+            <option value="ha">Hausa</option>
+          </select>
+        </div>
+        <button class="btn btn--primary btn--sm" onclick="saveGeneral()">Save General</button>
+      </div>
+
+      <!-- Exam Defaults -->
+      <div class="section-title">Exam Defaults</div>
+      <div class="card mb-2">
+        <div class="field mb-2">
+          <label class="field__label">Default Duration (minutes)</label>
+          <input class="input" id="defaultDuration" type="number" value="60" min="5" max="480">
+        </div>
+        <div class="field mb-2">
+          <label class="field__label">Pass Mark (%)</label>
+          <input class="input" id="passMark" type="number" value="50" min="0" max="100">
+        </div>
+        <div class="list-item" style="padding:10px 0;">
+          <div style="flex:1;">
+            <div class="list-item__text">Shuffle Questions</div>
+            <div class="list-item__sub">Randomise question order for each student</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="shuffleToggle" checked onchange="settingChange('Shuffle', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <div class="list-item" style="padding:10px 0;border-top:1px solid var(--color-stroke);">
+          <div style="flex:1;">
+            <div class="list-item__text">Auto-submit on Timeout</div>
+            <div class="list-item__sub">Automatically submit when time runs out</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="autoSubmit" checked onchange="settingChange('Auto-submit', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <button class="btn btn--primary btn--sm mt-2" onclick="saveExamDefaults()">Save Exam Defaults</button>
+      </div>
+
+      <!-- Security -->
+      <div class="section-title">Security</div>
+      <div class="card mb-2">
+        <div class="list-item" style="padding:10px 0;">
+          <div style="flex:1;">
+            <div class="list-item__text">Require Admin Team</div>
+            <div class="list-item__sub">Lock admin panel to Appwrite team members</div>
+          </div>
+          <label class="toggle"><input type="checkbox" checked onchange="settingChange('Admin team', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <div class="info-row" style="border-top:1px solid var(--color-stroke);">
+          <span class="info-row__label">Admin Email</span>
+          <span class="info-row__value" id="adminEmail">&mdash;</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">App Version</span>
+          <span class="info-row__value">v2.0.0</span>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="section-title">Appearance</div>
+      <div class="card mb-2">
+        <div class="list-item" style="padding:10px 0;">
+          <div class="list-item__icon">🎨</div>
+          <div style="flex:1;">
+            <div class="list-item__text">Theme</div>
+            <div class="list-item__sub">Switch between dark and light mode</div>
+          </div>
+          <a href="appearance.html" class="btn btn--sm">Change</a>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="section-title">Danger Zone</div>
+      <div class="danger-zone mb-4">
+        <h4>Danger Zone</h4>
+        <p class="text-muted" style="font-size:13px;margin-bottom:12px;">These actions are irreversible. Proceed with extreme caution.</p>
+        <button class="btn btn--danger btn--sm mb-2" style="width:100%;" onclick="clearDrafts()">Clear All Draft Exams</button>
+        <button class="btn btn--danger btn--sm mb-2" style="width:100%;" onclick="adminLogout()">Log Out</button>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    // Show admin email if available
+    try {
+      const user = JSON.parse(localStorage.getItem('ronyx_admin') || '{}');
+      if (user.email) document.getElementById('adminEmail').textContent = user.email;
+      if (RONYX.CONFIGURED) document.getElementById('adminEmail').textContent = RONYX.ADMIN_EMAIL || 'Configured';
+    } catch(e) {}
+
+    function saveGeneral() {
+      const name = document.getElementById('instName').value.trim();
+      const tz = document.getElementById('timezone').value;
+      const lang = document.getElementById('lang').value;
+      if (!name) { toast('Institution name cannot be empty'); return; }
+      localStorage.setItem('ronyx_settings_general', JSON.stringify({ name, tz, lang }));
+      toast('General settings saved!');
+    }
+
+    function saveExamDefaults() {
+      const duration = parseInt(document.getElementById('defaultDuration').value);
+      const passMark = parseInt(document.getElementById('passMark').value);
+      const shuffle = document.getElementById('shuffleToggle').checked;
+      const autoSubmit = document.getElementById('autoSubmit').checked;
+      if (isNaN(duration) || duration < 5) { toast('Duration must be at least 5 minutes'); return; }
+      if (isNaN(passMark) || passMark < 0 || passMark > 100) { toast('Pass mark must be 0&rdquo;“100'); return; }
+      localStorage.setItem('ronyx_settings_exam', JSON.stringify({ duration, passMark, shuffle, autoSubmit }));
+      toast('Exam defaults saved!');
+    }
+
+    function settingChange(name, val) {
+      toast(name + ' ' + (val ? 'enabled' : 'disabled'));
+    }
+
+    async function clearDrafts() {
+      if (!confirm('Clear all draft exams? This cannot be undone.')) return;
+      if (!RONYX.CONFIGURED) { toast('Appwrite not configured'); return; }
+      try {
+        const exams = await RonyxAdmin.listExams();
+        const drafts = exams.filter(e => e.status === 'draft');
+        if (!drafts.length) { toast('No draft exams to clear'); return; }
+        await Promise.all(drafts.map(e => RonyxAdmin.deleteExam(e.$id)));
+        toast(drafts.length + ' draft exam(s) cleared');
+      } catch(e) { toast('Error: ' + e.message); }
+    }
+
+    // Load saved settings
+    try {
+      const gen = JSON.parse(localStorage.getItem('ronyx_settings_general') || '{}');
+      if (gen.name) document.getElementById('instName').value = gen.name;
+      if (gen.tz) document.getElementById('timezone').value = gen.tz;
+      if (gen.lang) document.getElementById('lang').value = gen.lang;
+      const exam = JSON.parse(localStorage.getItem('ronyx_settings_exam') || '{}');
+      if (exam.duration) document.getElementById('defaultDuration').value = exam.duration;
+      if (exam.passMark !== undefined) document.getElementById('passMark').value = exam.passMark;
+      if (exam.shuffle !== undefined) document.getElementById('shuffleToggle').checked = exam.shuffle;
+      if (exam.autoSubmit !== undefined) document.getElementById('autoSubmit').checked = exam.autoSubmit;
+    } catch(e) {}
+  </script>
+</body>
+</html>
+
+
+

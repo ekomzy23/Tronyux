@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Instructions — Runyx</title>
+  <title>Instructions — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,6 +37,16 @@
         <div class="chip" data-format="mixed">Mixed</div>
       </div>
 
+      <!-- CHOOSE QUESTION COUNT -->
+      <h3 class="title-md mb-4">How many questions?</h3>
+      <div class="chips mb-4" id="countChips">
+        <div class="chip" data-count="10">10 Qs</div>
+        <div class="chip" data-count="20">20 Qs</div>
+        <div class="chip" data-count="30">30 Qs</div>
+        <div class="chip" data-count="50">50 Qs</div>
+        <div class="chip is-active" data-count="0">All</div>
+      </div>
+
       <!-- CHOOSE TIME -->
       <h3 class="title-md mb-4">Choose your time</h3>
       <div class="chips mb-4" id="timeChips">
@@ -65,15 +75,15 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
-  <script src="/js/data.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
+  <script src="/js/data.js?v=mqye4cj4"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
   <script>
     const params = new URLSearchParams(location.search);
     const examId = params.get('exam') || '';
-    let format = 'objective', minutes = 30;
+    let format = 'objective', minutes = 30, qcount = 0;
 
     // chip pickers
     function wireChips(id, attr, onPick) {
@@ -85,27 +95,38 @@
       });
     }
     wireChips('formatChips', 'data-format', v => format = v);
-    wireChips('timeChips', 'data-min', v => minutes = parseInt(v));
+    wireChips('countChips',  'data-count',  v => qcount = parseInt(v));
+    wireChips('timeChips',   'data-min',    v => minutes = parseInt(v));
 
-    // load real exam info
+    // load real exam info + auto-select format
     (async function () {
-      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED || !examId) return;
-      const exam = await RunyxData.getExam(examId).catch(() => null);
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED || !examId) return;
+      const exam = await RonyxData.getExam(examId).catch(() => null);
       if (!exam) return;
       document.getElementById('examTitle').textContent = exam.title;
       document.getElementById('examBadge').textContent = (exam.type || 'Exam').toUpperCase();
       document.getElementById('statQuestions').textContent = exam.questionsCount || '–';
       document.getElementById('statMarks').textContent = exam.totalMarks || '–';
       document.getElementById('statPass').textContent = exam.passMark || '–';
+
+      /* Auto-select the format chip based on what the exam actually contains */
+      if (exam.format && exam.format !== 'mixed') {
+        format = exam.format;
+        [...document.getElementById('formatChips').children].forEach(c => {
+          c.classList.toggle('is-active', c.getAttribute('data-format') === exam.format);
+        });
+      }
     })();
 
     // continue → save chosen format + time, go to permissions
     document.getElementById('continueBtn').addEventListener('click', () => {
       if (!document.getElementById('agree').checked) { alert('Please confirm you have read the instructions.'); return; }
-      sessionStorage.setItem('runyx_format', format);
-      sessionStorage.setItem('runyx_minutes', minutes);
+      sessionStorage.setItem('ronyx_format', format);
+      sessionStorage.setItem('ronyx_minutes', minutes);
+      sessionStorage.setItem('ronyx_qcount', qcount);
       location.href = '/pages/student/permissions.html' + (examId ? '?exam=' + examId : '');
     });
   </script>
 </body>
 </html>
+

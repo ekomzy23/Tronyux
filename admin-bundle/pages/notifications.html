@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Notifications — Runyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .type-badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+    .type-exam_reminder { background:rgba(109,94,252,.18); color:#a78bfa; }
+    .type-result        { background:rgba(52,211,153,.18);  color:#34d399; }
+    .type-announcement  { background:rgba(251,191,36,.18);  color:#fbbf24; }
+    .type-alert         { background:rgba(251,113,133,.18); color:#fb7185; }
+
+    .notif-row {
+      display:flex; align-items:flex-start; gap:12px;
+      background:var(--color-bg-2); border:1px solid var(--color-stroke);
+      border-radius:var(--radius-lg); padding:14px 16px; margin-bottom:10px;
+    }
+    .notif-row__icon {
+      width:38px; height:38px; border-radius:12px; flex-shrink:0;
+      display:grid; place-items:center; font-size:18px;
+      background:var(--color-surface-2);
+    }
+    .notif-row__body { flex:1; min-width:0; }
+    .notif-row__title { font-size:14px; font-weight:700; margin-bottom:3px; }
+    .notif-row__msg { font-size:12px; color:var(--color-muted); line-height:1.45; margin-bottom:6px; }
+    .notif-row__meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .notif-row__date { font-size:11px; color:var(--color-muted-2); }
+    .notif-row__target { font-size:11px; color:var(--color-muted); }
+    .del-btn {
+      flex-shrink:0; background:rgba(251,113,133,.12); border:1px solid rgba(251,113,133,.3);
+      color:var(--color-danger); border-radius:8px; padding:5px 10px; font-size:12px;
+      cursor:pointer; align-self:flex-start;
+    }
+    .del-btn:hover { background:rgba(251,113,133,.22); }
+
+    .char-count { font-size:11px; color:var(--color-muted); text-align:right; margin-top:3px; }
+    .send-preview {
+      background:rgba(109,94,252,.06); border:1px solid rgba(109,94,252,.25);
+      border-radius:14px; padding:13px 15px; margin-bottom:14px; display:none;
+    }
+    .send-preview.visible { display:block; }
+    .send-preview__title { font-size:13px; font-weight:700; margin-bottom:3px; }
+    .send-preview__body  { font-size:12px; color:var(--color-muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">&larr;</a>
+      <span class="appbar__title">Send Notification</span>
+    </div>
+
+    <div class="app__body">
+
+      <!-- ── Compose form ── -->
+      <div class="card mb-4">
+        <div class="field mb-3">
+          <label class="field__label">Title *</label>
+          <input class="input" id="nTitle" maxlength="120"
+            placeholder="e.g. Exam Reminder: MTH 301" oninput="updatePreview()">
+          <div class="char-count" id="titleCount">0 / 120</div>
+        </div>
+
+        <div class="field mb-3">
+          <label class="field__label">Message *</label>
+          <textarea class="input" id="nBody" rows="4" maxlength="600"
+            placeholder="Write your announcement here…" oninput="updatePreview()"></textarea>
+          <div class="char-count" id="bodyCount">0 / 600</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+          <div class="field">
+            <label class="field__label">Type</label>
+            <select class="input" id="nType" onchange="updatePreview()">
+              <option value="announcement">Announcement</option>
+              <option value="exam_reminder">Exam Reminder</option>
+              <option value="result">Result</option>
+              <option value="alert">Alert</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label">Target</label>
+            <select class="input" id="nYear">
+              <option value="all">All Students</option>
+              <option value="1">Year 1 Only</option>
+              <option value="2">Year 2 Only</option>
+              <option value="3">Year 3 Only</option>
+              <option value="4">Year 4 Only</option>
+              <option value="5">Year 5 Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field mb-4">
+          <label class="field__label">Link (optional)</label>
+          <input class="input" id="nLink" placeholder="e.g. /pages/student/exams.html" maxlength="256">
+          <div class="char-count" style="margin-top:3px;">Tapping the notification will open this page.</div>
+        </div>
+
+        <!-- Live preview -->
+        <div class="send-preview" id="preview">
+          <div style="font-size:11px; color:var(--color-muted); margin-bottom:6px; font-weight:600;">PREVIEW</div>
+          <div class="send-preview__title" id="pvTitle"></div>
+          <div class="send-preview__body"  id="pvBody"></div>
+        </div>
+
+        <button class="btn btn--primary" style="width:100%;" id="sendBtn" onclick="sendNotification()">
+          &#128276; Send to all students
+        </button>
+      </div>
+
+      <!-- ── Recent list ── -->
+      <div class="between mb-3">
+        <span class="text-tiny" style="font-weight:700;">SENT NOTIFICATIONS</span>
+        <span class="text-tiny link" onclick="load()">Refresh</span>
+      </div>
+      <div id="notifList">
+        <div class="empty"><div class="empty__icon">&#8987;</div><p>Loading&hellip;</p></div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    var TYPE_ICON  = { announcement:'&#128226;', exam_reminder:'&#9200;', result:'&#128202;', alert:'&#9888;' };
+    var TYPE_LABEL = { announcement:'Announcement', exam_reminder:'Exam Reminder', result:'Result', alert:'Alert' };
+    var TYPE_TARGET_LABEL = { all:'All students', '1':'Year 1', '2':'Year 2', '3':'Year 3', '4':'Year 4', '5':'Year 5' };
+
+    function updatePreview() {
+      var title = document.getElementById('nTitle').value.trim();
+      var body  = document.getElementById('nBody').value.trim();
+      var type  = document.getElementById('nType').value;
+      document.getElementById('titleCount').textContent = document.getElementById('nTitle').value.length + ' / 120';
+      document.getElementById('bodyCount').textContent  = document.getElementById('nBody').value.length  + ' / 600';
+
+      var pv = document.getElementById('preview');
+      if (title || body) {
+        pv.classList.add('visible');
+        document.getElementById('pvTitle').innerHTML =
+          (TYPE_ICON[type] || '&#128276;') + ' ' + esc(title || '(no title)');
+        document.getElementById('pvBody').textContent = body || '(no message)';
+        document.getElementById('sendBtn').textContent =
+          '🔔 Send to ' + (document.getElementById('nYear').value === 'all' ? 'all students' :
+            'Year ' + document.getElementById('nYear').value + ' students');
+      } else {
+        pv.classList.remove('visible');
+      }
+    }
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function timeAgo(dateStr) {
+      var diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+      if (diff < 60)     return 'Just now';
+      if (diff < 3600)   return Math.floor(diff/60)   + 'm ago';
+      if (diff < 86400)  return Math.floor(diff/3600)  + 'h ago';
+      if (diff < 604800) return Math.floor(diff/86400) + 'd ago';
+      return new Date(dateStr).toLocaleDateString();
+    }
+
+    async function sendNotification() {
+      var title = document.getElementById('nTitle').value.trim();
+      var body  = document.getElementById('nBody').value.trim();
+      var type  = document.getElementById('nType').value;
+      var year  = document.getElementById('nYear').value;
+      var link  = document.getElementById('nLink').value.trim();
+
+      if (!title) { toast('Please enter a title.'); return; }
+      if (!body)  { toast('Please enter a message.'); return; }
+
+      var btn = document.getElementById('sendBtn');
+      btn.disabled = true; btn.textContent = 'Sending…';
+
+      try {
+        var y = year === 'all' ? 0 : parseInt(year) || 0;
+        await RonyxAdmin.broadcastAnnouncement(title, body, type, link, y);
+        var target = year === 'all' ? 'all students' : 'Year ' + year + ' students';
+        toast('Sent to ' + target + ' ✓', 'success');
+        document.getElementById('nTitle').value = '';
+        document.getElementById('nBody').value  = '';
+        document.getElementById('nLink').value  = '';
+        document.getElementById('preview').classList.remove('visible');
+        document.getElementById('titleCount').textContent = '0 / 120';
+        document.getElementById('bodyCount').textContent  = '0 / 600';
+        btn.textContent = '🔔 Send to all students';
+        load();
+      } catch(e) {
+        toast('Failed: ' + (e.message || 'Unknown error'), 'error');
+      }
+      btn.disabled = false;
+    }
+
+    async function deleteNotif(id) {
+      if (!confirm('Delete this notification? Students will no longer see it.')) return;
+      try {
+        await RonyxAdmin.deleteNotification(id);
+        toast('Notification deleted', 'success');
+        load();
+      } catch(e) {
+        toast('Delete failed: ' + (e.message || 'Permission error'), 'error');
+      }
+    }
+
+    async function load() {
+      var el = document.getElementById('notifList');
+      el.innerHTML = '<div class="empty"><div class="empty__icon">&#8987;</div><p>Loading…</p></div>';
+      try {
+        var notifs = await RonyxAdmin.listNotifications();
+        if (!notifs.length) {
+          el.innerHTML = '<div class="empty"><div class="empty__icon">&#128276;</div>' +
+            '<p>No notifications sent yet.<br><small>Send your first one above.</small></p></div>';
+          return;
+        }
+        el.innerHTML = notifs.map(function(n) {
+          var icon  = TYPE_ICON[n.type]  || '&#128276;';
+          var label = TYPE_LABEL[n.type] || n.type;
+          var target = n.year && n.year > 0 ? 'Year ' + n.year : 'All students';
+          var date   = n.$createdAt ? timeAgo(n.$createdAt) : '';
+          return '<div class="notif-row">' +
+            '<div class="notif-row__icon">' + icon + '</div>' +
+            '<div class="notif-row__body">' +
+              '<div class="notif-row__title">' + esc(n.title) + '</div>' +
+              '<div class="notif-row__msg">'   + esc((n.body||'').slice(0,120)) + (n.body && n.body.length > 120 ? '…' : '') + '</div>' +
+              '<div class="notif-row__meta">' +
+                '<span class="type-badge type-' + (n.type||'') + '">' + esc(label) + '</span>' +
+                '<span class="notif-row__target">&#128101; ' + target + '</span>' +
+                '<span class="notif-row__date">&#128337; ' + date + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<button class="del-btn" onclick="deleteNotif(\'' + n.$id + '\')">&#10005;</button>' +
+          '</div>';
+        }).join('');
+      } catch(e) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">&#9888;</div>' +
+          '<p>Failed to load notifications.<br><small>' + esc(e.message || '') + '</small></p></div>';
+      }
+    }
+
+    document.getElementById('nYear').addEventListener('change', updatePreview);
+    load();
+  </script>
+</body>
+</html>

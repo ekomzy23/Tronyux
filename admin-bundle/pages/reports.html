@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Reports &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .report-card { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:18px; padding:16px; margin-bottom:10px; }
+    .report-card__hd { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .report-card__icon { width:40px; height:40px; border-radius:12px; background:var(--color-primary-soft); display:grid; place-items:center; font-size:20px; flex-shrink:0; }
+    .report-card__title { font-family:var(--font-display); font-size:15px; font-weight:700; color:var(--color-text); }
+    .report-card__desc { font-size:12px; color:var(--color-muted); line-height:1.5; margin-bottom:12px; }
+    .export-btn { display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; margin-bottom:8px; cursor:pointer; width:100%; text-align:left; transition:border-color .15s; }
+    .export-btn:hover { border-color:var(--color-primary-2); }
+    .export-btn__label { font-size:14px; font-weight:500; color:var(--color-text); flex:1; }
+    .export-btn__badge { font-size:11px; color:var(--color-muted); }
+    .scheduled-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--color-stroke); }
+    .scheduled-item:last-child { border-bottom:none; }
+    .scheduled-item__label { flex:1; }
+    .scheduled-item__title { font-size:14px; font-weight:500; color:var(--color-text); }
+    .scheduled-item__sub { font-size:12px; color:var(--color-muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Reports</span>
+    </div>
+
+    <div class="app__body">
+
+      <!-- Generate reports -->
+      <div class="section-hd"><h3>Generate Reports</h3></div>
+
+      <div class="report-card">
+        <div class="report-card__hd">
+          <div class="report-card__icon">🎓</div>
+          <div class="report-card__title">Student Report</div>
+        </div>
+        <div class="report-card__desc">Full list of registered students including year, department, and activity summary.</div>
+        <button class="btn btn--primary btn--sm" onclick="generateReport('Student Report')">Generate PDF</button>
+      </div>
+
+      <div class="report-card">
+        <div class="report-card__hd">
+          <div class="report-card__icon">📝</div>
+          <div class="report-card__title">Exam Report</div>
+        </div>
+        <div class="report-card__desc">Overview of all exams: status, participant count, average score, pass rate.</div>
+        <button class="btn btn--primary btn--sm" onclick="generateReport('Exam Report')">Generate PDF</button>
+      </div>
+
+      <div class="report-card">
+        <div class="report-card__hd">
+          <div class="report-card__icon">📊</div>
+          <div class="report-card__title">Results Report</div>
+        </div>
+        <div class="report-card__desc">Detailed results per exam with individual student scores and grades.</div>
+        <button class="btn btn--primary btn--sm" onclick="generateReport('Results Report')">Generate PDF</button>
+      </div>
+
+      <div class="report-card mb-4">
+        <div class="report-card__hd">
+          <div class="report-card__icon">📅</div>
+          <div class="report-card__title">Attendance Report</div>
+        </div>
+        <div class="report-card__desc">Attendance rates per exam session with absent and present counts.</div>
+        <button class="btn btn--primary btn--sm" onclick="generateReport('Attendance Report')">Generate PDF</button>
+      </div>
+
+      <!-- Quick exports -->
+      <div class="section-hd"><h3>Quick Export</h3></div>
+      <div class="card mb-4">
+        <button class="export-btn" onclick="quickExport('questions','CSV')">
+          <span style="font-size:18px;">❓</span>
+          <span class="export-btn__label">Export Questions CSV</span>
+          <span class="export-btn__badge">CSV</span>
+        </button>
+        <button class="export-btn" onclick="quickExport('students','CSV')">
+          <span style="font-size:18px;">🎓</span>
+          <span class="export-btn__label">Export Students CSV</span>
+          <span class="export-btn__badge">CSV</span>
+        </button>
+        <button class="export-btn" onclick="quickExport('results','PDF')">
+          <span style="font-size:18px;">📊</span>
+          <span class="export-btn__label">Export Results PDF</span>
+          <span class="export-btn__badge">PDF</span>
+        </button>
+        <button class="export-btn" onclick="quickExport('books','CSV')">
+          <span style="font-size:18px;">📚</span>
+          <span class="export-btn__label">Export Books CSV</span>
+          <span class="export-btn__badge">CSV</span>
+        </button>
+      </div>
+
+      <!-- Scheduled reports -->
+      <div class="section-hd"><h3>Scheduled Reports</h3></div>
+      <div class="card mb-4">
+        <div class="scheduled-item">
+          <div class="scheduled-item__label">
+            <div class="scheduled-item__title">Weekly Summary</div>
+            <div class="scheduled-item__sub">Every Monday at 8:00 AM</div>
+          </div>
+          <label class="toggle"><input type="checkbox" checked onchange="toast('Weekly report ' + (this.checked ? 'enabled' : 'disabled'))"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <div class="scheduled-item">
+          <div class="scheduled-item__label">
+            <div class="scheduled-item__title">Monthly Analytics</div>
+            <div class="scheduled-item__sub">1st of each month at 9:00 AM</div>
+          </div>
+          <label class="toggle"><input type="checkbox" onchange="toast('Monthly report ' + (this.checked ? 'enabled' : 'disabled'))"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    async function generateReport(name) {
+      toast('Generating ' + name + '&hellip;');
+      await new Promise(r => setTimeout(r, 1200));
+      toast('Download ready (PDF generation coming soon)');
+    }
+    async function quickExport(type, format) {
+      toast('Generating ' + type + ' ' + format + '&hellip;');
+      await new Promise(r => setTimeout(r, 800));
+      toast('Download ready (export coming soon)');
+    }
+  </script>
+</body>
+</html>
+
+
+

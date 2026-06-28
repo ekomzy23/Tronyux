@@ -1,0 +1,345 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Questions &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .filter-strip { display:flex; overflow-x:auto; scrollbar-width:none; gap:5px; padding:6px 0 2px; }
+    .filter-strip::-webkit-scrollbar { display:none; }
+    .chip { flex-shrink:0; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700;
+            border:1px solid var(--color-stroke); background:var(--color-surface); color:var(--color-muted);
+            cursor:pointer; transition:.12s; }
+    .chip.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.4); }
+    .chip--green.active { background:rgba(52,211,153,.12); color:var(--color-success); border-color:rgba(52,211,153,.35); }
+    .chip--yellow.active { background:rgba(251,191,36,.12); color:var(--color-warning); border-color:rgba(251,191,36,.35); }
+    .chip--red.active { background:rgba(251,113,133,.1); color:var(--color-danger); border-color:rgba(251,113,133,.25); }
+    .q-card { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
+    .q-card__header { display:flex; align-items:flex-start; gap:10px; }
+    .q-card__num { width:28px; height:28px; border-radius:8px; background:var(--color-surface-2); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+    .q-card__body { flex:1; min-width:0; }
+    .q-card__text { font-size:13px; font-weight:600; line-height:1.4; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; }
+    .q-card__meta { font-size:11px; color:var(--color-muted); margin-top:3px; }
+    .q-card__actions { display:flex; gap:5px; margin-top:10px; }
+    .qbtn { flex:1; padding:7px; border-radius:8px; font-size:11px; font-weight:700; border:1px solid var(--color-stroke); background:var(--color-surface-2); color:var(--color-muted); cursor:pointer; }
+    .qbtn:hover { color:var(--color-text); }
+    .qbtn--primary { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.3); }
+    .qbtn--danger { background:rgba(251,113,133,.08); color:var(--color-danger); border-color:rgba(251,113,133,.2); }
+    .type-badge { display:inline-block; padding:2px 7px; border-radius:6px; font-size:9px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+    .tb--mcq       { background:rgba(109,94,252,.15); color:#a89bff; }
+    .tb--multi     { background:rgba(52,211,153,.12); color:var(--color-success); }
+    .tb--truefalse { background:rgba(96,165,250,.12); color:#60a5fa; }
+    .tb--theory    { background:rgba(251,191,36,.12); color:var(--color-warning); }
+    .tb--fill      { background:rgba(244,114,182,.12); color:#f472b6; }
+    .tb--matching  { background:rgba(167,139,250,.12); color:#a78bfa; }
+    .tb--ordering  { background:rgba(110,231,183,.12); color:#6ee7b7; }
+    .tb--programming { background:rgba(34,197,94,.12); color:#4ade80; }
+    .tb--mathematical { background:rgba(251,113,133,.1); color:var(--color-danger); }
+    .tb--image, .tb--audio, .tb--upload { background:rgba(156,163,175,.1); color:#9ca3af; }
+    .stats-row { display:flex; gap:8px; margin-bottom:8px; }
+    .stat-mini { flex:1; padding:8px 10px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; text-align:center; }
+    .stat-mini__n { font-size:20px; font-weight:800; font-family:var(--font-display); }
+    .stat-mini__l { font-size:10px; color:var(--color-muted); }
+    /* Type breakdown */
+    .type-tally { display:flex; overflow-x:auto; scrollbar-width:none; gap:5px; margin-bottom:10px; }
+    .type-tally::-webkit-scrollbar { display:none; }
+    .tally-chip { flex-shrink:0; display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:10px; font-weight:700; border:1px solid rgba(255,255,255,.07); background:var(--color-surface); cursor:pointer; transition:.12s; }
+    .tally-chip:hover { filter:brightness(1.15); }
+    .tally-chip.active { box-shadow:0 0 0 1.5px rgba(109,94,252,.5); }
+    .tally-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="appbar">
+    <a id="backBtn" href="dashboard.html" class="iconbtn">&#8592;</a>
+    <span class="appbar__title" id="pageTitle">Question bank</span>
+    <button class="iconbtn" id="addBtn" onclick="addQuestion()">&#65291;</button>
+  </div>
+
+  <div class="app__body">
+
+    <!-- Exam filter banner -->
+    <div id="examBanner" style="display:none;background:var(--color-surface);border:1px solid var(--color-stroke);border-radius:12px;padding:8px 12px;margin-bottom:10px;display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="text-tiny" id="examBannerLabel">Filtered by exam</span>
+        <a href="questions.html" class="link" style="font-size:11px;">Show all</a>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-mini"><div class="stat-mini__n" id="stTotal">&#8212;</div><div class="stat-mini__l">Total</div></div>
+      <div class="stat-mini"><div class="stat-mini__n" id="stPub" style="color:var(--color-success);">&#8212;</div><div class="stat-mini__l">Published</div></div>
+      <div class="stat-mini"><div class="stat-mini__n" id="stDraft" style="color:var(--color-warning);">&#8212;</div><div class="stat-mini__l">Draft</div></div>
+    </div>
+
+    <!-- Type breakdown -->
+    <div class="type-tally" id="typeTally"></div>
+
+    <!-- Search -->
+    <input class="input mb-2" id="search" placeholder="&#128269; Search questions&hellip;" oninput="filterDraw()">
+
+    <!-- Type filters -->
+    <div class="filter-strip" id="typeFilters">
+      <button class="chip active" data-t="">All types</button>
+      <button class="chip" data-t="mcq">MCQ</button>
+      <button class="chip" data-t="multi">Multi-answer</button>
+      <button class="chip" data-t="truefalse">True/False</button>
+      <button class="chip" data-t="theory">Theory</button>
+      <button class="chip" data-t="fill">Fill blank</button>
+      <button class="chip" data-t="matching">Matching</button>
+      <button class="chip" data-t="ordering">Ordering</button>
+      <button class="chip" data-t="programming">Code</button>
+      <button class="chip" data-t="mathematical">Math</button>
+    </div>
+
+    <!-- Status / difficulty filters -->
+    <div class="filter-strip" style="margin-bottom:8px;">
+      <button class="chip active" data-st="">All status</button>
+      <button class="chip chip--green" data-st="published">Published</button>
+      <button class="chip chip--yellow" data-st="draft">Draft</button>
+      <button class="chip chip--red" data-st="archived">Archived</button>
+      <span style="width:1px;background:var(--color-stroke);flex-shrink:0;margin:0 4px;"></span>
+      <button class="chip active" data-d="">All levels</button>
+      <button class="chip" data-d="easy">Easy</button>
+      <button class="chip" data-d="medium">Medium</button>
+      <button class="chip" data-d="hard">Hard</button>
+    </div>
+
+    <!-- Question list -->
+    <div id="qList">
+      <div class="empty"><div class="empty__icon">&#9203;</div><p>Loading&hellip;</p></div>
+    </div>
+
+  </div>
+  <nav class="tabbar" data-nav-admin="questions"></nav>
+</div>
+
+<script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+<script src="../js/config.js?v=mqye4cj4"></script>
+<script src="../js/appwrite.js?v=mqye4cj4"></script>
+<script src="../js/admin-data.js?v=mqye4cj4"></script>
+<script src="../js/theme.js?v=mqye4cj4"></script>
+<script src="../js/ui.js?v=mqye4cj4"></script>
+<script>
+requireAdmin();
+
+var params = new URLSearchParams(location.search);
+var examId = params.get('examId');
+var allQs  = [], examTitle = '', filterType = '', filterStatus = '', filterDiff = '';
+
+function addQuestion() {
+  location.href = 'question-edit.html' + (examId ? '?examId='+examId : '');
+}
+window.addQuestion = addQuestion;
+
+/* ---- Filter chips ---- */
+document.querySelectorAll('[data-t]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('[data-t]').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    filterType = b.dataset.t;
+    filterDraw();
+  });
+});
+document.querySelectorAll('[data-st]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('[data-st]').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    filterStatus = b.dataset.st;
+    filterDraw();
+  });
+});
+document.querySelectorAll('[data-d]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('[data-d]').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    filterDiff = b.dataset.d;
+    filterDraw();
+  });
+});
+
+/* ---- Filter + draw ---- */
+function filterDraw() {
+  var q    = document.getElementById('search').value.toLowerCase();
+  var list = allQs.filter(function(x){
+    if (filterType   && x.type       !== filterType)   return false;
+    if (filterStatus && x.status     !== filterStatus)  return false;
+    if (filterDiff   && x.difficulty !== filterDiff)    return false;
+    if (q && !(x.text + (x.topic||'')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  draw(list);
+}
+
+var TNAME = {
+  mcq:'MCQ', multi:'Multi', truefalse:'T/F', theory:'Theory', fill:'Fill',
+  matching:'Match', ordering:'Order', programming:'Code', mathematical:'Math',
+  image:'Image', audio:'Audio', upload:'Upload',
+};
+
+var TYPE_COLOR = {
+  mcq:'#a89bff', multi:'#34d399', truefalse:'#60a5fa', theory:'#fbbf24',
+  fill:'#f472b6', matching:'#a78bfa', ordering:'#6ee7b7', programming:'#4ade80',
+  mathematical:'#f87171', image:'#9ca3af', audio:'#9ca3af', upload:'#9ca3af',
+};
+
+function buildTypeTally(qs) {
+  var counts = {};
+  qs.forEach(function(q){ counts[q.type] = (counts[q.type]||0) + 1; });
+  var tally = document.getElementById('typeTally');
+  if (!Object.keys(counts).length) { tally.innerHTML = ''; return; }
+  tally.innerHTML = Object.entries(counts)
+    .sort(function(a,b){ return b[1]-a[1]; })
+    .map(function(e){
+      var type = e[0], cnt = e[1];
+      var col  = TYPE_COLOR[type] || '#9ca3af';
+      var name = TNAME[type] || type;
+      return '<button class="tally-chip" data-t="'+type+'" style="color:'+col+';border-color:'+col+'22;">' +
+               '<span class="tally-dot" style="background:'+col+';"></span>' +
+               name + ' <strong>'+cnt+'</strong>' +
+             '</button>';
+    }).join('');
+
+  /* Tally chips also act as filter shortcuts */
+  tally.querySelectorAll('.tally-chip').forEach(function(b){
+    b.addEventListener('click', function(){
+      var t = b.dataset.t;
+      /* Toggle: clicking same type twice resets */
+      if (filterType === t) {
+        filterType = '';
+        tally.querySelectorAll('.tally-chip').forEach(function(c){ c.classList.remove('active'); });
+        document.querySelectorAll('[data-t]').forEach(function(x){ x.classList.remove('active'); });
+        document.querySelector('[data-t=""]').classList.add('active');
+      } else {
+        filterType = t;
+        tally.querySelectorAll('.tally-chip').forEach(function(c){ c.classList.remove('active'); });
+        b.classList.add('active');
+        document.querySelectorAll('[data-t]').forEach(function(x){ x.classList.remove('active'); });
+        var matchChip = document.querySelector('[data-t="'+t+'"]');
+        if (matchChip) matchChip.classList.add('active');
+      }
+      filterDraw();
+    });
+  });
+}
+
+function draw(list) {
+  var el = document.getElementById('qList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty__icon">&#10067;</div><p>No questions match your filters.</p></div>';
+    return;
+  }
+  el.innerHTML = list.map(function(q, i) {
+    var typeName = TNAME[q.type] || q.type;
+    var statusColor = q.status==='published' ? 'var(--color-success)' : q.status==='archived' ? 'var(--color-danger)' : 'var(--color-warning)';
+    return (
+      '<div class="q-card">' +
+        '<div class="q-card__header">' +
+          '<div class="q-card__num">' + (i+1) + '</div>' +
+          '<div class="q-card__body">' +
+            '<div class="q-card__text">' + (q.text||'').replace(/</g,'&lt;') + '</div>' +
+            '<div class="q-card__meta">' +
+              '<span class="type-badge tb--'+q.type+'">'+typeName+'</span> &nbsp;' +
+              (q.marks||1) + ' mark' + ((q.marks||1)!==1?'s':'') + ' &middot; ' +
+              (q.topic || 'No topic') + ' &middot; ' +
+              '<span style="text-transform:capitalize;color:'+statusColor+';">'+(q.status||'draft')+'</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="q-card__actions">' +
+          '<button class="qbtn qbtn--primary" onclick="location.href=\'question-edit.html?id='+q.$id+(examId?'&examId='+examId:'')+'\'">' +
+            '&#9998; Edit</button>' +
+          '<button class="qbtn" onclick="dupQ(\''+q.$id+'\')">&#9166; Dup</button>' +
+          '<button class="qbtn" onclick="toggleStatus(\''+q.$id+'\',\''+q.status+'\')">'+
+            (q.status==='published' ? '&#128274; Unpublish' : '&#128275; Publish') +
+          '</button>' +
+          '<button class="qbtn qbtn--danger" onclick="delQ(\''+q.$id+'\')">&#128465;</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+/* ---- Load ---- */
+async function load() {
+  if (examId) {
+    document.getElementById('examBanner').style.display = 'block';
+    document.getElementById('backBtn').href = 'exam-edit.html?id=' + examId;
+    try {
+      var exam = await RonyxAdmin.getExam(examId);
+      examTitle = exam ? exam.title : 'Exam';
+      document.getElementById('examBannerLabel').textContent = examTitle;
+      document.getElementById('pageTitle').textContent = 'Questions';
+    } catch(e) {}
+  }
+  try {
+    allQs = await RonyxAdmin.listQuestions(examId || null);
+    /* Sort newest first */
+    allQs.sort(function(a,b){ return (b.$createdAt||'').localeCompare(a.$createdAt||''); });
+    document.getElementById('stTotal').textContent = allQs.length;
+    document.getElementById('stPub').textContent   = allQs.filter(function(q){return q.status==='published';}).length;
+    document.getElementById('stDraft').textContent = allQs.filter(function(q){return !q.status||q.status==='draft';}).length;
+    buildTypeTally(allQs);
+    filterDraw();
+  } catch(e) {
+    document.getElementById('qList').innerHTML =
+      '<div class="empty"><div class="empty__icon">&#9888;&#65039;</div><p>Failed to load: ' + e.message + '</p></div>';
+  }
+}
+load();
+
+/* ---- Duplicate ---- */
+window.dupQ = async function(qid) {
+  try {
+    var q = await RonyxAdmin.getQuestion(qid);
+    if (!q) return;
+    var data = {
+      examId: q.examId, type: q.type, text: q.text + ' (copy)',
+      options: q.options, correctAnswer: q.correctAnswer,
+      marks: q.marks, difficulty: q.difficulty, topic: q.topic,
+      status: 'draft',
+    };
+    await RonyxAdmin.createQuestion(data);
+    toast('Duplicated!', 'success');
+    load();
+  } catch(e) { toast('Duplicate failed: ' + e.message, 'error'); }
+};
+
+/* ---- Toggle publish status ---- */
+window.toggleStatus = async function(qid, current) {
+  var newSt = current === 'published' ? 'draft' : 'published';
+  try {
+    await RonyxAdmin.updateQuestion(qid, {status: newSt});
+    toast(newSt === 'published' ? 'Published!' : 'Unpublished.', 'success');
+    load();
+  } catch(e) { toast('Update failed: ' + e.message, 'error'); }
+};
+
+/* ---- Delete ---- */
+window.delQ = async function(qid) {
+  if (!confirm('Delete this question?')) return;
+  try {
+    await RonyxAdmin.deleteQuestion(qid);
+    allQs = allQs.filter(function(q){ return q.$id !== qid; });
+    toast('Deleted.', 'success');
+    document.getElementById('stTotal').textContent = allQs.length;
+    document.getElementById('stPub').textContent = allQs.filter(function(q){return q.status==='published';}).length;
+    document.getElementById('stDraft').textContent = allQs.filter(function(q){return !q.status||q.status==='draft';}).length;
+    buildTypeTally(allQs);
+    filterDraw();
+  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+};
+</script>
+</body>
+</html>
+
+

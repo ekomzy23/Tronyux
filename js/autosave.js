@@ -1,5 +1,5 @@
 /* ============================================================
-   RUNYX · autosave.js
+   RONYX · autosave.js
    Real-time auto-save for any text field.
 
    Layer 1 (works now): saves to the browser instantly → survives
@@ -18,7 +18,7 @@
    ============================================================ */
 
 (function () {
-  const cfg = window.RUNYX_CONFIG || { CONFIGURED: false };
+  const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
 
   // Optional cloud client (only if configured + SDK present)
   let databases = null;
@@ -30,7 +30,7 @@
   }
 
   // turn a key into a safe localStorage + document id
-  const idFor = key => 'runyx_draft_' + key.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const idFor = key => 'ronyx_draft_' + key.replace(/[^a-zA-Z0-9_-]/g, '_');
 
   function setStatus(el, text, color) {
     if (!el) return;

@@ -1,5 +1,5 @@
 /* ============================================================
-   RUNYX · components.css
+   RONYX · components.css
    Every reusable UI piece, built from tokens.css.
    Load order:  tokens.css → reset.css → base.css → components.css
 
@@ -151,6 +151,27 @@
   box-shadow: 0 0 0 4px var(--color-primary-soft);
 }
 textarea.input { resize: none; line-height: var(--leading-base); }
+
+/* Select dark-mode fix */
+select.input {
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: dark;
+  background-color: #0c0c24;
+  color: #f3f3fb;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath fill='%239aa0bd' d='M6 7L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  background-size: 10px;
+  padding-right: 42px;
+  cursor: pointer;
+  border-color: var(--color-stroke-2);
+}
+select.input option,
+select.input optgroup {
+  background-color: #0c0c24;
+  color: #f3f3fb;
+}
 
 /* Checkbox tint */
 .checkbox { accent-color: var(--color-primary); width: 16px; height: 16px; }

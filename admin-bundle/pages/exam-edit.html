@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Edit exam &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .sec-hdr { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--color-muted-2); margin:16px 0 8px; }
+    .sec-divider { height:1px; background:var(--color-stroke); margin:16px 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="exams.html" class="iconbtn">←</a>
+      <span class="appbar__title" id="pageTitle">New exam</span>
+    </div>
+
+    <div class="app__body">
+
+      <!-- ── BASIC INFO ── -->
+      <div class="sec-hdr">Basic info</div>
+
+      <div class="field">
+        <label class="field__label">Exam title</label>
+        <input class="input" id="title" placeholder="e.g. Microbial Diversity Final Exam">
+      </div>
+
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Course code</label>
+          <input class="input" id="courseCode" placeholder="MCB 322">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Exam type</label>
+          <select class="input" id="type">
+            <option value="final">Final Exam</option>
+            <option value="mid">Mid Semester</option>
+            <option value="ca">Continuous Assessment</option>
+            <option value="quiz" selected>Quiz</option>
+            <option value="practice">Practice / Mock</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Full subject name</label>
+        <input class="input" id="subject" placeholder="e.g. Microbial Diversity and Systematics">
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ── ACADEMIC DETAILS ── -->
+      <div class="sec-hdr">Academic details</div>
+
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Year / Level</label>
+          <select class="input" id="level">
+            <option value="0">All years</option>
+            <option value="1">Year 1 (100L)</option>
+            <option value="2">Year 2 (200L)</option>
+            <option value="3">Year 3 (300L)</option>
+            <option value="4">Year 4 (400L)</option>
+            <option value="5">Year 5 (500L)</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Semester</label>
+          <select class="input" id="semester">
+            <option value="0">Not specified</option>
+            <option value="1">1st Semester</option>
+            <option value="2">2nd Semester</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Department</label>
+          <input class="input" id="department" placeholder="e.g. Microbiology">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Academic year</label>
+          <input class="input" id="academicYear" placeholder="2024/2025">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Faculty / School</label>
+        <input class="input" id="faculty" placeholder="e.g. Faculty of Natural Sciences">
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ── EXAM SETTINGS ── -->
+      <div class="sec-hdr">Exam settings</div>
+
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Duration (minutes)</label>
+          <input class="input" id="durationMinutes" type="number" value="60">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Pass mark %</label>
+          <input class="input" id="passMark" type="number" value="50">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Question format</label>
+          <select class="input" id="format">
+            <option value="mixed">Mixed (Obj + Theory)</option>
+            <option value="objective">Objective only (MCQ/T-F)</option>
+            <option value="theory">Theory / Essay only</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Status</label>
+          <select class="input" id="status">
+            <option value="draft" selected>Draft</option>
+            <option value="published">Published</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Short description (shown to students)</label>
+        <textarea class="input" id="description" rows="2" placeholder="e.g. Covers heterotrophic bacteria families and their biochemical identification"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field__label">Instructions (shown before exam starts)</label>
+        <textarea class="input" id="instructions" rows="4" placeholder="Read each question carefully. Each question carries equal marks unless stated otherwise."></textarea>
+      </div>
+
+      <div class="sec-divider"></div>
+
+      <!-- ── QUESTIONS (shown when editing) ── -->
+      <div id="qCountCard" style="display:none;" class="card mb-4">
+        <div class="info-row">
+          <span class="info-row__label">Questions added</span>
+          <span class="info-row__value" id="qCount">—</span>
+        </div>
+        <a id="manageQLink" href="questions.html" class="btn btn--sm" style="margin-top:10px;display:block;text-align:center;">
+          Manage Questions
+        </a>
+      </div>
+
+      <!-- ── ACTIONS ── -->
+      <button class="btn btn--primary" onclick="saveExam(false)" style="margin-bottom:8px;">Save exam</button>
+      <button class="btn" onclick="saveExam(true)" id="saveAddBtn">Save &amp; Add Questions</button>
+      <button class="btn btn--danger" id="deleteBtn" style="display:none;margin-top:8px;" onclick="deleteExam()">Delete exam</button>
+
+      <div style="height:24px;"></div>
+    </div>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    const id = new URLSearchParams(location.search).get('id');
+
+    (async function () {
+      if (id) {
+        document.getElementById('pageTitle').textContent = 'Edit exam';
+        document.getElementById('deleteBtn').style.display = 'block';
+        document.getElementById('saveAddBtn').textContent  = 'Save & Go to Questions';
+
+        const e = await RonyxAdmin.getExam(id);
+        if (e) {
+          document.getElementById('title').value           = e.title           || '';
+          document.getElementById('courseCode').value      = e.courseCode      || '';
+          document.getElementById('subject').value         = e.subject         || '';
+          document.getElementById('type').value            = e.type            || 'quiz';
+          document.getElementById('level').value           = e.level           ?? 0;
+          document.getElementById('semester').value        = e.semester        ?? 0;
+          document.getElementById('department').value      = e.department      || '';
+          document.getElementById('academicYear').value    = e.academicYear    || '';
+          document.getElementById('faculty').value         = e.faculty         || '';
+          document.getElementById('durationMinutes').value = e.durationMinutes || 60;
+          document.getElementById('passMark').value        = e.passMark        || 50;
+          document.getElementById('format').value          = e.format          || 'mixed';
+          document.getElementById('status').value          = e.status          || 'draft';
+          document.getElementById('description').value     = e.description     || '';
+          document.getElementById('instructions').value    = e.instructions    || '';
+        }
+        const qn = await RonyxAdmin.countQuestions(id);
+        document.getElementById('qCount').textContent = qn;
+        document.getElementById('manageQLink').href   = 'questions.html?examId=' + id;
+        document.getElementById('qCountCard').style.display = 'block';
+      }
+    })();
+
+    async function saveExam(goToQuestions) {
+      const data = {
+        title:           document.getElementById('title').value.trim(),
+        courseCode:      document.getElementById('courseCode').value.trim().toUpperCase(),
+        subject:         document.getElementById('subject').value.trim(),
+        type:            document.getElementById('type').value,
+        level:           parseInt(document.getElementById('level').value),
+        semester:        parseInt(document.getElementById('semester').value),
+        department:      document.getElementById('department').value.trim(),
+        academicYear:    document.getElementById('academicYear').value.trim(),
+        faculty:         document.getElementById('faculty').value.trim(),
+        durationMinutes: parseInt(document.getElementById('durationMinutes').value) || 60,
+        passMark:        parseInt(document.getElementById('passMark').value) || 50,
+        format:          document.getElementById('format').value,
+        status:          document.getElementById('status').value,
+        description:     document.getElementById('description').value.trim(),
+        instructions:    document.getElementById('instructions').value.trim(),
+      };
+      if (!data.title) return toast('Exam title is required.', 'error');
+
+      try {
+        let examId = id;
+        let wasPublished = false;
+        if (id) {
+          /* Check if status just changed to published */
+          try {
+            const prev = await RonyxAdmin.getExam(id).catch(() => null);
+            wasPublished = prev && prev.status !== 'published' && data.status === 'published';
+          } catch(e) {}
+          await RonyxAdmin.updateExam(id, data);
+        } else {
+          const created = await RonyxAdmin.createExam({
+            ...data, totalMarks: 0, questionsCount: 0, maxAttempts: 1, createdBy: 'admin',
+          });
+          examId = created.$id;
+          wasPublished = data.status === 'published';
+        }
+        /* Auto-broadcast notification when an exam is published */
+        if (wasPublished) {
+          try {
+            await RonyxAdmin.broadcastAnnouncement(
+              'New exam available: ' + data.title,
+              (data.courseCode ? data.courseCode + ' — ' : '') + (data.type || 'Exam') + ' is now live. Head to the Exams page to begin.',
+              'success',
+              '/pages/student/exams.html'
+            );
+          } catch(e) { /* notification is best-effort */ }
+        }
+        toast('Saved!', 'success');
+        setTimeout(function() {
+          location.href = goToQuestions ? 'questions.html?examId=' + examId : 'exams.html';
+        }, 600);
+      } catch(e) {
+        toast('Save failed: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteExam() {
+      if (!confirm('Delete this exam permanently? Questions in the bank are kept.')) return;
+      try {
+        await RonyxAdmin.deleteExam(id);
+        location.href = 'exams.html';
+      } catch(e) {
+        toast('Delete failed: ' + e.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
+
+

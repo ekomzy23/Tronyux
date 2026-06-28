@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Institutions &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Institutions</span>
+    </div>
+
+    <div class="app__body">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search institutions&hellip;" oninput="filterList()">
+      </div>
+      <div id="instList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+    </div>
+
+    <button class="fab" onclick="toast('Institutions are managed via Appwrite console.')">＋</button>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    let allItems = [];
+
+    function filterList() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const list = q ? allItems.filter(i => (i.name||'').toLowerCase().includes(q) || (i.code||'').toLowerCase().includes(q)) : allItems;
+      renderList(list);
+    }
+
+    function renderList(list) {
+      const el = document.getElementById('instList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">🏛️</div><p>No institutions added yet.</p></div>';
+        return;
+      }
+      el.innerHTML = list.map(i => `
+        <div class="row-card">
+          <div style="width:40px;height:40px;border-radius:14px;background:var(--gradient-brand);display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;">${(i.code||'?').slice(0,3)}</div>
+          <div class="row-card__meta" style="flex:1;">
+            <h4>${i.name||'Unnamed'}</h4>
+            <p>${i.location||''}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function load() {
+      const el = document.getElementById('instList');
+      try {
+        const cfg = window.RONYX_CONFIG || {};
+        if (!cfg.CONFIGURED) throw new Error('not configured');
+        const client = new Appwrite.Client().setEndpoint(cfg.ENDPOINT).setProject(cfg.PROJECT_ID);
+        const dbs = new Appwrite.Databases(client);
+        const res = await dbs.listDocuments(cfg.DATABASE_ID, 'institutions', [Appwrite.Query.limit(100)]);
+        allItems = res.documents;
+        renderList(allItems);
+      } catch (e) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">🏛️</div><p>No institutions added yet.</p></div>';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
+
+

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Reset password — Runyx</title>
+  <title>Reset password — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
 
       <div class="field">
         <label class="field__label">Email address</label>
-        <input class="input" id="email" type="email" placeholder="john.dave@gmail.com">
+        <input class="input" id="email" type="email" placeholder="your@email.com">
       </div>
 
       <button class="btn btn--primary" id="resetBtn">Send reset link</button>
@@ -38,16 +38,16 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
   <script>
     document.getElementById('resetBtn').addEventListener('click', () => {
       const email = document.getElementById('email').value.trim();
-      if (RUNYX.CONFIGURED && !email) return toast('Enter your email.');
-      runyxForgot(email);
+      if (RONYX.CONFIGURED && !email) return toast('Enter your email.');
+      ronyxForgot(email);
     });
   </script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
 </body>
 </html>

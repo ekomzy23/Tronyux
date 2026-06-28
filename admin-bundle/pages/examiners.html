@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Examiners Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Examiners</span>
+    </div>
+    <div class="app__body">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search examiners&hellip;" oninput="render()">
+      </div>
+      <div id="list">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+    </div>
+    <button class="fab" onclick="toast('Add examiner coming soon')">＋</button>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let all = [];
+    function render() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const list = q ? all.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)) : all;
+      const el = document.getElementById('list');
+      if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty__icon">🧑‍💼</div><p>No examiners found.</p></div>'; return; }
+      el.innerHTML = list.map(u => {
+        const i = (u.name||u.email||'?')[0].toUpperCase();
+        return `<div class="row-card">
+          <div style="width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#6d5efc);display:grid;place-items:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;">${i}</div>
+          <div class="row-card__meta" style="flex:1;"><h4>${u.name||'Unnamed'}</h4><p>${u.email||'No email'} &middot; ${u.department||'No dept'}</p></div>
+          <span class="badge badge--violet">Examiner</span>
+        </div>`;
+      }).join('');
+    }
+    async function load() {
+      if (!RONYX.CONFIGURED) { document.getElementById('list').innerHTML = '<div class="empty"><div class="empty__icon">⚙️</div><p>Not configured.</p></div>'; return; }
+      try { all = await RonyxAdmin.listUsersByRole('examiner'); render(); }
+      catch(e) { document.getElementById('list').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Failed to load.</p></div>'; }
+    }
+    load();
+  </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Equations &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="dashboard.html" class="iconbtn">←</a>
+      <span class="appbar__title">Equation library</span>
+      <button class="iconbtn" onclick="location.href='equation-edit.html'">＋</button>
+    </div>
+
+    <div class="app__body">
+      <input class="input mb-4" id="search" placeholder="🔍 Search&hellip;">
+      <div id="eqList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+    </div>
+    <nav class="tabbar" data-nav-admin="equations"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/realtime.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let allEq = [];
+    async function load() {
+      allEq = await RonyxAdmin.listEquations();
+      draw(allEq);
+    }
+    function draw(list) {
+      const el = document.getElementById('eqList');
+      el.innerHTML = list.length ? list.map(e => `
+        <div class="row-card">
+          <div class="row-card__meta" style="flex:1;"><h4>${e.name}</h4><p>${e.category || 'General'}</p></div>
+          <button class="btn btn--sm" onclick="location.href='equation-edit.html?id=${e.$id}'">Edit</button>
+        </div>`).join('') : '<div class="empty"><div class="empty__icon">Î£</div><p>No equations.</p></div>';
+    }
+    document.getElementById('search').addEventListener('input', e => {
+      const q = e.target.value.toLowerCase();
+      draw(allEq.filter(x => (x.name + x.category).toLowerCase().includes(q)));
+    });
+    load();
+    if (window.RonyxRealtime && RONYX.CONFIGURED) RonyxRealtime.subscribe(RONYX.COLLECTIONS.equations, load);
+  </script>
+</body>
+</html>
+
+
+

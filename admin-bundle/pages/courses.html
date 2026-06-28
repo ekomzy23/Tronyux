@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Courses &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Courses</span>
+    </div>
+
+    <div class="app__body">
+
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search courses&hellip;" oninput="render()">
+      </div>
+
+      <div class="chips mb-4" id="semChips">
+        <button class="chip is-active" data-sem="" onclick="setSem(this)">All</button>
+        <button class="chip" data-sem="1" onclick="setSem(this)">Semester 1</button>
+        <button class="chip" data-sem="2" onclick="setSem(this)">Semester 2</button>
+      </div>
+
+      <div id="courseList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+
+    </div>
+
+    <button class="fab" onclick="location.href='exam-edit.html?id='">＋</button>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let allExams = [], activeSem = '';
+
+    function setSem(btn) {
+      activeSem = btn.dataset.sem;
+      document.querySelectorAll('#semChips .chip').forEach(c => c.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      render();
+    }
+
+    function render() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      let list = allExams;
+      if (activeSem) list = list.filter(e => String(e.semester) === activeSem);
+      if (q) list = list.filter(e => (e.courseCode||'').toLowerCase().includes(q) || (e.title||'').toLowerCase().includes(q));
+      const el = document.getElementById('courseList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">📚</div><p>No courses found.</p></div>';
+        return;
+      }
+      // Group by courseCode
+      const grouped = {};
+      list.forEach(e => {
+        const code = e.courseCode || 'N/A';
+        if (!grouped[code]) grouped[code] = { code, title: e.title, level: e.level, type: e.type, count: 0 };
+        grouped[code].count++;
+      });
+      el.innerHTML = Object.values(grouped).map(c => `
+        <div class="row-card">
+          <div style="width:40px;height:40px;border-radius:14px;background:var(--gradient-brand);display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;">${c.code.slice(0,3)}</div>
+          <div class="row-card__meta" style="flex:1;">
+            <h4>${c.code} &mdash; ${c.title}</h4>
+            <p>${c.count} exam${c.count > 1 ? 's' : ''} &middot; Year ${c.level || '?'}</p>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            ${c.type ? `<span class="badge badge--violet">${c.type}</span>` : ''}
+            ${c.level ? `<span class="badge badge--green">Y${c.level}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function load() {
+      if (!RONYX.CONFIGURED) {
+        document.getElementById('courseList').innerHTML = '<div class="empty"><div class="empty__icon">⚙️</div><p>Appwrite not configured.</p></div>';
+        return;
+      }
+      try {
+        allExams = await RonyxAdmin.listExams();
+        render();
+      } catch(e) {
+        document.getElementById('courseList').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Failed to load.</p></div>';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
+
+
+

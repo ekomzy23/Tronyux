@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Log in — Runyx</title>
+  <title>Log in — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,8 +25,8 @@
       <h1 class="title-lg mb-4">Continue your learning journey</h1>
 
       <div class="field">
-        <label class="field__label">Email or username</label>
-        <input class="input" id="email" type="email" placeholder="john.dave@gmail.com">
+        <label class="field__label">Email address</label>
+        <input class="input" id="email" type="email" placeholder="your@email.com">
       </div>
       <div class="field">
         <label class="field__label">Password</label>
@@ -37,10 +37,7 @@
         <a href="/pages/auth/forgot.html" class="link">Forgot password?</a>
       </p>
 
-      <button class="btn btn--primary" id="loginBtn" data-label="Log in">Log in</button>
-
-      <div class="or">or</div>
-      <button class="btn btn--ghost">Continue with Google</button>
+      <button class="btn btn--primary" id="loginBtn" onclick="doLogin()">Log in</button>
 
       <p class="text-center text-muted mt-4">
         No account yet? <a href="/pages/auth/signup.html" class="link">Sign up</a>
@@ -48,21 +45,53 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
   <script>
-    document.getElementById('loginBtn').addEventListener('click', () => {
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const emailOk  = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+    async function doLogin() {
+      var email    = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
 
-      if (!emailOk)  return toast('Enter a valid email address.');
-      if (!password) return toast('Enter your password.');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showErr('Enter a valid email address.');
+      if (!password) return showErr('Enter your password.');
 
-      runyxLogin(email, password);
+      var btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+
+      try {
+        var cfg = window.RONYX_CONFIG;
+        var client = new Appwrite.Client()
+          .setEndpoint(cfg.ENDPOINT)
+          .setProject(cfg.PROJECT_ID);
+        var acc = new Appwrite.Account(client);
+        try { await acc.deleteSession('current'); } catch(e) {}
+        await acc.createEmailPasswordSession(email, password);
+        window.location.href = '/pages/student/dashboard.html';
+      } catch(err) {
+        console.error('[Ronyx login error]', err);
+        btn.disabled = false;
+        btn.textContent = 'Log in';
+        var map = {
+          'user_invalid_credentials':    'Wrong email or password.',
+          'user_not_found':              'No account found with this email.',
+          'general_rate_limit_exceeded': 'Too many attempts — wait a moment.',
+        };
+        showErr(map[err.type] || err.message || 'Login failed. Check your internet and try again.');
+      }
+    }
+
+    function showErr(msg) {
+      if (typeof toast === 'function') return toast(msg);
+      alert(msg);
+    }
+
+    /* Allow pressing Enter to submit */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doLogin();
     });
   </script>
-  <script src="/js/theme.js"></script>
 </body>
 </html>

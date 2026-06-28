@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Help Center &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .faq-item { border-bottom:1px solid var(--color-stroke); }
+    .faq-item:last-child { border-bottom:none; }
+    .faq-q { display:flex; justify-content:space-between; align-items:center; padding:14px 0; cursor:pointer; }
+    .faq-q__text { font-size:14px; font-weight:600; color:var(--color-text); flex:1; padding-right:12px; }
+    .faq-q__arrow { font-size:14px; color:var(--color-muted); transition:transform .2s; flex-shrink:0; }
+    .faq-item.open .faq-q__arrow { transform:rotate(180deg); }
+    .faq-a { font-size:13px; color:var(--color-muted); line-height:1.7; padding-bottom:14px; display:none; }
+    .faq-item.open .faq-a { display:block; }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:var(--color-success); display:inline-block; }
+    .quick-link { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:12px; margin-bottom:8px; cursor:pointer; text-decoration:none; }
+    .quick-link__label { font-size:14px; font-weight:500; color:var(--color-text); flex:1; }
+    .quick-link__arrow { color:var(--color-muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Help Center</span>
+    </div>
+
+    <div class="app__body">
+
+      <div class="search-bar mb-4">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search help topics&hellip;" oninput="filterFAQ()">
+      </div>
+
+      <!-- FAQ -->
+      <div class="section-hd"><h3>Frequently Asked Questions</h3></div>
+      <div class="card mb-4" id="faqList">
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How do I create an exam?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Go to <strong>Exams</strong> from the bottom navigation, then tap the <strong>＋</strong> button in the top-right corner. Fill in the exam title, course code, year level, duration, and question type. Once ready, tap <strong>Publish</strong> to make it visible to students.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How do I publish results?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Go to <strong>Results</strong> from the More menu. Select the exam you want to publish results for. Review all submitted attempts, then tap <strong>Publish Results</strong>. Students will be notified automatically and can view their scores in the student app.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How do I add students?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Go to <strong>Students</strong> in the bottom navigation. Tap the <strong>＋</strong> FAB button at the bottom right to add a single student manually. For bulk imports, go to <strong>More → Bulk Import</strong> and upload a CSV file with student data.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How do I use the AI Center?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Go to <strong>More → AI Center</strong>. You can generate questions by entering a topic, selecting the question type and difficulty. Use the <strong>Question Tools</strong> to detect duplicates, analyse difficulty, or improve existing questions. The AI Console lets you send free-form prompts. Note: full AI features require an API key configuration.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How do I import questions in bulk?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Go to <strong>More → Bulk Import</strong>. Select <strong>Questions</strong> as the import type. Download the CSV template shown in the Format Guide, fill in your questions following the column format, then upload the file. The system will validate and import all valid rows.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">What question types are supported?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Ronyx supports <strong>MCQ</strong> (Multiple Choice with 4 options), <strong>Theory</strong> (long-form essay answer), <strong>True/False</strong>, and <strong>Fill in the Blank</strong>. Theory questions require manual marking from the admin panel via <strong>Theory Marking</strong>.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How does the Live Monitor work?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Go to <strong>More → Live Monitor</strong> during an active exam. Select the exam from the chips at the top to filter candidates. You can see each student's progress (questions answered), time remaining, and flag status. The list auto-refreshes every 15 seconds.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFAQ(this)">
+            <span class="faq-q__text">How do I set up Appwrite?</span>
+            <span class="faq-q__arrow">–¼</span>
+          </div>
+          <div class="faq-a">Edit the file <code>js/config.js</code> and fill in your Appwrite <strong>Endpoint</strong>, <strong>Project ID</strong>, <strong>Database ID</strong>, and <strong>Collection IDs</strong>. Set <code>CONFIGURED: true</code> and reload. All admin features will activate automatically once connected.</div>
+        </div>
+
+      </div>
+
+      <!-- Quick links -->
+      <div class="section-hd"><h3>Quick Links</h3></div>
+      <a href="#" class="quick-link" onclick="toast('Opening documentation&hellip;')">
+        <span style="font-size:20px;">📖</span>
+        <span class="quick-link__label">Documentation</span>
+        <span class="quick-link__arrow">&rdquo;º</span>
+      </a>
+      <a href="#" class="quick-link" onclick="toast('Opening bug report form&hellip;')">
+        <span style="font-size:20px;">🐛</span>
+        <span class="quick-link__label">Report a Bug</span>
+        <span class="quick-link__arrow">&rdquo;º</span>
+      </a>
+      <a href="#" class="quick-link" onclick="toast('Opening feature request form&hellip;')">
+        <span style="font-size:20px;">💡</span>
+        <span class="quick-link__label">Feature Request</span>
+        <span class="quick-link__arrow">&rdquo;º</span>
+      </a>
+      <a href="mailto:support@ronyx.app" class="quick-link">
+        <span style="font-size:20px;">œ‰</span>
+        <span class="quick-link__label">Contact Support</span>
+        <span class="quick-link__arrow">&rdquo;º</span>
+      </a>
+
+      <!-- System status -->
+      <div class="section-hd mt-4"><h3>System Status</h3></div>
+      <div class="card mb-4">
+        <div class="info-row">
+          <span class="info-row__label">API Server</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-success);">
+            <span class="status-dot"></span> Operational
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Database</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-success);">
+            <span class="status-dot"></span> Operational
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-row__label">Storage</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-success);">
+            <span class="status-dot"></span> Operational
+          </span>
+        </div>
+        <div class="info-row" style="border-bottom:none;">
+          <span class="info-row__label">Admin Panel Version</span>
+          <span class="info-row__value">v2.0.0</span>
+        </div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    function toggleFAQ(el) {
+      const item = el.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    }
+    function filterFAQ() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      document.querySelectorAll('.faq-item').forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = !q || text.includes(q) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
+
+
+

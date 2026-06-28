@@ -14,71 +14,147 @@
 </head>
 <body>
   <div class="app">
-
     <div class="appbar">
-      <a href="/pages/student/results.html" class="iconbtn">←</a>
-      <span class="appbar__title">Performance analysis</span>
+      <a href="/pages/student/results.html" class="iconbtn">&larr;</a>
+      <span class="appbar__title">Performance</span>
     </div>
-
-    <div class="app__body">
-      <div class="chips mb-4">
-        <div class="chip is-active">Overview</div>
-        <div class="chip">Strengths</div>
-        <div class="chip">Weaknesses</div>
-      </div>
-
-      <div class="ring mb-4">
-        <svg width="170" height="170">
-          <circle class="ring__bg" cx="85" cy="85" r="74"></circle>
-          <circle class="ring__fg" cx="85" cy="85" r="74" stroke="url(#grad2)" data-ring="86"></circle>
-          <defs>
-            <linearGradient id="grad2" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#34d399"></stop>
-              <stop offset="1" stop-color="#6d5efc"></stop>
-            </linearGradient>
-          </defs>
-        </svg>
-        <div class="ring__center">
-          <div class="ring__value">86%</div>
-          <div class="ring__sub">accuracy</div>
-        </div>
-      </div>
-
-      <div class="list-item">
-        <div class="list-item__icon" style="background: var(--color-success-soft); color: var(--color-success);">✓</div>
-        <div class="list-item__text">Correct</div><b>52</b>
-      </div>
-      <div class="list-item">
-        <div class="list-item__icon" style="background: var(--color-danger-soft); color: var(--color-danger);">✕</div>
-        <div class="list-item__text">Incorrect</div><b>6</b>
-      </div>
-      <div class="list-item">
-        <div class="list-item__icon" style="background: var(--color-surface-2);">○</div>
-        <div class="list-item__text">Unattempted</div><b>2</b>
-      </div>
-
-      <div class="stat-grid">
-        <div class="stat"><div class="stat__n">75</div><div class="stat__l">Time (min)</div></div>
-        <div class="stat"><div class="stat__n">86%</div><div class="stat__l">Accuracy</div></div>
-        <div class="stat"><div class="stat__n">A</div><div class="stat__l">Grade</div></div>
-      </div>
-
-      <a href="/pages/student/qreview.html" class="btn btn--primary">Review questions</a>
+    <div class="app__body" id="perfBody">
+      <div class="empty"><div class="empty__icon">&#8987;</div><p>Loading&hellip;</p></div>
     </div>
-
     <nav class="tabbar" data-nav="results"></nav>
   </div>
 
-  <script src="/js/ui.js"></script>
+  <!--
+  ═══════════════════════════════════════════════════════════════════════
+  ADMIN-DEPENDENT DETAILED PERFORMANCE ANALYSIS — DISABLED
+  ═══════════════════════════════════════════════════════════════════════
+  This section showed a breakdown fetched from the admin-created
+  `results` collection in Appwrite (rank, percentile, topic analysis).
+
+  To re-enable for school exam system use, restore this block and
+  wire it to the Appwrite results collection with the proper document
+  structure: { examId, userId, score, totalMarks, percentage, rank,
+                topicBreakdown: [{topic, correct, total}] }
+
+  <div class="chips mb-4">
+    <div class="chip is-active">Overview</div>
+    <div class="chip">Strengths</div>
+    <div class="chip">Weaknesses</div>
+  </div>
+
+  <div class="ring mb-4">
+    <svg width="170" height="170">
+      <circle class="ring__bg" cx="85" cy="85" r="74"></circle>
+      <circle class="ring__fg" cx="85" cy="85" r="74" stroke="url(#grad2)" data-ring="ADMIN_PCT"></circle>
+      <defs>
+        <linearGradient id="grad2" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#34d399"></stop>
+          <stop offset="1" stop-color="#6d5efc"></stop>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="ring__center">
+      <div class="ring__value">ADMIN_PCT%</div>
+      <div class="ring__sub">accuracy</div>
+    </div>
+  </div>
+
+  <div class="list-item">
+    <div class="list-item__icon" style="background: var(--color-success-soft); color: var(--color-success);">✓</div>
+    <div class="list-item__text">Correct</div><b>ADMIN_CORRECT</b>
+  </div>
+  <div class="list-item">
+    <div class="list-item__icon" style="background: var(--color-danger-soft); color: var(--color-danger);">✕</div>
+    <div class="list-item__text">Incorrect</div><b>ADMIN_INCORRECT</b>
+  </div>
+  <div class="list-item">
+    <div class="list-item__icon" style="background: var(--color-surface-2);">○</div>
+    <div class="list-item__text">Unattempted</div><b>ADMIN_SKIP</b>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="stat__n">ADMIN_MINS</div><div class="stat__l">Time (min)</div></div>
+    <div class="stat"><div class="stat__n">ADMIN_PCT%</div><div class="stat__l">Accuracy</div></div>
+    <div class="stat"><div class="stat__n">ADMIN_RANK</div><div class="stat__l">Rank</div></div>
+  </div>
+  ═══════════════════════════════════════════════════════════════════════
+  END ADMIN BLOCK
+  ═══════════════════════════════════════════════════════════════════════
+  -->
+
+  <script src="/js/ui.js?v=mqye4cj4"></script>
   <script>
-    document.querySelectorAll('[data-ring]').forEach(ring => {
-      const pct = +ring.getAttribute('data-ring');
-      const c = 2 * Math.PI * 74;
-      ring.style.strokeDasharray = c;
-      ring.style.strokeDashoffset = c;
-      requestAnimationFrame(() => { ring.style.strokeDashoffset = c * (1 - pct / 100); });
-    });
+  /* Performance page — reads auto-computed result from localStorage.
+     Detailed admin analysis (rank, percentile, topic breakdown) is
+     commented out above for future school exam system use. */
+  (function () {
+    var body = document.getElementById('perfBody');
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    var result = null;
+    try { result = JSON.parse(localStorage.getItem('ronyx_last_result') || 'null'); } catch(e) {}
+
+    if (!result) {
+      body.innerHTML =
+        '<div class="empty text-center"><div class="empty__icon">&#128236;</div>' +
+        '<p>No result yet.<br><small class="text-muted">Complete an exam first.</small></p>' +
+        '<a href="/pages/student/exams.html" class="btn btn--primary" style="margin-top:var(--space-4);">Browse exams</a></div>';
+      return;
+    }
+
+    var pct      = result.percentage || 0;
+    var c        = 2 * Math.PI * 74;
+    var gradeCol = pct >= 70 ? 'var(--color-success)' : pct >= 50 ? '#f59e0b' : 'var(--color-danger)';
+
+    body.innerHTML =
+      '<h1 class="title-lg mb-1">' + esc(result.examTitle || 'Result') + '</h1>' +
+      '<p class="text-muted mb-4">Completed ' +
+        new Date(result.completedAt).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) + '</p>' +
+
+      '<div class="ring mb-4">' +
+        '<svg width="170" height="170">' +
+          '<circle class="ring__bg" cx="85" cy="85" r="74"></circle>' +
+          '<circle class="ring__fg" cx="85" cy="85" r="74" stroke="url(#pg)" id="pRing"></circle>' +
+          '<defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0" stop-color="#34d399"></stop>' +
+            '<stop offset="1" stop-color="#6d5efc"></stop>' +
+          '</linearGradient></defs>' +
+        '</svg>' +
+        '<div class="ring__center">' +
+          '<div class="ring__value" style="color:' + gradeCol + '">' + pct + '%</div>' +
+          '<div class="ring__sub">accuracy</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="list-item">' +
+        '<div class="list-item__icon" style="background:var(--color-success-soft);color:var(--color-success);">&#10003;</div>' +
+        '<div class="list-item__text">Correct</div><b style="color:var(--color-success)">' + (result.correct || 0) + '</b>' +
+      '</div>' +
+      '<div class="list-item">' +
+        '<div class="list-item__icon" style="background:var(--color-danger-soft);color:var(--color-danger);">&#10005;</div>' +
+        '<div class="list-item__text">Incorrect</div><b style="color:var(--color-danger)">' + (result.incorrect || 0) + '</b>' +
+      '</div>' +
+      '<div class="list-item">' +
+        '<div class="list-item__icon" style="background:var(--color-surface-2);">&#9898;</div>' +
+        '<div class="list-item__text">Skipped</div><b>' + (result.unattempted || 0) + '</b>' +
+      '</div>' +
+
+      '<div class="stat-grid mt-4 mb-4">' +
+        '<div class="stat"><div class="stat__n">' + (result.timeTaken || 0) + '</div><div class="stat__l">Minutes</div></div>' +
+        '<div class="stat"><div class="stat__n" style="color:' + gradeCol + '">' + pct + '%</div><div class="stat__l">Accuracy</div></div>' +
+        '<div class="stat"><div class="stat__n" style="color:' + gradeCol + '">' + (result.grade || '—') + '</div><div class="stat__l">Grade</div></div>' +
+      '</div>' +
+
+      '<a href="/pages/student/qreview.html" class="btn btn--primary">Review all questions</a>' +
+      '<a href="/pages/student/results.html" class="btn btn--ghost" style="margin-top:var(--space-2);">Back to result</a>';
+
+    var ring = document.getElementById('pRing');
+    ring.style.strokeDasharray  = c;
+    ring.style.strokeDashoffset = c;
+    requestAnimationFrame(function () { ring.style.strokeDashoffset = c * (1 - pct / 100); });
+  })();
   </script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
 </body>
 </html>

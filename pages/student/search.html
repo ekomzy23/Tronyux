@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Search — Runyx</title>
+  <title>Search — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,12 +21,32 @@
     </div>
 
     <div class="app__body">
-      <p class="text-tiny mb-4">Recent</p>
-      <a href="/pages/student/instructions.html" class="row-card"><div class="row-card__icon">📘</div><div class="row-card__meta"><h4>Data Structures Final</h4><p>Exam · 60 marks</p></div></a>
-      <a href="/pages/student/notes.html" class="row-card"><div class="row-card__icon">📔</div><div class="row-card__meta"><h4>Recursion notes</h4><p>Study note</p></div></a>
-      <a href="/pages/student/results.html" class="row-card"><div class="row-card__icon">📊</div><div class="row-card__meta"><h4>My results</h4><p>Analytics</p></div></a>
+      <div id="searchResults">
+        <div class="empty" style="margin-top:32px;"><div class="empty__icon">🔍</div><p>Search exams, topics or notes.</p></div>
+      </div>
     </div>
+  <script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="/js/config.js?v=mqye4cj4"></script>
+  <script src="/js/appwrite.js?v=mqye4cj4"></script>
+  <script src="/js/data.js?v=mqye4cj4"></script>
+  <script src="/js/render.js?v=mqye4cj4"></script>
+  <script>
+    var input = document.querySelector('.appbar .input');
+    var el = document.getElementById('searchResults');
+    var allExams = [];
+    (async function() {
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) return;
+      allExams = await RonyxData.listExams().catch(function(){ return []; });
+    })();
+    if (input) input.addEventListener('input', function() {
+      var q = input.value.trim().toLowerCase();
+      if (!q) { el.innerHTML = '<div class="empty" style="margin-top:32px;"><div class="empty__icon">🔍</div><p>Search exams, topics or notes.</p></div>'; return; }
+      var hits = allExams.filter(function(e){ return (e.title+' '+(e.courseCode||'')+' '+(e.topic||'')).toLowerCase().includes(q); });
+      el.innerHTML = hits.length ? hits.map(renderExamCard).join('') : '<div class="empty"><div class="empty__icon">🕳️</div><p>No results for "'+q+'"</p></div>';
+    });
+  </script>
   </div>
-  <script src="/js/theme.js"></script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
 </body>
 </html>
+

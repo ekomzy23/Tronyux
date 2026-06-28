@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Live Monitor &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .time-green { color:var(--color-success); font-size:13px; font-weight:700; }
+    .time-yellow { color:var(--color-warning); font-size:13px; font-weight:700; }
+    .time-red { color:var(--color-danger); font-size:13px; font-weight:700; }
+    .refresh-hint { text-align:center; font-size:12px; color:var(--color-muted); margin-bottom:12px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Live Monitor</span>
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+
+    <div class="app__body">
+
+      <!-- Exam selector -->
+      <div class="chips mb-4" id="examChips" style="overflow-x:auto;flex-wrap:nowrap;">
+        <button class="chip is-active" data-eid="" onclick="selectExam(this,'')">All Exams</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-grid mb-4">
+        <div class="stat stat--accent"><div class="stat__n" id="kOnline">0</div><div class="stat__l">Online</div></div>
+        <div class="stat"><div class="stat__n" id="kDone">0</div><div class="stat__l">Submitted</div></div>
+        <div class="stat"><div class="stat__n" id="kFlagged">0</div><div class="stat__l">Flagged</div></div>
+      </div>
+
+      <div class="refresh-hint" id="refreshHint">Refreshing in 15s&hellip;</div>
+
+      <!-- Candidate list -->
+      <div class="section-hd"><h3>Active Candidates</h3></div>
+      <div id="candidateList"></div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    let selectedExamId = '', countdown = 15, countdownTimer;
+    let liveAttempts = [], liveExams = [];
+
+    function selectExam(btn, eid) {
+      selectedExamId = eid;
+      document.querySelectorAll('#examChips .chip').forEach(c => c.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      renderCandidates();
+    }
+
+    function elapsed(startedAt) {
+      if (!startedAt) return '—';
+      var ms = Date.now() - new Date(startedAt).getTime();
+      var m = Math.floor(ms/60000), s = Math.floor((ms%60000)/1000);
+      return m + 'm ' + s + 's';
+    }
+
+    function renderCandidates() {
+      var list = selectedExamId
+        ? liveAttempts.filter(function(a){ return a.examId === selectedExamId; })
+        : liveAttempts;
+      document.getElementById('kOnline').textContent   = list.filter(function(a){ return a.status==='in_progress'; }).length;
+      document.getElementById('kDone').textContent     = list.filter(function(a){ return a.status==='submitted'; }).length;
+      document.getElementById('kFlagged').textContent  = 0;
+      var el = document.getElementById('candidateList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty" style="margin-top:16px;"><div class="empty__icon">📡</div><p>No active attempts right now.</p></div>';
+        return;
+      }
+      el.innerHTML = list.map(function(a) {
+        var exam = liveExams.find(function(e){ return e.$id === a.examId; });
+        var examTitle = exam ? exam.title : a.examId;
+        var initial = (a.userId||'?')[0].toUpperCase();
+        var statusCls = a.status === 'submitted' ? 'candidate-card--warning' : '';
+        return '<div class="candidate-card ' + statusCls + '">' +
+          '<div style="width:38px;height:38px;border-radius:12px;background:var(--gradient-brand);display:grid;place-items:center;font-weight:700;color:#fff;flex-shrink:0;">' + initial + '</div>' +
+          '<div class="candidate-card__info">' +
+            '<div class="candidate-card__name">' + a.userId.slice(-8) + '</div>' +
+            '<div class="candidate-card__meta">' + examTitle + ' &middot; ' + a.status + '</div>' +
+          '</div>' +
+          '<div><div class="time-green">' + elapsed(a.startedAt) + '</div>' +
+            '<div style="font-size:11px;color:var(--color-muted);text-align:right;">elapsed</div>' +
+          '</div></div>';
+      }).join('');
+    }
+
+    async function loadLiveData() {
+      try {
+        liveAttempts = await RonyxAdmin.listAttempts(selectedExamId || null, 50).catch(function(){ return []; });
+        if (!liveAttempts) liveAttempts = [];
+
+        // Build exam chips from unique examIds
+        var examIds = [...new Set(liveAttempts.map(function(a){ return a.examId; }))];
+        var chips = document.getElementById('examChips');
+        // Remove old chips (keep 'All Exams')
+        while (chips.children.length > 1) chips.removeChild(chips.lastChild);
+        for (var i = 0; i < examIds.length; i++) {
+          var exam = liveExams.find(function(e){ return e.$id === examIds[i]; });
+          if (!exam) {
+            try { exam = await RonyxAdmin.getExam(examIds[i]); if (exam) liveExams.push(exam); } catch(e2) {}
+          }
+          var btn = document.createElement('button');
+          btn.className = 'chip';
+          btn.dataset.eid = examIds[i];
+          btn.textContent = exam ? exam.title : examIds[i].slice(-8);
+          btn.onclick = (function(b, eid){ return function(){ selectExam(b, eid); }; })(btn, examIds[i]);
+          chips.appendChild(btn);
+        }
+        renderCandidates();
+      } catch(e) { console.error(e); }
+    }
+
+    function startCountdown() {
+      countdown = 15;
+      clearInterval(countdownTimer);
+      countdownTimer = setInterval(function() {
+        countdown--;
+        document.getElementById('refreshHint').textContent = 'Refreshing in ' + countdown + 's…';
+        if (countdown <= 0) { countdown = 15; loadLiveData(); }
+      }, 1000);
+    }
+
+    loadLiveData();
+    startCountdown();
+  </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,106 @@
+/* ============================================================
+   RONYX · tokens.css
+   The single source of truth for the design system.
+   Change a value here and it updates everywhere.
+   Load this FIRST, before reset.css and base.css.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Brand & accent ---------- */
+  --color-primary:        #6d5efc;   /* main violet */
+  --color-primary-2:      #8b5cf6;   /* lighter violet (gradient end) */
+  --color-primary-soft:   rgba(109, 94, 252, .16);
+  --gradient-brand:       linear-gradient(135deg, #6d5efc, #8b5cf6);
+
+  /* ---------- Surfaces & background ---------- */
+  --color-bg:             #08081a;   /* app background */
+  --color-bg-2:           #0c0c24;   /* raised background */
+  --color-surface:        rgba(255, 255, 255, .035);  /* card */
+  --color-surface-2:      rgba(255, 255, 255, .06);   /* hover / input */
+  --color-stroke:         rgba(255, 255, 255, .08);   /* borders */
+  --color-stroke-2:       rgba(255, 255, 255, .14);   /* strong border */
+
+  /* ---------- Text ---------- */
+  --color-text:           #f3f3fb;
+  --color-muted:          #9aa0bd;
+  --color-muted-2:        #6a6f8c;
+
+  /* ---------- Status ---------- */
+  --color-success:        #34d399;
+  --color-success-soft:   rgba(52, 211, 153, .14);
+  --color-danger:         #fb7185;
+  --color-danger-soft:    rgba(251, 113, 133, .14);
+  --color-warning:        #fbbf24;
+  --color-warning-soft:   rgba(251, 191, 36, .14);
+
+  /* ---------- Typography ---------- */
+  --font-display: 'Sora', system-ui, sans-serif;   /* headings */
+  --font-body:    'Inter', system-ui, sans-serif;  /* everything else */
+
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 15px;
+  --text-md:   18px;
+  --text-lg:   24px;
+  --text-xl:   30px;
+  --text-2xl:  40px;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-extra:    800;
+
+  --leading-tight: 1.15;
+  --leading-base:  1.5;
+
+  /* ---------- Spacing scale (4px base) ---------- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  /* ---------- Elevation ---------- */
+  --shadow-brand: 0 18px 50px -18px rgba(76, 52, 200, .6);
+  --shadow-card:  0 8px 24px -12px rgba(0, 0, 0, .5);
+
+  /* ---------- Effects ---------- */
+  --blur-glass: blur(14px);
+
+  /* ---------- Layout ---------- */
+  --app-max-width: 420px;   /* mobile-first phone width */
+
+  /* ---------- Motion ---------- */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --transition-fast: .2s var(--ease);
+  --transition-base: .35s var(--ease);
+}
+
+/* ------------------------------------------------------------
+   Light theme override.
+   Add  data-theme="light"  to the <html> tag to activate.
+   ------------------------------------------------------------ */
+[data-theme="light"] {
+  --color-bg:           #f5f5fb;
+  --color-bg-2:         #ffffff;
+  --color-surface:      rgba(20, 20, 40, .03);
+  --color-surface-2:    rgba(20, 20, 40, .06);
+  --color-stroke:       rgba(20, 20, 40, .10);
+  --color-stroke-2:     rgba(20, 20, 40, .18);
+  --color-text:         #14142b;
+  --color-muted:        #5a6078;
+  --color-muted-2:      #8a90a8;
+  --color-primary-soft: rgba(109, 94, 252, .12);
+}

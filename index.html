@@ -3,63 +3,240 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Runyx — Exams. Evolved.</title>
-
-  <!-- Fonts -->
+  <title>Ronyx — Exams. Evolved.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #07070d; overflow: hidden; font-family: 'Sora', sans-serif; }
 
-  <!-- Styles (always in this order) -->
-  <link rel="stylesheet" href="/css/tokens.css">
-  <link rel="stylesheet" href="/css/reset.css">
-  <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/components.css">
+    /* ── Canvas (particles) ── */
+    #cv { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ── Splash shell ── */
+    .splash {
+      position: fixed; inset: 0; z-index: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+
+    /* ── Central energy burst ── */
+    .burst {
+      position: absolute;
+      width: 360px; height: 360px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(109,94,252,.95) 0%,
+        rgba(109,94,252,.55) 18%,
+        rgba(80,40,160,.28) 45%,
+        transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%) scale(0);
+      opacity: 0;
+      filter: blur(18px);
+      animation: burstIn .38s cubic-bezier(.1,.85,.15,1) .05s forwards;
+      z-index: 0;
+    }
+    @keyframes burstIn {
+      0%   { opacity: 0;  transform: translate(-50%,-50%) scale(0); }
+      55%  { opacity: 1;  transform: translate(-50%,-50%) scale(1.25); }
+      100% { opacity: .7; transform: translate(-50%,-50%) scale(1); }
+    }
+
+    /* ── Logo ── */
+    .logo-wrap {
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-img {
+      width: 230px; height: 230px; object-fit: contain;
+      opacity: 0;
+      transform: scale(2.4);
+      filter: blur(48px) brightness(5) saturate(2);
+      animation: logoMat .95s cubic-bezier(.08,.88,.12,1) .28s forwards;
+      position: relative; z-index: 3;
+      display: block;
+    }
+    @keyframes logoMat {
+      0%   { opacity: .08; transform: scale(2.4);  filter: blur(48px) brightness(5) saturate(2); }
+      40%  { opacity: .75; transform: scale(1.1);  filter: blur(8px)  brightness(2) saturate(1.5); }
+      70%  { opacity: .95; transform: scale(.98);  filter: blur(1px)  brightness(1.1); }
+      100% { opacity: 1;   transform: scale(1);
+             filter: blur(0) brightness(1)
+               drop-shadow(0 0 55px rgba(109,94,252,.75))
+               drop-shadow(0 0 22px rgba(167,139,250,.5))
+               drop-shadow(0 0  8px rgba(255,255,255,.2)); }
+    }
+
+    /* Scan line (exam scanner metaphor) */
+    .scan {
+      position: absolute;
+      top: 0; left: -15%; right: -15%; height: 38%;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(167,139,250,.08) 35%,
+        rgba(255,255,255,.22) 50%,
+        rgba(167,139,250,.08) 65%,
+        transparent 100%);
+      transform: translateY(-130%);
+      animation: scanDown .85s cubic-bezier(.4,0,.55,1) 1.05s forwards;
+      z-index: 4; pointer-events: none;
+    }
+    @keyframes scanDown {
+      0%   { transform: translateY(-130%); opacity: 1; }
+      75%  { opacity: .8; }
+      100% { transform: translateY(330%);  opacity: 0; }
+    }
+
+    /* Pulse rings */
+    .ring {
+      position: absolute; border-radius: 50%;
+      border: 1.5px solid rgba(109,94,252,.6);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%) scale(.3);
+      opacity: 0; pointer-events: none; z-index: 1;
+    }
+    .r1 { width: 270px; height: 270px; animation: ringExp 1.05s ease .82s forwards; }
+    .r2 { width: 350px; height: 350px; animation: ringExp 1.05s ease 1.01s forwards; border-color: rgba(109,94,252,.38); }
+    .r3 { width: 450px; height: 450px; animation: ringExp 1.15s ease 1.22s forwards; border-color: rgba(109,94,252,.18); }
+    @keyframes ringExp {
+      0%  { opacity: 0;   transform: translate(-50%,-50%) scale(.3); }
+      12% { opacity: 1; }
+      100%{ opacity: 0;   transform: translate(-50%,-50%) scale(1); }
+    }
+
+    /* ── Tagline ── */
+    .tagline {
+      margin-top: 28px; position: relative; z-index: 2;
+      font-size: 11.5px; font-weight: 700;
+      letter-spacing: .3em; text-transform: uppercase;
+      color: rgba(255,255,255,.42);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .tagline span {
+      display: inline-block;
+      opacity: 0; transform: translateY(9px);
+    }
+
+    /* ── Load bar ── */
+    .bar-wrap {
+      position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%);
+      width: 90px; height: 2px;
+      background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden;
+      opacity: 0; animation: fadeIn .3s ease 1.9s forwards; z-index: 10;
+    }
+    .bar-fill {
+      height: 100%; width: 0; border-radius: 2px;
+      background: linear-gradient(90deg, #6d5efc, #a78bfa, #c4b5fd);
+      transition: width 1.85s cubic-bezier(.2,.85,.25,1);
+    }
+
+    /* ── "Powered by" ── */
+    .byline {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+      color: rgba(255,255,255,.2); white-space: nowrap;
+      opacity: 0; animation: fadeIn .4s ease 2s forwards; z-index: 10;
+    }
+
+    /* ── Exit (page turns upward like flipping an exam sheet) ── */
+    .splash.exit {
+      animation: pageFlip .44s cubic-bezier(.75,0,.9,.3) forwards !important;
+    }
+    @keyframes pageFlip {
+      0%   { clip-path: inset(0 0 0 0 round 0px); opacity: 1; }
+      100% { clip-path: inset(0 0 100% 0 round 0px); opacity: .2; }
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes wordIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ============ App shell ============ -->
-  <div class="app">
+  <canvas id="cv"></canvas>
 
-    <!-- Status bar -->
+  <div class="splash" id="splash">
+    <div class="burst"></div>
 
-    <!-- ============ Splash content ============ -->
-    <div class="app__body center" style="gap: var(--space-5);">
-      <div class="logo-mark logo-mark--lg">R</div>
-      <h1 class="title-xl">Runyx</h1>
-      <p class="text-muted" style="max-width: 260px;">
-        Exams. Evolved. Learning. Empowered.<br>
-        Your smart way to learn and excel.
-      </p>
-      <div class="pbar" style="width: 140px; margin-top: var(--space-2);">
-        <i class="pbar__fill" style="width: 0;" id="loaderFill"></i>
-      </div>
+    <div class="logo-wrap">
+      <img class="logo-img" src="/assets/images/ronyx-logo.png" alt="Ronyx" id="logoImg">
+      <div class="scan"></div>
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
     </div>
 
+    <div class="tagline" id="tagline"></div>
   </div>
 
-  <!-- ============ Splash logic ============ -->
+  <div class="bar-wrap"><div class="bar-fill" id="barFill"></div></div>
+  <div class="byline">BY GBY360</div>
+
   <script>
-    // Animate the loader bar, then move to the welcome screen.
-    const fill = document.getElementById('loaderFill');
+    /* ── Particle canvas ─────────────────────────────────── */
+    const cv  = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+    resize(); addEventListener('resize', resize);
 
-    // kick off the fill on the next frame so the transition runs
-    requestAnimationFrame(() => {
-      fill.style.transition = 'width 2s ' + 'cubic-bezier(.2,.8,.2,1)';
-      fill.style.width = '100%';
+    const pts = Array.from({length: 65}, () => mkPt(true));
+    function mkPt(scatter) {
+      return {
+        x:  Math.random() * innerWidth,
+        y:  scatter ? Math.random() * innerHeight : innerHeight + 6,
+        r:  Math.random() * 1.6 + .3,
+        vx: (Math.random() - .5) * .22,
+        vy: -(Math.random() * .5 + .1),
+        a:  Math.random() * .32 + .04,
+        pulse: Math.random() * Math.PI * 2,
+        pv: Math.random() * .02 + .005,
+      };
+    }
+    function drawPts() {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      pts.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.pulse += p.pv;
+        if (p.y < -5) { Object.assign(p, mkPt(false)); }
+        if (p.x < -4 || p.x > cv.width + 4) p.x = Math.random() * cv.width;
+        const a = p.a * (.65 + .35 * Math.sin(p.pulse));
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(167,139,250,${a})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(drawPts);
+    }
+    drawPts();
+
+    /* ── Tagline reveal (word by word) ──────────────────── */
+    const words = ['LEARN', '·', 'EXCEL', '·', 'INNOVATE'];
+    const tg = document.getElementById('tagline');
+    words.forEach((w, i) => {
+      const sp = document.createElement('span');
+      sp.textContent = w;
+      sp.style.animation = `wordIn .22s ease ${1.18 + i * .105}s forwards`;
+      tg.appendChild(sp);
     });
 
-    // advance to welcome after the splash plays
-    setTimeout(() => {
-      window.location.href = '/pages/auth/welcome.html';
-    }, 2200);
+    /* ── Load bar ────────────────────────────────────────── */
+    requestAnimationFrame(() => setTimeout(() => {
+      document.getElementById('barFill').style.width = '100%';
+    }, 1920));
 
-    // let the user tap anywhere to skip
-    document.body.addEventListener('click', () => {
-      window.location.href = '/pages/auth/welcome.html';
-    });
+    /* ── Exit ───────────────────────────────────────────── */
+    const splash = document.getElementById('splash');
+    let gone = false;
+    function leave() {
+      if (gone) return; gone = true;
+      splash.classList.add('exit');
+      setTimeout(() => { location.href = '/pages/auth/welcome.html'; }, 420);
+    }
+    setTimeout(leave, 3600);
+    document.body.addEventListener('click', leave, { once: true });
   </script>
 
-  <script src="/js/theme.js"></script>
 </body>
 </html>

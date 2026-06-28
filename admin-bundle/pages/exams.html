@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Exams &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="dashboard.html" class="iconbtn">←</a>
+      <span class="appbar__title">Manage exams</span>
+      <button class="iconbtn" onclick="newExam()">＋</button>
+    </div>
+
+    <div class="app__body">
+      <div id="examList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+    </div>
+    <nav class="tabbar" data-nav-admin="exams"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/realtime.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    async function load() {
+      const exams = await RonyxAdmin.listExams();
+      const el = document.getElementById('examList');
+      if (!exams.length) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">📚</div><p>No exams yet. Tap ＋ to create one.</p></div>';
+        return;
+      }
+      const SB = s => s==='published'?'badge--green':s==='live'?'badge--violet':'badge--yellow';
+      const TYPE_ICON = { final:'📘', mid:'⚙️', ca:'📋', quiz:'🗄️', practice:'📝' };
+      const FMT_COL   = { mixed:'#9ca3af', objective:'#4ade80', theory:'#fbbf24' };
+      el.innerHTML = exams.map(e => {
+        const meta = [
+          e.courseCode || '',
+          e.level ? 'Year ' + e.level : '',
+          e.semester ? (e.semester === 1 ? '1st Sem' : '2nd Sem') : '',
+          e.durationMinutes ? e.durationMinutes + ' min' : '',
+          (e.questionsCount || 0) + ' Q',
+        ].filter(Boolean).join(' · ');
+        const fmtBadge = e.format
+          ? `<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.07);color:${FMT_COL[e.format]||'#9ca3af'};text-transform:uppercase;">${e.format}</span>`
+          : '';
+        return `
+        <div class="row-card" style="flex-direction:column;align-items:stretch;gap:8px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <div style="font-size:22px;flex-shrink:0;">${TYPE_ICON[e.type]||'📄'}</div>
+            <div style="flex:1;min-width:0;">
+              <h4 style="font-size:14px;font-weight:700;margin-bottom:2px;">${e.title}</h4>
+              <p style="font-size:11px;color:var(--color-muted);">${meta}</p>
+              ${e.department||e.faculty ? `<p style="font-size:10px;color:var(--color-muted-2);margin-top:2px;">${[e.department,e.faculty].filter(Boolean).join(' · ')}</p>` : ''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+              <span class="badge ${SB(e.status)}">${e.status}</span>
+              ${fmtBadge}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn--sm" style="flex:1;" onclick="location.href='questions.html?examId=${e.$id}'">📝 Questions</button>
+            <button class="btn btn--sm" style="flex:1;" onclick="location.href='exam-edit.html?id=${e.$id}'">✏️ Edit</button>
+            <button class="btn btn--sm btn--danger" onclick="delExam('${e.$id}')">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    function newExam() { location.href = 'exam-edit.html'; }
+    async function delExam(id) {
+      if (!confirm('Delete this exam?')) return;
+      try { await RonyxAdmin.deleteExam(id); load(); }
+      catch(e) { toast('Delete failed: ' + e.message); }
+    }
+    load();
+    if (window.RonyxRealtime && RONYX.CONFIGURED) RonyxRealtime.subscribe(RONYX.COLLECTIONS.exams, load);
+  </script>
+</body>
+</html>
+
+
+

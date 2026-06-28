@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Theory — Runyx</title>
+  <title>Theory &#8212; Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,51 +11,826 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    /* ---- override app body to flex column ---- */
+    .app__body { padding:0; overflow:hidden; display:flex; flex-direction:column; }
+
+    /* ---- question header ---- */
+    .q-hdr {
+      padding:8px 14px; background:var(--color-bg-2);
+      border-bottom:1px solid var(--color-stroke); flex-shrink:0;
+    }
+    .q-hdr__meta { display:flex; justify-content:space-between; font-size:11px; color:var(--color-muted-2); margin-bottom:4px; }
+    .q-hdr__text { font-size:14px; font-weight:600; line-height:1.4; }
+
+    /* ---- format toolbar ---- */
+    .fmtbar {
+      display:flex; overflow-x:auto; scrollbar-width:none; gap:3px;
+      padding:5px 10px; border-bottom:1px solid var(--color-stroke); flex-shrink:0;
+      align-items:center;
+    }
+    .fmtbar::-webkit-scrollbar { display:none; }
+    .fmtbar__sep { width:1px; height:18px; background:var(--color-stroke); flex-shrink:0; margin:0 3px; }
+    .fb {
+      flex-shrink:0; min-width:30px; height:30px; padding:0 8px; border-radius:8px;
+      border:1px solid transparent; background:transparent; color:var(--color-muted);
+      font-family:var(--font-body); font-size:12px; font-weight:700; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:.12s;
+    }
+    .fb:hover { background:var(--color-surface-2); color:var(--color-text); }
+    .fb.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.35); }
+
+    /* ---- editor ---- */
+    .editor-wrap { flex:1; overflow-y:auto; position:relative; }
+    #editor {
+      min-height:100%; padding:14px 16px 40px;
+      font-size:15px; line-height:1.7; color:var(--color-text);
+      outline:none; caret-color:var(--color-primary-2);
+      font-family:var(--font-body);
+    }
+    #editor:empty::before {
+      content:attr(data-placeholder);
+      color:var(--color-muted-2); pointer-events:none;
+    }
+    #editor h1 { font-size:22px; font-weight:800; margin:12px 0 6px; }
+    #editor h2 { font-size:18px; font-weight:700; margin:10px 0 5px; }
+    #editor h3 { font-size:15px; font-weight:700; margin:8px 0 4px; color:var(--color-primary-2); }
+    #editor ul, #editor ol { padding-left:20px; margin:6px 0; }
+    #editor li { margin:3px 0; }
+    #editor blockquote { border-left:3px solid var(--color-primary-2); margin:8px 0; padding:6px 12px; color:var(--color-muted); background:var(--color-surface); border-radius:0 8px 8px 0; }
+    #editor code, #editor pre { font-family:ui-monospace,monospace; background:var(--color-surface-2); border-radius:6px; padding:2px 6px; font-size:13px; }
+    #editor pre { display:block; padding:10px; margin:8px 0; overflow-x:auto; }
+    #editor mark { background:rgba(251,191,36,.3); color:var(--color-text); border-radius:3px; padding:0 2px; }
+    #editor img { max-width:100%; border-radius:10px; margin:8px 0; display:block; }
+    #editor hr { border:none; border-top:1px solid var(--color-stroke); margin:12px 0; }
+    #editor a { color:var(--color-primary-2); text-decoration:underline; }
+    #editor table { width:100%; border-collapse:collapse; margin:8px 0; }
+    #editor td, #editor th { border:1px solid var(--color-stroke); padding:6px 10px; font-size:13px; }
+    #editor th { background:var(--color-surface); font-weight:700; }
+
+    /* ---- word count bar ---- */
+    .wc-bar { position:absolute; bottom:0; left:0; right:0; display:flex; justify-content:space-between;
+              padding:3px 14px; background:var(--color-bg); border-top:1px solid var(--color-stroke);
+              font-size:10px; color:var(--color-muted-2); pointer-events:none; }
+
+    /* ---- bottom action bar ---- */
+    .action-bar {
+      display:flex; border-top:1px solid var(--color-stroke); flex-shrink:0;
+      background:var(--color-bg-2);
+    }
+    .ab-btn {
+      flex:1; padding:10px 4px; font-size:11px; font-weight:700; color:var(--color-muted);
+      border:none; background:transparent; cursor:pointer; display:flex;
+      flex-direction:column; align-items:center; gap:2px; transition:.15s;
+    }
+    .ab-btn span { font-size:16px; line-height:1; }
+    .ab-btn.active { color:var(--color-primary-2); background:var(--color-primary-soft); }
+
+    /* ---- keyboard sheet ---- */
+    .kb-sheet {
+      flex-shrink:0; border-top:1px solid var(--color-stroke);
+      background:var(--color-bg-2); display:none; flex-direction:column;
+      max-height:52vh;
+    }
+    .kb-sheet.open { display:flex; }
+    .kb-tabs { display:flex; overflow-x:auto; scrollbar-width:none; gap:0;
+               border-bottom:1px solid var(--color-stroke); flex-shrink:0; }
+    .kb-tabs::-webkit-scrollbar { display:none; }
+    .kbt { flex-shrink:0; padding:7px 14px; font-size:11px; font-weight:700;
+           color:var(--color-muted); border-bottom:2px solid transparent; cursor:pointer; transition:.12s; }
+    .kbt.active { color:var(--color-primary-2); border-bottom-color:var(--color-primary-2); }
+    .kb-panels { flex:1; overflow:hidden; position:relative; min-height:120px; }
+    .kbp { position:absolute; inset:0; display:none; overflow-y:auto;
+            grid-template-columns:repeat(6,1fr); gap:4px; padding:6px; }
+    .kbp.active { display:grid; }
+    .ks {
+      border-radius:8px; border:1px solid var(--color-stroke); background:var(--color-surface);
+      color:var(--color-text); font-size:14px; padding:8px 4px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; user-select:none;
+      -webkit-tap-highlight-color:transparent; transition:transform .07s;
+    }
+    .ks:active { transform:scale(.88); background:var(--color-surface-2); }
+    .ks--wide { grid-column:span 2; font-size:11px; font-weight:700; }
+
+    /* ---- canvas overlay ---- */
+    .canvas-ov {
+      position:absolute; inset:0; z-index:50; background:var(--color-bg);
+      display:none; flex-direction:column;
+    }
+    .canvas-ov.open { display:flex; }
+    .cv-head { display:flex; align-items:center; gap:6px; padding:8px 12px;
+               border-bottom:1px solid var(--color-stroke); flex-shrink:0; }
+    .cv-head__title { flex:1; font-size:14px; font-weight:700; }
+    .cv-tools { display:flex; overflow-x:auto; scrollbar-width:none;
+                gap:4px; padding:6px 10px; border-bottom:1px solid var(--color-stroke); flex-shrink:0; }
+    .cv-tools::-webkit-scrollbar { display:none; }
+    .cvt { flex-shrink:0; min-width:36px; height:36px; border-radius:10px; border:1px solid var(--color-stroke);
+           background:var(--color-surface); color:var(--color-muted); font-size:14px;
+           cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.12s; }
+    .cvt:hover { background:var(--color-surface-2); }
+    .cvt.active { background:var(--color-primary-soft); color:var(--color-primary-2); border-color:rgba(109,94,252,.4); }
+    .cv-colors { display:flex; gap:5px; padding:5px 10px; flex-shrink:0; align-items:center; flex-wrap:wrap; }
+    .cc { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:.12s; flex-shrink:0; }
+    .cc.active { border-color:var(--color-text); transform:scale(1.2); }
+    .cv-sizes { display:flex; gap:5px; padding:0 10px 4px; align-items:center; flex-shrink:0; }
+    .csz { width:28px; height:28px; border-radius:8px; border:1px solid var(--color-stroke); background:var(--color-surface);
+           cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .csz.active { border-color:var(--color-primary-2); background:var(--color-primary-soft); }
+    .canvas-wrap { flex:1; overflow:hidden; position:relative; background:#111128; }
+    #drawCanvas { display:block; touch-action:none; cursor:crosshair; }
+    .cv-bottom { display:flex; gap:5px; padding:6px 10px; border-top:1px solid var(--color-stroke);
+                 flex-shrink:0; }
+    .cvb { flex:1; padding:8px; border-radius:10px; border:1px solid var(--color-stroke);
+           background:var(--color-surface); color:var(--color-muted); font-size:11px; font-weight:700; cursor:pointer; }
+    .cvb--primary { background:var(--gradient-brand); color:#fff; border-color:transparent; }
+  </style>
 </head>
 <body>
-  <div class="app">
+<div class="app">
 
-    <div class="appbar">
-      <a href="/pages/student/exam.html" class="iconbtn">&larr;</a>
-      <div style="flex: 1;"></div>
-      <span class="timer">&#9201; 01:18:02</span>
-    </div>
-
-    <div class="app__body">
-      <div class="between mb-4">
-        <span class="text-tiny">Question 25 of 60</span>
-        <span class="badge badge--green">Theory &middot; 5 marks</span>
-      </div>
-
-      <h3 class="title-md mb-4">Explain the concept of recursion with an example.</h3>
-
-      <!-- answer auto-saves: the data-autosave key makes it unique -->
-      <textarea class="input" id="answer25" rows="7"
-                data-autosave="exam:ds-final:q25"
-                placeholder="Write your answer here&hellip;"></textarea>
-
-      <!-- live save status -->
-      <div class="row" style="justify-content: flex-end; margin-top: 6px;">
-        <span class="text-tiny" data-status data-for="answer25"></span>
-      </div>
-
-      <div class="card mt-4 row" style="justify-content: space-around;">
-        <span class="link text-tiny">&fnof; Equation</span>
-        <span class="link text-tiny">&#127912; Canvas</span>
-        <span class="link text-tiny">&#10515; Upload</span>
-      </div>
-    </div>
-
-    <nav class="tabbar tabbar--actions">
-      <a href="/pages/student/exam.html" class="btn btn--ghost">&larr; Previous</a>
-      <a href="/pages/student/upload.html" class="btn btn--primary">Next &rarr;</a>
-    </nav>
+  <!-- Appbar -->
+  <div class="appbar">
+    <a href="/pages/student/exam.html" class="iconbtn">&#8592;</a>
+    <span class="appbar__title">Theory Answer</span>
+    <span class="timer">&#9201; <span id="tTimer">--:--</span></span>
   </div>
 
-  <!-- real-time auto-save -->
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/autosave.js"></script>
-  <script src="/js/theme.js"></script>
+  <!-- Main body (flex column) -->
+  <div class="app__body" id="appBody">
+
+    <!-- Question -->
+    <div class="q-hdr">
+      <div class="q-hdr__meta">
+        <span id="qMeta">Question 25 of 60</span>
+        <span class="badge badge--violet" id="qBadge">Theory &middot; 5 marks</span>
+      </div>
+      <div class="q-hdr__text" id="qText">Explain the concept of recursion with an example.</div>
+    </div>
+
+    <!-- Format toolbar -->
+    <div class="fmtbar" id="fmtbar">
+      <button class="fb" onclick="fmt('bold')" title="Bold" id="fb-bold"><b>B</b></button>
+      <button class="fb" onclick="fmt('italic')" title="Italic" id="fb-italic"><i>I</i></button>
+      <button class="fb" onclick="fmt('underline')" title="Underline" id="fb-under"><u>U</u></button>
+      <button class="fb" onclick="fmt('strikeThrough')" title="Strikethrough" id="fb-strike"><s>S</s></button>
+      <div class="fmtbar__sep"></div>
+      <button class="fb" onclick="fmtBlock('h1')" title="Heading 1">H1</button>
+      <button class="fb" onclick="fmtBlock('h2')" title="Heading 2">H2</button>
+      <button class="fb" onclick="fmtBlock('h3')" title="Heading 3">H3</button>
+      <div class="fmtbar__sep"></div>
+      <button class="fb" onclick="fmt('insertUnorderedList')" title="Bullet list">&#8226;&#8212;</button>
+      <button class="fb" onclick="fmt('insertOrderedList')" title="Numbered list">1.</button>
+      <button class="fb" onclick="fmtBlock('blockquote')" title="Quote">&#10077;</button>
+      <div class="fmtbar__sep"></div>
+      <button class="fb" onclick="insertCode()" title="Code">{ }</button>
+      <button class="fb" onclick="insertTable()" title="Table">&#9783;</button>
+      <button class="fb" onclick="insertHR()" title="Divider">&#8212;</button>
+      <div class="fmtbar__sep"></div>
+      <button class="fb" onclick="insertLink()" title="Link">&#128279;</button>
+      <button class="fb" onclick="fmt('hiliteColor','rgba(251,191,36,0.3)')" title="Highlight">&#11088;</button>
+      <button class="fb" onclick="fmt('removeFormat')" title="Clear formatting">&#8998;</button>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-wrap" id="editorWrap">
+      <div id="editor" contenteditable="true"
+           data-placeholder="Write your answer here..."></div>
+      <div class="wc-bar">
+        <span id="wcWords">0 words</span>
+        <span id="saveStatus">Unsaved</span>
+      </div>
+    </div>
+
+    <!-- Keyboard sheet -->
+    <div class="kb-sheet" id="kbSheet">
+      <div class="kb-tabs">
+        <button class="kbt active" onclick="switchKb('math',this)">&#x222b; Math</button>
+        <button class="kbt" onclick="switchKb('greek',this)">&#x3B1; Greek</button>
+        <button class="kbt" onclick="switchKb('sci',this)">&#x212F; Science</button>
+        <button class="kbt" onclick="switchKb('stats',this)">&#x3C3; Stats</button>
+        <button class="kbt" onclick="switchKb('chem',this)">&#x2697; Chem</button>
+        <button class="kbt" onclick="switchKb('prog',this)">&#60;/&#62; Code</button>
+      </div>
+      <div class="kb-panels">
+        <!-- Math keyboard -->
+        <div class="kbp active" id="kbp-math">
+          <button class="ks" onclick="ins('&#178;')">&#178;</button>
+          <button class="ks" onclick="ins('&#179;')">&#179;</button>
+          <button class="ks" onclick="ins('&#8308;')">&#8308;</button>
+          <button class="ks" onclick="ins('&#8319;')">&#x207F;</button>
+          <button class="ks" onclick="ins('&#8730;')">&#x221A;</button>
+          <button class="ks" onclick="ins('&#8731;')">&#x221B;</button>
+          <button class="ks" onclick="ins('&#189;')">&#189;</button>
+          <button class="ks" onclick="ins('&#8531;')">&#8531;</button>
+          <button class="ks" onclick="ins('&#188;')">&#188;</button>
+          <button class="ks" onclick="ins('&#8532;')">&#8532;</button>
+          <button class="ks" onclick="ins('&#190;')">&#190;</button>
+          <button class="ks" onclick="ins('&#8539;')">&#8539;</button>
+          <button class="ks" onclick="ins('&#8721;')">&#8721;</button>
+          <button class="ks" onclick="ins('&#8719;')">&#8719;</button>
+          <button class="ks" onclick="ins('&#8747;')">&#8747;</button>
+          <button class="ks" onclick="ins('&#8748;')">&#8748;</button>
+          <button class="ks" onclick="ins('&#8749;')">&#8749;</button>
+          <button class="ks" onclick="ins('&#8750;')">&#8750;</button>
+          <button class="ks" onclick="ins('&#8706;')">&#8706;</button>
+          <button class="ks" onclick="ins('&#8711;')">&#8711;</button>
+          <button class="ks" onclick="ins('&#8734;')">&#8734;</button>
+          <button class="ks" onclick="ins('&#177;')">&#177;</button>
+          <button class="ks" onclick="ins('&#215;')">&#215;</button>
+          <button class="ks" onclick="ins('&#247;')">&#247;</button>
+          <button class="ks" onclick="ins('&#8800;')">&#8800;</button>
+          <button class="ks" onclick="ins('&#8776;')">&#8776;</button>
+          <button class="ks" onclick="ins('&#8804;')">&#8804;</button>
+          <button class="ks" onclick="ins('&#8805;')">&#8805;</button>
+          <button class="ks" onclick="ins('&#8810;')">&#8810;</button>
+          <button class="ks" onclick="ins('&#8811;')">&#8811;</button>
+          <button class="ks" onclick="ins('&#8801;')">&#8801;</button>
+          <button class="ks" onclick="ins('&#8712;')">&#8712;</button>
+          <button class="ks" onclick="ins('&#8713;')">&#8713;</button>
+          <button class="ks" onclick="ins('&#8834;')">&#8834;</button>
+          <button class="ks" onclick="ins('&#8838;')">&#8838;</button>
+          <button class="ks" onclick="ins('&#8746;')">&#8746;</button>
+          <button class="ks" onclick="ins('&#8745;')">&#8745;</button>
+          <button class="ks" onclick="ins('&#8709;')">&#8709;</button>
+          <button class="ks" onclick="ins('&#8704;')">&#8704;</button>
+          <button class="ks" onclick="ins('&#8707;')">&#8707;</button>
+          <button class="ks" onclick="ins('&#8756;')">&#8756;</button>
+          <button class="ks" onclick="ins('&#8757;')">&#8757;</button>
+          <button class="ks" onclick="ins('&#8743;')">&#8743;</button>
+          <button class="ks" onclick="ins('&#8744;')">&#8744;</button>
+          <button class="ks" onclick="ins('&#172;')">&#172;</button>
+          <button class="ks" onclick="ins('&#8658;')">&#8658;</button>
+          <button class="ks" onclick="ins('&#8660;')">&#8660;</button>
+          <button class="ks" onclick="ins('&#8592;')">&#8592;</button>
+          <button class="ks" onclick="ins('&#8594;')">&#8594;</button>
+          <button class="ks" onclick="ins('&#8596;')">&#8596;</button>
+          <button class="ks" onclick="ins('&#8593;')">&#8593;</button>
+          <button class="ks" onclick="ins('&#8595;')">&#8595;</button>
+          <button class="ks" onclick="ins('&#8597;')">&#8597;</button>
+          <button class="ks" onclick="ins('&#9633;')">&#9633;</button>
+          <button class="ks" onclick="ins('&#9651;')">&#9651;</button>
+          <button class="ks" onclick="ins('&#8869;')">&#8869;</button>
+          <button class="ks" onclick="ins('&#8741;')">&#8741;</button>
+          <button class="ks" onclick="ins('&#8736;')">&#8736;</button>
+          <button class="ks" onclick="ins('&#8737;')">&#8737;</button>
+        </div>
+        <!-- Greek keyboard -->
+        <div class="kbp" id="kbp-greek">
+          <button class="ks" onclick="ins('&#945;')">&#945;</button>
+          <button class="ks" onclick="ins('&#946;')">&#946;</button>
+          <button class="ks" onclick="ins('&#947;')">&#947;</button>
+          <button class="ks" onclick="ins('&#948;')">&#948;</button>
+          <button class="ks" onclick="ins('&#949;')">&#949;</button>
+          <button class="ks" onclick="ins('&#950;')">&#950;</button>
+          <button class="ks" onclick="ins('&#951;')">&#951;</button>
+          <button class="ks" onclick="ins('&#952;')">&#952;</button>
+          <button class="ks" onclick="ins('&#953;')">&#953;</button>
+          <button class="ks" onclick="ins('&#954;')">&#954;</button>
+          <button class="ks" onclick="ins('&#955;')">&#955;</button>
+          <button class="ks" onclick="ins('&#956;')">&#956;</button>
+          <button class="ks" onclick="ins('&#957;')">&#957;</button>
+          <button class="ks" onclick="ins('&#958;')">&#958;</button>
+          <button class="ks" onclick="ins('&#960;')">&#960;</button>
+          <button class="ks" onclick="ins('&#961;')">&#961;</button>
+          <button class="ks" onclick="ins('&#963;')">&#963;</button>
+          <button class="ks" onclick="ins('&#964;')">&#964;</button>
+          <button class="ks" onclick="ins('&#965;')">&#965;</button>
+          <button class="ks" onclick="ins('&#966;')">&#966;</button>
+          <button class="ks" onclick="ins('&#967;')">&#967;</button>
+          <button class="ks" onclick="ins('&#968;')">&#968;</button>
+          <button class="ks" onclick="ins('&#969;')">&#969;</button>
+          <button class="ks" onclick="ins('&#977;')">&#977;</button>
+          <button class="ks" onclick="ins('&#981;')">&#981;</button>
+          <button class="ks" onclick="ins('&#913;')">&#913;</button>
+          <button class="ks" onclick="ins('&#914;')">&#914;</button>
+          <button class="ks" onclick="ins('&#915;')">&#915;</button>
+          <button class="ks" onclick="ins('&#916;')">&#916;</button>
+          <button class="ks" onclick="ins('&#917;')">&#917;</button>
+          <button class="ks" onclick="ins('&#918;')">&#918;</button>
+          <button class="ks" onclick="ins('&#919;')">&#919;</button>
+          <button class="ks" onclick="ins('&#920;')">&#920;</button>
+          <button class="ks" onclick="ins('&#923;')">&#923;</button>
+          <button class="ks" onclick="ins('&#924;')">&#924;</button>
+          <button class="ks" onclick="ins('&#925;')">&#925;</button>
+          <button class="ks" onclick="ins('&#926;')">&#926;</button>
+          <button class="ks" onclick="ins('&#928;')">&#928;</button>
+          <button class="ks" onclick="ins('&#929;')">&#929;</button>
+          <button class="ks" onclick="ins('&#931;')">&#931;</button>
+          <button class="ks" onclick="ins('&#932;')">&#932;</button>
+          <button class="ks" onclick="ins('&#933;')">&#933;</button>
+          <button class="ks" onclick="ins('&#934;')">&#934;</button>
+          <button class="ks" onclick="ins('&#935;')">&#935;</button>
+          <button class="ks" onclick="ins('&#936;')">&#936;</button>
+          <button class="ks" onclick="ins('&#937;')">&#937;</button>
+        </div>
+        <!-- Science/Physics keyboard -->
+        <div class="kbp" id="kbp-sci">
+          <button class="ks" onclick="ins('&#8463;')">&#8463;</button>
+          <button class="ks" onclick="ins('&#294;')">&#294;</button>
+          <button class="ks" onclick="ins('&#937;')">&#937;</button>
+          <button class="ks" onclick="ins('&#8451;')">&#8451;</button>
+          <button class="ks" onclick="ins('&#8457;')">&#8457;</button>
+          <button class="ks" onclick="ins('&#8490;')">&#8490;</button>
+          <button class="ks" onclick="ins('c = 3&#215;10&#8312; m/s')" class="ks--wide">c=3&#215;10&#8312;</button>
+          <button class="ks" onclick="ins('g = 9.81 m/s&#178;')" class="ks--wide">g=9.81</button>
+          <button class="ks" onclick="ins('&#8776;')" >&#8776;</button>
+          <button class="ks" onclick="ins('&#8943;')">&#8943;</button>
+          <button class="ks" onclick="ins('&#8741;')">&#8741;</button>
+          <button class="ks" onclick="ins('&#8869;')">&#8869;</button>
+          <button class="ks" onclick="ins('&#8736;')">&#8736;</button>
+          <button class="ks" onclick="ins('&#176;')">&#176;</button>
+          <button class="ks" onclick="ins('&#8960;')">&#8960;</button>
+          <button class="ks" onclick="ins('&#8644;')">&#8644;</button>
+          <button class="ks" onclick="ins('&#8651;')">&#8651;</button>
+          <button class="ks" onclick="ins('F = ma')" class="ks--wide">F=ma</button>
+          <button class="ks" onclick="ins('E = mc&#178;')" class="ks--wide">E=mc&#178;</button>
+          <button class="ks" onclick="ins('&#955;')">&#955;</button>
+          <button class="ks" onclick="ins('&#957;')">&#957;</button>
+          <button class="ks" onclick="ins('&#961;')">&#961;</button>
+          <button class="ks" onclick="ins('&#963;')">&#963;</button>
+          <button class="ks" onclick="ins('&#964;')">&#964;</button>
+          <button class="ks" onclick="ins('&#956;')">&#956;</button>
+          <button class="ks" onclick="ins('W = Fd')" class="ks--wide">W=Fd</button>
+          <button class="ks" onclick="ins('P = W/t')" class="ks--wide">P=W/t</button>
+          <button class="ks" onclick="ins('&#951;')">&#951;</button>
+          <button class="ks" onclick="ins('&#949;')">&#949;</button>
+          <button class="ks" onclick="ins('&#947;')">&#947;</button>
+          <button class="ks" onclick="ins('&#946;')">&#946;</button>
+        </div>
+        <!-- Statistics keyboard -->
+        <div class="kbp" id="kbp-stats">
+          <button class="ks" onclick="ins('x&#772;')">x&#772;</button>
+          <button class="ks" onclick="ins('&#956;')">&#956;</button>
+          <button class="ks" onclick="ins('&#963;')">&#963;</button>
+          <button class="ks" onclick="ins('&#963;&#178;')">&#963;&#178;</button>
+          <button class="ks" onclick="ins('&#961;')">&#961;</button>
+          <button class="ks" onclick="ins('&#8721;')">&#8721;</button>
+          <button class="ks" onclick="ins('P(')">P(</button>
+          <button class="ks" onclick="ins('E(X)')">E(X)</button>
+          <button class="ks" onclick="ins('Var(X)')">Var</button>
+          <button class="ks" onclick="ins('&#967;&#178;')">&#967;&#178;</button>
+          <button class="ks" onclick="ins('H&#8320;')">H&#8320;</button>
+          <button class="ks" onclick="ins('H&#8321;')">H&#8321;</button>
+          <button class="ks" onclick="ins('&#945; = 0.05')" class="ks--wide">&#945;=0.05</button>
+          <button class="ks" onclick="ins('&#946; = 0.05')" class="ks--wide">&#946;=0.05</button>
+          <button class="ks" onclick="ins('n')">n</button>
+          <button class="ks" onclick="ins('p')">p</button>
+          <button class="ks" onclick="ins('q = 1-p')">q</button>
+          <button class="ks" onclick="ins('r')">r</button>
+          <button class="ks" onclick="ins('&#8805;')">&#8805;</button>
+          <button class="ks" onclick="ins('&#8804;')">&#8804;</button>
+          <button class="ks" onclick="ins('~N(&#956;, &#963;&#178;)')" class="ks--wide">~N(&#956;,&#963;&#178;)</button>
+          <button class="ks" onclick="ins('~B(n, p)')" class="ks--wide">~B(n,p)</button>
+          <button class="ks" onclick="ins('z')">z</button>
+          <button class="ks" onclick="ins('t')">t</button>
+          <button class="ks" onclick="ins('F')">F</button>
+          <button class="ks" onclick="ins('&#8776;')">&#8776;</button>
+        </div>
+        <!-- Chemistry keyboard -->
+        <div class="kbp" id="kbp-chem">
+          <button class="ks" onclick="ins('&#8594;')">&#8594;</button>
+          <button class="ks" onclick="ins('&#8644;')">&#8644;</button>
+          <button class="ks" onclick="ins('&#8651;')">&#8651;</button>
+          <button class="ks" onclick="ins('&#8593;')">&#8593;</button>
+          <button class="ks" onclick="ins('&#8595;')">&#8595;</button>
+          <button class="ks" onclick="ins('&#916;')">&#916;</button>
+          <button class="ks" onclick="ins('H')">H</button>
+          <button class="ks" onclick="ins('He')">He</button>
+          <button class="ks" onclick="ins('Li')">Li</button>
+          <button class="ks" onclick="ins('Be')">Be</button>
+          <button class="ks" onclick="ins('B')">B</button>
+          <button class="ks" onclick="ins('C')">C</button>
+          <button class="ks" onclick="ins('N')">N</button>
+          <button class="ks" onclick="ins('O')">O</button>
+          <button class="ks" onclick="ins('F')">F</button>
+          <button class="ks" onclick="ins('Ne')">Ne</button>
+          <button class="ks" onclick="ins('Na')">Na</button>
+          <button class="ks" onclick="ins('Mg')">Mg</button>
+          <button class="ks" onclick="ins('Al')">Al</button>
+          <button class="ks" onclick="ins('Si')">Si</button>
+          <button class="ks" onclick="ins('P')">P</button>
+          <button class="ks" onclick="ins('S')">S</button>
+          <button class="ks" onclick="ins('Cl')">Cl</button>
+          <button class="ks" onclick="ins('Ar')">Ar</button>
+          <button class="ks" onclick="ins('K')">K</button>
+          <button class="ks" onclick="ins('Ca')">Ca</button>
+          <button class="ks" onclick="ins('Fe')">Fe</button>
+          <button class="ks" onclick="ins('Cu')">Cu</button>
+          <button class="ks" onclick="ins('Zn')">Zn</button>
+          <button class="ks" onclick="ins('Ag')">Ag</button>
+          <button class="ks" onclick="ins('Au')">Au</button>
+          <button class="ks" onclick="ins('Pb')">Pb</button>
+          <button class="ks" onclick="ins('&#8314;')">&#8314;</button>
+          <button class="ks" onclick="ins('&#8315;')">&#8315;</button>
+          <button class="ks" onclick="ins('&#8320;')">&#8320;</button>
+          <button class="ks" onclick="ins('&#8321;')">&#8321;</button>
+          <button class="ks" onclick="ins('&#8322;')">&#8322;</button>
+          <button class="ks" onclick="ins('&#8323;')">&#8323;</button>
+          <button class="ks" onclick="ins('&#8324;')">&#8324;</button>
+          <button class="ks" onclick="ins('&#8325;')">&#8325;</button>
+          <button class="ks" onclick="ins('&#8326;')">&#8326;</button>
+          <button class="ks" onclick="ins('&#8327;')">&#8327;</button>
+        </div>
+        <!-- Programming keyboard -->
+        <div class="kbp" id="kbp-prog">
+          <button class="ks" onclick="ins('{')">&#123;</button>
+          <button class="ks" onclick="ins('}')">&#125;</button>
+          <button class="ks" onclick="ins('[')">&#91;</button>
+          <button class="ks" onclick="ins(']')">&#93;</button>
+          <button class="ks" onclick="ins('(')">&#40;</button>
+          <button class="ks" onclick="ins(')')">&#41;</button>
+          <button class="ks" onclick="ins('==')">==</button>
+          <button class="ks" onclick="ins('!=')">!=</button>
+          <button class="ks" onclick="ins('&&')">&amp;&amp;</button>
+          <button class="ks" onclick="ins('||')">||</button>
+          <button class="ks" onclick="ins('!')">!</button>
+          <button class="ks" onclick="ins('&lt;&lt;')">&lt;&lt;</button>
+          <button class="ks" onclick="ins('if (') " class="ks--wide">if (</button>
+          <button class="ks" onclick="ins('else {')" class="ks--wide">else {</button>
+          <button class="ks" onclick="ins('for (i=0; i&lt;n; i++)')" class="ks--wide" style="font-size:9px;">for loop</button>
+          <button class="ks" onclick="ins('while (')" class="ks--wide">while (</button>
+          <button class="ks" onclick="ins('return ')" class="ks--wide">return</button>
+          <button class="ks" onclick="ins('function ')" class="ks--wide">function</button>
+          <button class="ks" onclick="ins('null')">null</button>
+          <button class="ks" onclick="ins('true')">true</button>
+          <button class="ks" onclick="ins('false')">false</button>
+          <button class="ks" onclick="ins('O(n)')">O(n)</button>
+          <button class="ks" onclick="ins('O(log n)')">O(lg)</button>
+          <button class="ks" onclick="ins('O(n&#178;)')">O(n&#178;)</button>
+          <button class="ks" onclick="ins('-&#62;')">-&#62;</button>
+          <button class="ks" onclick="ins('&#60;=')">&#60;=</button>
+          <button class="ks" onclick="ins('&#62;=')">&#62;=</button>
+          <button class="ks" onclick="ins('++')" >++</button>
+          <button class="ks" onclick="ins('--')" >--</button>
+          <button class="ks" onclick="ins('%')" >%</button>
+          <button class="ks" onclick="ins('~')" >~</button>
+          <button class="ks" onclick="ins('^')" >^</button>
+          <button class="ks" onclick="ins('&amp;')" >&amp;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom action bar -->
+    <div class="action-bar">
+      <button class="ab-btn active" id="ab-editor" onclick="abSwitch('editor')">
+        <span>&#9998;</span>Editor
+      </button>
+      <button class="ab-btn" id="ab-kb" onclick="abSwitch('kb')">
+        <span>&#9918;</span>Keyboard
+      </button>
+      <button class="ab-btn" id="ab-canvas" onclick="abSwitch('canvas')">
+        <span>&#127912;</span>Canvas
+      </button>
+      <button class="ab-btn" onclick="triggerUpload()">
+        <span>&#128190;</span>Upload
+      </button>
+    </div>
+    <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="insertImage(this)">
+
+  </div><!-- .app__body -->
+
+  <!-- Canvas overlay (inside .app) -->
+  <div class="canvas-ov" id="canvasOv">
+    <div class="cv-head">
+      <span class="cv-head__title">&#127912; Drawing Canvas</span>
+      <button class="iconbtn" onclick="closeCanvas()">&#10005;</button>
+    </div>
+    <div class="cv-tools">
+      <button class="cvt active" id="cvt-pen" onclick="setTool('pen')" title="Pen">&#9998;</button>
+      <button class="cvt" id="cvt-hl" onclick="setTool('hl')" title="Highlighter">&#9616;</button>
+      <button class="cvt" id="cvt-er" onclick="setTool('er')" title="Eraser">&#11036;</button>
+      <button class="cvt" id="cvt-line" onclick="setTool('line')" title="Line">&#8595;</button>
+      <button class="cvt" id="cvt-rect" onclick="setTool('rect')" title="Rectangle">&#9645;</button>
+      <button class="cvt" id="cvt-circ" onclick="setTool('circ')" title="Circle">&#9898;</button>
+      <button class="cvt" id="cvt-arr" onclick="setTool('arr')" title="Arrow">&#8594;</button>
+      <button class="cvt" id="cvt-txt" onclick="setTool('txt')" title="Text">T</button>
+    </div>
+    <div class="cv-colors" id="cvColors">
+      <span style="font-size:10px;color:var(--color-muted-2);margin-right:4px;">Color:</span>
+    </div>
+    <div class="cv-sizes">
+      <span style="font-size:10px;color:var(--color-muted-2);margin-right:4px;">Size:</span>
+      <button class="csz active" data-sz="2" onclick="setBrush(2)"><div style="width:2px;height:2px;background:currentColor;border-radius:50%;margin:auto;"></div></button>
+      <button class="csz" data-sz="4" onclick="setBrush(4)"><div style="width:4px;height:4px;background:currentColor;border-radius:50%;margin:auto;"></div></button>
+      <button class="csz" data-sz="8" onclick="setBrush(8)"><div style="width:8px;height:8px;background:currentColor;border-radius:50%;margin:auto;"></div></button>
+      <button class="csz" data-sz="16" onclick="setBrush(16)"><div style="width:14px;height:14px;background:currentColor;border-radius:50%;margin:auto;"></div></button>
+    </div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="drawCanvas"></canvas>
+    </div>
+    <div class="cv-bottom">
+      <button class="cvb" onclick="cvUndo()">&#8617; Undo</button>
+      <button class="cvb" onclick="cvClear()">Clear</button>
+      <button class="cvb cvb--primary" onclick="cvDone()">&#10003; Insert into Answer</button>
+    </div>
+  </div>
+
+</div><!-- .app -->
+
+<script src="/js/appwrite.min.js?v=mqye4cj4"></script>
+<script src="/js/config.js?v=mqye4cj4"></script>
+<script src="/js/theme.js?v=mqye4cj4"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ===== Rich Text Editor ===== */
+  var editor   = document.getElementById('editor');
+  var saveKey  = 'ronyx_theory_' + (new URLSearchParams(location.search).get('q') || 'demo');
+  var savedSel = null;
+  var saveTimer;
+
+  // Restore saved content
+  var saved = sessionStorage.getItem(saveKey);
+  if (saved) editor.innerHTML = saved;
+
+  // Save selection when editor loses focus (keyboard buttons steal focus)
+  editor.addEventListener('blur', function(){
+    var sel = window.getSelection();
+    if (sel && sel.rangeCount) savedSel = sel.getRangeAt(0).cloneRange();
+  });
+
+  // Autosave
+  editor.addEventListener('input', function(){
+    updateWc();
+    clearTimeout(saveTimer);
+    document.getElementById('saveStatus').textContent = 'Saving...';
+    saveTimer = setTimeout(function(){
+      sessionStorage.setItem(saveKey, editor.innerHTML);
+      document.getElementById('saveStatus').textContent = 'Saved ✓';
+    }, 700);
+  });
+
+  function updateWc() {
+    var text = editor.innerText || '';
+    var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    document.getElementById('wcWords').textContent = words + ' word' + (words===1?'':'s');
+  }
+  updateWc();
+
+  /* ---- Formatting commands ---- */
+  window.fmt = function(cmd, val) {
+    editor.focus();
+    document.execCommand(cmd, false, val || null);
+    editor.focus();
+  };
+  window.fmtBlock = function(tag) {
+    editor.focus();
+    document.execCommand('formatBlock', false, '<'+tag+'>');
+    editor.focus();
+  };
+  window.insertCode = function() {
+    editor.focus();
+    document.execCommand('insertHTML', false, '<code>&nbsp;</code>');
+    editor.focus();
+  };
+  window.insertHR = function() {
+    editor.focus();
+    document.execCommand('insertHTML', false, '<hr>');
+    editor.focus();
+  };
+  window.insertLink = function() {
+    var url = prompt('URL:', 'https://');
+    if (!url) return;
+    editor.focus();
+    document.execCommand('createLink', false, url);
+    editor.focus();
+  };
+  window.insertTable = function() {
+    editor.focus();
+    document.execCommand('insertHTML', false,
+      '<table><tr><th>Header 1</th><th>Header 2</th><th>Header 3</th></tr>' +
+      '<tr><td>Cell</td><td>Cell</td><td>Cell</td></tr>' +
+      '<tr><td>Cell</td><td>Cell</td><td>Cell</td></tr></table><p></p>');
+    editor.focus();
+  };
+
+  /* ---- Symbol insertion (from keyboard) ---- */
+  window.ins = function(sym) {
+    // Restore selection if we lost it
+    if (savedSel) {
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedSel);
+    } else {
+      editor.focus();
+    }
+    try { document.execCommand('insertText', false, sym); }
+    catch(e) {
+      // Fallback: insert at end
+      editor.focus();
+      var range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      var sel2 = window.getSelection();
+      sel2.removeAllRanges();
+      sel2.addRange(range);
+      document.execCommand('insertText', false, sym);
+    }
+    updateWc();
+    // Save selection for next symbol
+    var sel3 = window.getSelection();
+    if (sel3 && sel3.rangeCount) savedSel = sel3.getRangeAt(0).cloneRange();
+  };
+
+  /* ===== Keyboard Panels ===== */
+  var kbOpen = false;
+  window.switchKb = function(name, btn) {
+    document.querySelectorAll('.kbt').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.kbp').forEach(function(p){ p.classList.remove('active'); });
+    var p = document.getElementById('kbp-'+name);
+    if (p) p.classList.add('active');
+    if (btn) btn.classList.add('active');
+  };
+
+  /* ===== Bottom action bar ===== */
+  window.abSwitch = function(mode) {
+    document.querySelectorAll('.ab-btn').forEach(function(b){ b.classList.remove('active'); });
+    var kbSheet = document.getElementById('kbSheet');
+    if (mode === 'kb') {
+      document.getElementById('ab-kb').classList.add('active');
+      kbSheet.classList.toggle('open');
+      kbOpen = kbSheet.classList.contains('open');
+      if (kbOpen) {
+        // Save selection now before keyboard takes focus
+        var sel = window.getSelection();
+        if (sel && sel.rangeCount) savedSel = sel.getRangeAt(0).cloneRange();
+      }
+    } else if (mode === 'canvas') {
+      document.getElementById('ab-canvas').classList.add('active');
+      openCanvas();
+    } else {
+      document.getElementById('ab-editor').classList.add('active');
+      kbSheet.classList.remove('open');
+      kbOpen = false;
+      editor.focus();
+    }
+  };
+  window.triggerUpload = function() {
+    document.getElementById('imgUpload').click();
+  };
+  window.insertImage = function(input) {
+    var file = input.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      editor.focus();
+      document.execCommand('insertHTML', false, '<img src="'+e.target.result+'" alt="uploaded image"><p></p>');
+      updateWc();
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  };
+
+  /* ===== Canvas Drawing ===== */
+  var canvas, ctx, isDrawing=false, tool='pen', color='#ffffff', brushSz=3;
+  var snapshots=[], startX, startY, overlayImg;
+
+  var COLORS = ['#ffffff','#6d5efc','#34d399','#fb7185','#fbbf24','#60a5fa','#f472b6','#000000'];
+
+  function openCanvas() {
+    var ov = document.getElementById('canvasOv');
+    ov.classList.add('open');
+    setTimeout(initCanvas, 50);
+  }
+  window.closeCanvas = function() {
+    document.getElementById('canvasOv').classList.remove('open');
+    document.getElementById('ab-editor').classList.add('active');
+    document.getElementById('ab-canvas').classList.remove('active');
+  };
+
+  function initCanvas() {
+    canvas = document.getElementById('drawCanvas');
+    var wrap = document.getElementById('canvasWrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#111128';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    pushSnap();
+    bindCanvas();
+  }
+
+  // Color buttons
+  var cDiv = document.getElementById('cvColors');
+  COLORS.forEach(function(c){
+    var btn = document.createElement('div');
+    btn.className = 'cc' + (c===color?' active':'');
+    btn.style.background = c;
+    btn.style.border = '2px solid ' + (c===color?'var(--color-text)':'transparent');
+    btn.onclick = function(){
+      color = c;
+      document.querySelectorAll('.cc').forEach(function(x){
+        x.style.border = '2px solid '+(x.style.background===c?'var(--color-text)':'transparent');
+      });
+    };
+    cDiv.appendChild(btn);
+  });
+
+  window.setTool = function(t) {
+    tool = t;
+    document.querySelectorAll('.cvt').forEach(function(b){ b.classList.remove('active'); });
+    var el = document.getElementById('cvt-'+t);
+    if (el) el.classList.add('active');
+  };
+  window.setBrush = function(sz) {
+    brushSz = sz;
+    document.querySelectorAll('.csz').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelector('.csz[data-sz="'+sz+'"]').classList.add('active');
+  };
+
+  function getPos(e) {
+    var r = canvas.getBoundingClientRect();
+    var src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
+  }
+
+  function pushSnap() {
+    if (!ctx) return;
+    snapshots.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    if (snapshots.length > 40) snapshots.shift();
+  }
+
+  function bindCanvas() {
+    function start(e) {
+      e.preventDefault();
+      var p = getPos(e); startX=p.x; startY=p.y; isDrawing=true;
+      pushSnap();
+      if (tool==='pen'||tool==='hl'||tool==='er') {
+        ctx.beginPath(); ctx.moveTo(p.x,p.y);
+      }
+      if (tool==='txt') {
+        var text = prompt('Enter text:', '');
+        if (text) {
+          ctx.font = (brushSz*6)+'px Inter, sans-serif';
+          ctx.fillStyle = color;
+          ctx.fillText(text, p.x, p.y);
+          pushSnap();
+        }
+        isDrawing = false;
+      }
+    }
+    function move(e) {
+      if (!isDrawing) return; e.preventDefault();
+      var p = getPos(e);
+      if (tool==='pen'||tool==='hl'||tool==='er') {
+        ctx.lineWidth = tool==='hl' ? brushSz*4 : brushSz;
+        ctx.strokeStyle = tool==='er' ? '#111128' : color;
+        ctx.globalAlpha = tool==='hl' ? 0.3 : 1;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.lineTo(p.x,p.y); ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else if (tool==='line'||tool==='rect'||tool==='circ'||tool==='arr') {
+        // Restore last snapshot for preview
+        if (snapshots.length) ctx.putImageData(snapshots[snapshots.length-1],0,0);
+        ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=brushSz; ctx.lineCap='round';
+        if (tool==='line') { ctx.moveTo(startX,startY); ctx.lineTo(p.x,p.y); ctx.stroke(); }
+        else if (tool==='rect') { ctx.strokeRect(startX,startY,p.x-startX,p.y-startY); }
+        else if (tool==='circ') {
+          var cx=(startX+p.x)/2, cy=(startY+p.y)/2, rx=Math.abs(p.x-startX)/2, ry=Math.abs(p.y-startY)/2;
+          ctx.ellipse(cx,cy,rx,ry,0,0,2*Math.PI); ctx.stroke();
+        } else if (tool==='arr') {
+          ctx.moveTo(startX,startY); ctx.lineTo(p.x,p.y); ctx.stroke();
+          // arrowhead
+          var ang=Math.atan2(p.y-startY,p.x-startX), hs=12;
+          ctx.beginPath();
+          ctx.moveTo(p.x,p.y);
+          ctx.lineTo(p.x-hs*Math.cos(ang-0.4),p.y-hs*Math.sin(ang-0.4));
+          ctx.lineTo(p.x-hs*Math.cos(ang+0.4),p.y-hs*Math.sin(ang+0.4));
+          ctx.closePath(); ctx.fillStyle=color; ctx.fill();
+        }
+      }
+    }
+    function end(e) { if (!isDrawing) return; isDrawing=false; pushSnap(); }
+    canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move); canvas.addEventListener('mouseup',end);
+    canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',move,{passive:false}); canvas.addEventListener('touchend',end);
+  }
+
+  window.cvUndo = function() {
+    if (snapshots.length > 1) { snapshots.pop(); ctx.putImageData(snapshots[snapshots.length-1],0,0); }
+  };
+  window.cvClear = function() {
+    ctx.fillStyle='#111128'; ctx.fillRect(0,0,canvas.width,canvas.height); pushSnap();
+  };
+  window.cvDone = function() {
+    var dataUrl = canvas.toDataURL('image/png');
+    editor.focus();
+    document.execCommand('insertHTML', false, '<img src="'+dataUrl+'" style="max-width:100%;border-radius:10px;border:1px solid var(--color-stroke);" alt="drawing"><p></p>');
+    closeCanvas();
+    updateWc();
+  };
+
+  /* ===== Timer (reads from sessionStorage if exam is running) ===== */
+  var timerEl = document.getElementById('tTimer');
+  var dur = parseInt(sessionStorage.getItem('ronyx_minutes') || '30') * 60;
+  (function tick(){
+    if (dur <= 0) { timerEl.textContent='Time up'; return; }
+    dur--;
+    var m=Math.floor(dur/60), s=dur%60;
+    timerEl.textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    setTimeout(tick, 1000);
+  })();
+
+})();
+</script>
 </body>
 </html>

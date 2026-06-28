@@ -1,11 +1,12 @@
 /* ============================================================
-   RUNYX · tokens.css
+   RONYX · tokens.css
    The single source of truth for the design system.
    Change a value here and it updates everywhere.
    Load this FIRST, before reset.css and base.css.
    ============================================================ */
 
 :root {
+  color-scheme: dark;   /* tells browser to render native controls (selects, scrollbars) dark */
 
   /* ---------- Brand & accent ---------- */
   --color-primary:        #6d5efc;   /* main violet */

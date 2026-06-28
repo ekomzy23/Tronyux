@@ -1,0 +1,5 @@
+setup/
+admin-bundle/setup/
+*.md
+.git/
+node_modules/

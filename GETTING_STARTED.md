@@ -1,6 +1,6 @@
-# RUNYX — Getting Started (read this first)
+# RONYX — Getting Started (read this first)
 
-Runyx is an AI-powered exam app. It's plain **HTML + CSS + JavaScript** (no build
+Ronyx is an AI-powered exam app. It's plain **HTML + CSS + JavaScript** (no build
 step) with **Appwrite** as the backend. This guide tells you how everything links
 together and how to make it talk to Appwrite.
 
@@ -9,7 +9,7 @@ together and how to make it talk to Appwrite.
 ## 1. What's in the box
 
 ```
-runyx/
+ronyx/
 ├── index.html              ← entry point (splash screen)
 ├── vercel.json             ← Vercel hosting config
 ├── .env.example            ← (for later server-side functions)
@@ -55,7 +55,7 @@ You must **serve** the folder — don't double-click the HTML (the `/css/...` an
 `/js/...` paths only work when served).
 
 ```bash
-cd runyx
+cd ronyx
 npx serve .
 ```
 
@@ -113,7 +113,7 @@ Full detail in `setup/BACKEND.md`. Short version:
 Open **`js/config.js`** and set 3 things:
 
 ```js
-window.RUNYX_CONFIG = {
+window.RONYX_CONFIG = {
   CONFIGURED: true,                              // ← flip to true
   ENDPOINT:   'https://cloud.appwrite.io/v1',    // ← your endpoint
   PROJECT_ID: 'paste_your_project_id_here',      // ← your project ID
@@ -139,8 +139,8 @@ That's it. Now:
 | File           | Job |
 |----------------|-----|
 | `config.js`    | Your settings. The ONE file you edit to connect Appwrite. |
-| `appwrite.js`  | `runyxSignup`, `runyxLogin`, `runyxVerifyOtp`, `runyxForgot`, `runyxLogout`. |
-| `data.js`      | `RunyxData.listExams()`, `getExam()`, `startAttempt()`, `saveAnswers()`, `submitAttempt()`, `listResults()`, `uploadFile()`. |
+| `appwrite.js`  | `ronyxSignup`, `ronyxLogin`, `ronyxVerifyOtp`, `ronyxForgot`, `ronyxLogout`. |
+| `data.js`      | `RonyxData.listExams()`, `getExam()`, `startAttempt()`, `saveAnswers()`, `submitAttempt()`, `listResults()`, `uploadFile()`. |
 | `autosave.js`  | Any field with `data-autosave="key"` saves itself (browser + cloud). |
 | `render.js`    | Turns exam records into the cards you see on the dashboard. |
 | `ui.js`        | Builds the bottom navigation and restores your theme. |

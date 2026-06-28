@@ -1,0 +1,150 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Students &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .av-0{background:#6d5efc} .av-1{background:#10b981} .av-2{background:#f59e0b}
+    .av-3{background:#3b82f6} .av-4{background:#ec4899} .av-5{background:#8b5cf6}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="dashboard.html" class="iconbtn">←</a>
+      <span class="appbar__title">Students</span>
+    </div>
+
+    <div class="app__body">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search name or email&hellip;" oninput="render()">
+      </div>
+
+      <div class="chips mb-4" id="levelChips">
+        <button class="chip is-active" data-level="" onclick="setLevel(this)">All</button>
+        <button class="chip" data-level="1" onclick="setLevel(this)">Y1</button>
+        <button class="chip" data-level="2" onclick="setLevel(this)">Y2</button>
+        <button class="chip" data-level="3" onclick="setLevel(this)">Y3</button>
+        <button class="chip" data-level="4" onclick="setLevel(this)">Y4</button>
+        <button class="chip" data-level="5" onclick="setLevel(this)">Y5</button>
+      </div>
+
+      <div id="studentList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+    </div>
+
+    <button class="fab" onclick="location.href='student-view.html?id=new'">＋</button>
+
+    <div class="sheet-overlay" id="overlay" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet">
+      <div class="sheet__handle"></div>
+      <div class="sheet__title" id="sheetName">Student</div>
+      <div class="sheet__action" onclick="viewCurrent()">
+        <div class="sheet__action-icon">👤</div>
+        <div><div class="sheet__action-label">View Profile</div><div class="sheet__action-sub">Full details &amp; edit</div></div>
+      </div>
+      <div class="sheet__action sheet__action--danger" onclick="deleteCurrent()">
+        <div class="sheet__action-icon">🗑️</div>
+        <div><div class="sheet__action-label">Delete Account</div><div class="sheet__action-sub">Permanently remove student</div></div>
+      </div>
+    </div>
+
+    <nav class="tabbar" data-nav-admin="students"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let allStudents = [], activeLevel = '', activeId = '', activeName = '';
+    const avColors = ['av-0','av-1','av-2','av-3','av-4','av-5'];
+
+    function setLevel(btn) {
+      activeLevel = btn.dataset.level;
+      document.querySelectorAll('#levelChips .chip').forEach(c => c.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      render();
+    }
+
+    function render() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      let list = allStudents;
+      if (activeLevel) list = list.filter(s => String(s.level) === activeLevel);
+      if (q) list = list.filter(s => (s.name||'').toLowerCase().includes(q) || (s.email||'').toLowerCase().includes(q));
+      const el = document.getElementById('studentList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">🎓</div><p>No students found.</p></div>';
+        return;
+      }
+      el.innerHTML = list.map(s => {
+        const initial = (s.name || s.email || '?')[0].toUpperCase();
+        const lvl = Math.min(parseInt(s.level) || 0, 5);
+        const av = avColors[lvl];
+        const safeName = (s.name || 'Student').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="row-card" style="cursor:pointer;" onclick="openSheet('${s.$id}','${safeName}')">
+          <div class="avatar ${av}" style="width:40px;height:40px;border-radius:14px;display:grid;place-items:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;">${initial}</div>
+          <div class="row-card__meta" style="flex:1;">
+            <h4>${s.name || 'Unnamed'}</h4>
+            <p>${s.email || 'No email'}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${s.level ? `<span class="badge badge--violet">Y${s.level}</span>` : ''}
+            <button class="btn btn--sm" onclick="event.stopPropagation();location.href='student-view.html?id=${s.$id}'">View</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function openSheet(id, name) {
+      activeId = id; activeName = name;
+      document.getElementById('sheetName').textContent = name;
+      document.getElementById('overlay').classList.add('is-open');
+      document.getElementById('sheet').classList.add('is-open');
+    }
+    function closeSheet() {
+      document.getElementById('overlay').classList.remove('is-open');
+      document.getElementById('sheet').classList.remove('is-open');
+    }
+    function viewCurrent() { closeSheet(); location.href = 'student-view.html?id=' + activeId; }
+    async function deleteCurrent() {
+      closeSheet();
+      if (!confirm('Delete ' + activeName + '? This cannot be undone.')) return;
+      if (!RONYX.CONFIGURED) { toast('Not configured'); return; }
+      try { await RonyxAdmin.deleteUser(activeId); toast('Student deleted'); load(); }
+      catch(e) { toast('Error: ' + e.message); }
+    }
+
+    async function load() {
+      if (!RONYX.CONFIGURED) {
+        document.getElementById('studentList').innerHTML = '<div class="empty"><div class="empty__icon">⚙️</div><p>Appwrite not configured.</p></div>';
+        return;
+      }
+      try {
+        const users = await RonyxAdmin.listUsers();
+        allStudents = users.filter(u => !u.role || u.role === 'student');
+        render();
+      } catch(e) {
+        document.getElementById('studentList').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Failed to load.</p></div>';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
+
+
+

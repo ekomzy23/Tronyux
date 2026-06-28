@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Question review — Runyx</title>
+  <title>Question Review — Runyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,49 +11,217 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .qr-card {
+      background: var(--color-bg-2);
+      border: 1px solid var(--color-stroke);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .qr-card--correct { border-left: 3px solid var(--color-success); }
+    .qr-card--wrong   { border-left: 3px solid var(--color-danger); }
+    .qr-card--skip    { border-left: 3px solid var(--color-stroke); }
+
+    .qr-hd { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
+    .qr-icon {
+      width:30px; height:30px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:700; margin-top:1px;
+    }
+    .qr-icon--correct { background:var(--color-success-soft); color:var(--color-success); }
+    .qr-icon--wrong   { background:var(--color-danger-soft);  color:var(--color-danger);  }
+    .qr-icon--skip    { background:var(--color-surface-2);    color:var(--color-muted);   }
+
+    .qr-meta { font-size:11px; color:var(--color-muted); font-weight:600; margin-bottom:3px; }
+    .qr-text { font-size:14px; font-weight:600; line-height:1.45; }
+
+    .qr-pill {
+      display:inline-block; font-size:11px; padding:3px 8px;
+      border-radius:20px; margin-bottom:6px;
+    }
+    .qr-pill--chose   { background:rgba(251,113,133,.12); border:1px solid rgba(251,113,133,.3); color:var(--color-danger); }
+    .qr-pill--chose-ok{ background:rgba(52,211,153,.12);  border:1px solid rgba(52,211,153,.3);  color:var(--color-success); }
+    .qr-pill--correct { background:rgba(52,211,153,.12);  border:1px solid rgba(52,211,153,.3);  color:var(--color-success); }
+    .qr-pill--skip    { background:var(--color-surface-2); color:var(--color-muted); border:1px solid var(--color-stroke); }
+
+    .qr-explain {
+      font-size:12px; color:var(--color-muted); line-height:1.6;
+      background:var(--color-surface-2); border-radius:10px;
+      padding:10px 12px; margin-top:8px;
+    }
+    .qr-explain b { color:var(--color-text); }
+
+    .chip-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+    .chip-row .chip { cursor:pointer; font-size:12px; }
+
+    .subj-note {
+      font-size:11px; color:var(--color-muted); font-style:italic;
+      padding:8px 12px; background:var(--color-surface-2);
+      border-radius:10px; margin-bottom:8px;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
-
     <div class="appbar">
-      <a href="/pages/student/performance.html" class="iconbtn">←</a>
+      <a href="/pages/student/results.html" class="iconbtn">&larr;</a>
       <span class="appbar__title">Question review</span>
     </div>
 
     <div class="app__body">
-      <div class="chips mb-4">
-        <div class="chip is-active">All</div>
-        <div class="chip">Correct</div>
-        <div class="chip">Incorrect</div>
-        <div class="chip">Unattempted</div>
+      <div class="chip-row" id="filterRow">
+        <div class="chip is-active" data-filter="all">All</div>
+        <div class="chip" data-filter="correct">Correct</div>
+        <div class="chip" data-filter="wrong">Wrong</div>
+        <div class="chip" data-filter="skip">Skipped</div>
       </div>
-
-      <a href="/pages/student/explain.html" class="row-card">
-        <div class="row-card__icon row-card__icon--green">✓</div>
-        <div class="row-card__meta"><h4>Q1 · Time complexity</h4><p>Correct · 3 marks</p></div>
-      </a>
-      <a href="/pages/student/explain.html" class="row-card">
-        <div class="row-card__icon row-card__icon--green">✓</div>
-        <div class="row-card__meta"><h4>Q2 · Stacks &amp; queues</h4><p>Correct · 3 marks</p></div>
-      </a>
-      <a href="/pages/student/explain.html" class="row-card">
-        <div class="row-card__icon row-card__icon--red">✕</div>
-        <div class="row-card__meta"><h4>Q3 · Binary search complexity</h4><p>Incorrect · 0 / 3 marks</p></div>
-      </a>
-      <a href="/pages/student/explain.html" class="row-card">
-        <div class="row-card__icon row-card__icon--green">✓</div>
-        <div class="row-card__meta"><h4>Q4 · Hash tables</h4><p>Correct · 3 marks</p></div>
-      </a>
-      <a href="/pages/student/explain.html" class="row-card">
-        <div class="row-card__icon row-card__icon--red">✕</div>
-        <div class="row-card__meta"><h4>Q5 · Tree traversal</h4><p>Incorrect · 0 / 3 marks</p></div>
-      </a>
+      <div id="qrBody">
+        <div class="empty"><div class="empty__icon">&#8987;</div><p>Loading&hellip;</p></div>
+      </div>
     </div>
 
     <nav class="tabbar" data-nav="results"></nav>
   </div>
 
-  <script src="/js/ui.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/ui.js?v=mqye4cj4"></script>
+  <script>
+  (function () {
+    var body = document.getElementById('qrBody');
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    var result = null;
+    try { result = JSON.parse(localStorage.getItem('ronyx_last_result') || 'null'); } catch(e) {}
+
+    if (!result || !Array.isArray(result.questions) || !result.questions.length) {
+      body.innerHTML =
+        '<div class="empty text-center"><div class="empty__icon">&#128236;</div>' +
+        '<p>No review available.<br><a href="/pages/student/results.html" class="link">Back to results</a></p></div>';
+      return;
+    }
+
+    var qs = result.questions;
+    var KEYS = ['A','B','C','D','E','F','G','H'];
+
+    /* Return display text for option key, e.g. "A. Photosynthesis" */
+    function optLabel(optionsJson, keyStr) {
+      if (!keyStr) return '';
+      try {
+        var opts = JSON.parse(optionsJson || '[]');
+        return keyStr.split(',').map(function(k) {
+          k = k.trim().toUpperCase();
+          var idx = KEYS.indexOf(k);
+          if (idx === -1 || idx >= opts.length) return k;
+          var o = opts[idx];
+          var text = typeof o === 'string' ? o : (o.text || o.toString());
+          return k + '. ' + text;
+        }).join('  /  ');
+      } catch(e) { return keyStr; }
+    }
+
+    /* Update filter chip counts */
+    function updateChipCounts() {
+      var correct = qs.filter(function(q) { return q.isCorrect; }).length;
+      var wrong   = qs.filter(function(q) { return !q.isCorrect && q.chosen && ['mcq','truefalse','multi'].indexOf(q.type) !== -1; }).length;
+      var skip    = qs.filter(function(q) { return !q.chosen || q.chosen === ''; }).length;
+      document.querySelector('[data-filter="all"]').textContent     = 'All (' + qs.length + ')';
+      document.querySelector('[data-filter="correct"]').textContent = 'Correct (' + correct + ')';
+      document.querySelector('[data-filter="wrong"]').textContent   = 'Wrong (' + wrong + ')';
+      document.querySelector('[data-filter="skip"]').textContent    = 'Skipped (' + skip + ')';
+    }
+
+    function render(filter) {
+      var OBJECTIVE = ['mcq','truefalse','multi'];
+
+      var filtered = qs.filter(function(q) {
+        var isObj  = OBJECTIVE.indexOf(q.type) !== -1;
+        var tried  = q.chosen && q.chosen !== '';
+        if (filter === 'correct')  return q.isCorrect;
+        if (filter === 'wrong')    return !q.isCorrect && tried && isObj;
+        if (filter === 'skip')     return !tried;
+        return true;
+      });
+
+      if (!filtered.length) {
+        body.innerHTML = '<div class="empty"><p>No questions in this category.</p></div>';
+        return;
+      }
+
+      var html = '';
+      filtered.forEach(function(q, renderIdx) {
+        /* Global question number */
+        var globalIdx = qs.indexOf(q);
+        var isObj   = OBJECTIVE.indexOf(q.type) !== -1;
+        var tried   = q.chosen && q.chosen !== '';
+        var status  = (!tried) ? 'skip' : q.isCorrect ? 'correct' : 'wrong';
+
+        var iconChar = status === 'correct' ? '&#10003;' : status === 'wrong' ? '&#10005;' : '&#9898;';
+        var marks    = status === 'correct' ? (q.earned || q.marks) + ' / ' + q.marks
+                     : status === 'wrong'   ? '0 / ' + q.marks
+                     : 'Skipped';
+
+        html += '<div class="qr-card qr-card--' + status + '">';
+
+        /* Header row */
+        html += '<div class="qr-hd">';
+        html +=   '<div class="qr-icon qr-icon--' + status + '">' + iconChar + '</div>';
+        html +=   '<div style="flex:1">';
+        html +=     '<div class="qr-meta">Q' + (globalIdx + 1) + ' &middot; ' + marks + ' marks</div>';
+        html +=     '<div class="qr-text">' + esc(q.text) + '</div>';
+        html +=   '</div>';
+        html += '</div>';
+
+        /* Answer pills */
+        if (isObj) {
+          if (tried) {
+            /* What they chose */
+            var choseLabel = (q.type === 'truefalse')
+              ? q.chosen
+              : optLabel(q.options, q.chosen);
+            html += '<div class="qr-pill ' + (q.isCorrect ? 'qr-pill--chose-ok' : 'qr-pill--chose') + '">';
+            html += (q.isCorrect ? '&#10003; ' : '&#10005; ') + 'You chose: ' + esc(choseLabel) + '</div><br>';
+          } else {
+            html += '<div class="qr-pill qr-pill--skip">&#9898; Not attempted</div><br>';
+          }
+
+          /* Correct answer (always show for objective) */
+          if (q.answer && !q.isCorrect) {
+            var corrLabel = (q.type === 'truefalse')
+              ? q.answer
+              : optLabel(q.options, q.answer);
+            html += '<div class="qr-pill qr-pill--correct">&#10003; Correct: ' + esc(corrLabel) + '</div><br>';
+          }
+        } else {
+          /* Subjective question */
+          html += '<div class="subj-note">Subjective question — not auto-graded';
+          if (tried) html += '<br>Your answer: ' + esc(q.chosen.slice(0, 200)) + (q.chosen.length > 200 ? '…' : '');
+          html += '</div>';
+        }
+
+        /* Explanation */
+        if (q.explain) {
+          html += '<div class="qr-explain"><b>Explanation:</b> ' + esc(q.explain) + '</div>';
+        }
+
+        html += '</div>';
+      });
+
+      body.innerHTML = html;
+    }
+
+    updateChipCounts();
+    render('all');
+
+    document.querySelectorAll('[data-filter]').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('[data-filter]').forEach(function(c) { c.classList.remove('is-active'); });
+        chip.classList.add('is-active');
+        render(chip.dataset.filter);
+      });
+    });
+  })();
+  </script>
+  <script src="/js/theme.js?v=mqye4cj4"></script>
 </body>
 </html>

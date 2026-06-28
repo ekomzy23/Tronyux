@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Security &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Security Center</span>
+    </div>
+
+    <div class="app__body">
+
+      <div class="stat-grid mb-4">
+        <div class="stat stat--accent"><div class="stat__n" id="kSessions">—</div><div class="stat__l">Active Sessions</div></div>
+        <div class="stat"><div class="stat__n" style="color:var(--color-warning);">0</div><div class="stat__l">Suspicious</div></div>
+        <div class="stat"><div class="stat__n" style="color:var(--color-danger);">0</div><div class="stat__l">Blocked</div></div>
+      </div>
+
+      <!-- Recent Logins -->
+      <div class="section-hd"><h3>Recent Logins</h3></div>
+      <div class="card mb-4">
+        <div class="empty" style="padding:12px 0;"><div class="empty__icon" style="font-size:22px;">🔐</div><p style="font-size:13px;margin-top:6px;">Login history is managed by Appwrite.<br>Check your Appwrite console for session details.</p></div>
+      </div>
+
+      <!-- Active Sessions -->
+      <div class="section-hd"><h3>Active Sessions</h3></div>
+      <div class="card mb-4">
+        <div class="info-row">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--color-text);">Chrome &middot; Windows 11</div>
+            <div style="font-size:12px;color:var(--color-muted);">This device &middot; Active now</div>
+          </div>
+          <span class="badge badge--green">Current</span>
+        </div>
+        <div class="info-row">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--color-text);">Safari &middot; iPhone 15</div>
+            <div style="font-size:12px;color:var(--color-muted);">Kumasi, GH &middot; 1 hour ago</div>
+          </div>
+          <button class="btn btn--sm btn--danger" onclick="revokeSession('1')">Revoke</button>
+        </div>
+        <div class="info-row">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--color-text);">Firefox &middot; Android</div>
+            <div style="font-size:12px;color:var(--color-muted);">Accra, GH &middot; 3 hours ago</div>
+          </div>
+          <button class="btn btn--sm btn--danger" onclick="revokeSession('2')">Revoke</button>
+        </div>
+      </div>
+
+      <!-- Security Policies -->
+      <div class="section-hd"><h3>Security Policies</h3></div>
+      <div class="card mb-4">
+        <div class="list-item">
+          <div class="list-item__icon">🔐</div>
+          <div style="flex:1;">
+            <div class="list-item__text">Two-Factor Authentication</div>
+            <div class="list-item__sub">Require 2FA for admin accounts</div>
+          </div>
+          <label class="toggle"><input type="checkbox" checked onchange="policyChange('2FA', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <div class="list-item">
+          <div class="list-item__icon">⏱️</div>
+          <div style="flex:1;">
+            <div class="list-item__text">Session Timeout</div>
+            <div class="list-item__sub">Auto-logout after 30 minutes</div>
+          </div>
+          <label class="toggle"><input type="checkbox" checked onchange="policyChange('Session Timeout', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <div class="list-item">
+          <div class="list-item__icon">🌐</div>
+          <div style="flex:1;">
+            <div class="list-item__text">IP Filtering</div>
+            <div class="list-item__sub">Restrict access to allowed IPs</div>
+          </div>
+          <label class="toggle"><input type="checkbox" onchange="policyChange('IP Filtering', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+        <div class="list-item">
+          <div class="list-item__icon">🔒</div>
+          <div style="flex:1;">
+            <div class="list-item__text">Login Attempt Limit</div>
+            <div class="list-item__sub">Block after 5 failed attempts</div>
+          </div>
+          <label class="toggle"><input type="checkbox" checked onchange="policyChange('Login Limit', this.checked)"><span class="toggle__track"><span class="toggle__thumb"></span></span></label>
+        </div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    function revokeSession(id) {
+      if (!confirm('Revoke this session?')) return;
+      toast('Session revoked (mock)');
+    }
+    function policyChange(name, val) {
+      toast(name + (val ? ' enabled' : ' disabled'));
+    }
+  </script>
+</body>
+</html>
+
+
+

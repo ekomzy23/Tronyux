@@ -1,0 +1,173 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI Center &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .ai-hero { background:var(--gradient-brand); border-radius:22px; padding:24px 20px; margin-bottom:20px; text-align:center; position:relative; overflow:hidden; }
+    .ai-hero::before { content:'🤖'; position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:80px; opacity:.15; }
+    .ai-hero__title { font-family:var(--font-display); font-size:22px; font-weight:800; color:#fff; margin-bottom:6px; }
+    .ai-hero__sub { font-size:13px; color:rgba(255,255,255,.8); }
+    .tool-btn { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:14px; margin-bottom:10px; cursor:pointer; width:100%; text-align:left; transition:border-color .15s; }
+    .tool-btn:hover { border-color:var(--color-primary-2); }
+    .tool-btn__icon { width:36px; height:36px; border-radius:10px; background:var(--color-primary-soft); display:grid; place-items:center; font-size:18px; flex-shrink:0; }
+    .tool-btn__label { font-size:14px; font-weight:600; color:var(--color-text); }
+    .tool-btn__sub { font-size:12px; color:var(--color-muted); }
+    .ai-console { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:16px; padding:14px; }
+    .ai-console textarea { width:100%; background:none; border:none; outline:none; color:var(--color-text); font-size:14px; resize:none; }
+    .ai-response { margin-top:12px; background:var(--color-primary-soft); border-radius:12px; padding:12px; font-size:13px; color:var(--color-primary-2); display:none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">AI Center</span>
+    </div>
+
+    <div class="app__body">
+
+      <div class="ai-hero">
+        <div class="ai-hero__title">AI Center</div>
+        <div class="ai-hero__sub">Powered by AI &middot; Smart tools for educators</div>
+      </div>
+
+      <!-- Generate Questions -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:14px;"><h3>Generate Questions</h3></div>
+        <div class="field mb-2">
+          <label class="field__label">Topic</label>
+          <input class="input" id="genTopic" placeholder="e.g. Calculus, Photosynthesis, World War II">
+        </div>
+        <div class="field mb-2">
+          <label class="field__label">Question Type</label>
+          <select class="input" id="genType">
+            <option value="mcq">Multiple Choice (MCQ)</option>
+            <option value="theory">Theory</option>
+            <option value="true_false">True / False</option>
+            <option value="fill">Fill in the Blank</option>
+          </select>
+        </div>
+        <div class="field mb-2">
+          <label class="field__label">Difficulty</label>
+          <select class="input" id="genDiff">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div class="field mb-4">
+          <label class="field__label">Number of Questions</label>
+          <input class="input" id="genCount" type="number" min="1" max="20" value="5">
+        </div>
+        <button class="btn btn--primary" style="width:100%;" id="generateBtn" onclick="generateQuestions()">Generate with AI</button>
+        <div id="genOutput" style="display:none;" class="mt-4"></div>
+      </div>
+
+      <!-- Question Tools -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:14px;"><h3>Question Tools</h3></div>
+        <button class="tool-btn" onclick="aiTool('Detect Duplicates')">
+          <div class="tool-btn__icon">🔍</div>
+          <div><div class="tool-btn__label">Detect Duplicates</div><div class="tool-btn__sub">Find similar questions in bank</div></div>
+        </button>
+        <button class="tool-btn" onclick="aiTool('Difficulty Analysis')">
+          <div class="tool-btn__icon">📊</div>
+          <div><div class="tool-btn__label">Difficulty Analysis</div><div class="tool-btn__sub">Analyse question difficulty distribution</div></div>
+        </button>
+        <button class="tool-btn" onclick="aiTool('Improve Question')">
+          <div class="tool-btn__icon">✨</div>
+          <div><div class="tool-btn__label">Improve Question</div><div class="tool-btn__sub">Rephrase for clarity and accuracy</div></div>
+        </button>
+      </div>
+
+      <!-- Study Content -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:14px;"><h3>Study Content</h3></div>
+        <button class="tool-btn" onclick="aiTool('Generate Summary')">
+          <div class="tool-btn__icon">📝</div>
+          <div><div class="tool-btn__label">Generate Summary</div><div class="tool-btn__sub">Auto-summarise course material</div></div>
+        </button>
+        <button class="tool-btn" onclick="aiTool('Create Flashcards')">
+          <div class="tool-btn__icon">🃏</div>
+          <div><div class="tool-btn__label">Create Flashcards</div><div class="tool-btn__sub">Turn notes into revision cards</div></div>
+        </button>
+      </div>
+
+      <!-- AI Console -->
+      <div class="card mb-4">
+        <div class="section-hd" style="margin-bottom:12px;"><h3>AI Console</h3></div>
+        <div class="ai-console">
+          <textarea id="promptInput" rows="3" placeholder="Ask AI anything&hellip; e.g. 'Suggest 3 hard questions on thermodynamics'"></textarea>
+        </div>
+        <button class="btn btn--primary mt-2" style="width:100%;" onclick="sendPrompt()">Send to AI</button>
+        <div class="ai-response" id="aiResponse">💡 AI features are coming soon. This console will connect to an AI model to generate content, analyse data, and assist with marking.</div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+
+    function aiTool(name) {
+      toast(name + ' &mdash; AI features coming soon');
+    }
+
+    async function generateQuestions() {
+      const topic = document.getElementById('genTopic').value.trim();
+      if (!topic) { toast('Please enter a topic first'); return; }
+      const btn = document.getElementById('generateBtn');
+      btn.textContent = 'Generating&hellip;';
+      btn.disabled = true;
+      await new Promise(r => setTimeout(r, 1500));
+      const type = document.getElementById('genType').value;
+      const diff = document.getElementById('genDiff').value;
+      const count = parseInt(document.getElementById('genCount').value) || 5;
+      const output = document.getElementById('genOutput');
+      output.style.display = 'block';
+      output.innerHTML = `<div class="note" style="margin-bottom:0;">
+        <h4>Preview &mdash; ${count} ${type.toUpperCase()} questions on "${topic}" (${diff})</h4>
+        <p style="font-size:13px;color:var(--color-muted);margin-top:8px;">AI integration coming soon. Questions will be generated and auto-added to the question bank.</p>
+        <div style="margin-top:12px;background:var(--color-surface-2);border-radius:10px;padding:12px;font-size:13px;color:var(--color-text);line-height:1.8;">
+          1. What is the primary concept behind ${topic}?<br>
+          2. Explain how ${topic} relates to real-world applications.<br>
+          3. Which of the following best describes ${topic}?<br>
+          ${count > 3 ? '4. Compare and contrast two aspects of ' + topic + '.<br>' : ''}
+          ${count > 4 ? '5. Give an example that demonstrates ' + topic + '.' : ''}
+        </div>
+      </div>`;
+      btn.textContent = 'Generate with AI';
+      btn.disabled = false;
+      toast('Preview generated (AI coming soon)');
+    }
+
+    function sendPrompt() {
+      const prompt = document.getElementById('promptInput').value.trim();
+      if (!prompt) { toast('Please enter a prompt'); return; }
+      const resp = document.getElementById('aiResponse');
+      resp.style.display = 'block';
+      resp.textContent = '💡 AI features coming soon. This console will connect to an AI model to generate content, analyse data, and assist with marking.';
+      toast('AI Console coming soon');
+    }
+  </script>
+</body>
+</html>
+
+
+

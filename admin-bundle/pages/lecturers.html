@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lecturers &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Lecturers</span>
+    </div>
+
+    <div class="app__body">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search lecturers&hellip;" oninput="render()">
+      </div>
+
+      <div id="lecturerList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+    </div>
+
+    <button class="fab" onclick="toast('Add lecturer coming soon')">＋</button>
+
+    <div class="sheet-overlay" id="overlay" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet">
+      <div class="sheet__handle"></div>
+      <div class="sheet__title" id="sheetName">Lecturer</div>
+      <div class="sheet__action" onclick="editCurrent()">
+        <div class="sheet__action-icon">✏</div>
+        <div><div class="sheet__action-label">Edit Lecturer</div><div class="sheet__action-sub">Update profile details</div></div>
+      </div>
+      <div class="sheet__action sheet__action--danger" onclick="deleteCurrent()">
+        <div class="sheet__action-icon">🗑️</div>
+        <div><div class="sheet__action-label">Remove Lecturer</div><div class="sheet__action-sub">Permanently delete account</div></div>
+      </div>
+    </div>
+
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let allLecturers = [], activeId = '', activeName = '';
+
+    function render() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      let list = allLecturers;
+      if (q) list = list.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q) || (u.department||'').toLowerCase().includes(q));
+      const el = document.getElementById('lecturerList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">👨‍🏫</div><p>No lecturers found.</p></div>';
+        return;
+      }
+      el.innerHTML = list.map(u => {
+        const initial = (u.name || u.email || '?')[0].toUpperCase();
+        const safeName = (u.name || 'Lecturer').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="row-card" style="cursor:pointer;" onclick="openSheet('${u.$id}','${safeName}')">
+          <div style="width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#10b981,#34d399);display:grid;place-items:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;">${initial}</div>
+          <div class="row-card__meta" style="flex:1;">
+            <h4>${u.name || 'Unnamed'}</h4>
+            <p>${u.department || 'No department'} &middot; ${u.email || ''}</p>
+          </div>
+          <span class="badge badge--green">Lecturer</span>
+        </div>`;
+      }).join('');
+    }
+
+    function openSheet(id, name) {
+      activeId = id; activeName = name;
+      document.getElementById('sheetName').textContent = name;
+      document.getElementById('overlay').classList.add('is-open');
+      document.getElementById('sheet').classList.add('is-open');
+    }
+    function closeSheet() {
+      document.getElementById('overlay').classList.remove('is-open');
+      document.getElementById('sheet').classList.remove('is-open');
+    }
+    function editCurrent() { closeSheet(); location.href = 'student-view.html?id=' + activeId; }
+    async function deleteCurrent() {
+      closeSheet();
+      if (!confirm('Remove ' + activeName + '?')) return;
+      if (!RONYX.CONFIGURED) { toast('Not configured'); return; }
+      try { await RonyxAdmin.deleteUser(activeId); toast('Lecturer removed'); load(); }
+      catch(e) { toast('Error: ' + e.message); }
+    }
+
+    async function load() {
+      if (!RONYX.CONFIGURED) {
+        document.getElementById('lecturerList').innerHTML = '<div class="empty"><div class="empty__icon">⚙️</div><p>Appwrite not configured.</p></div>';
+        return;
+      }
+      try {
+        allLecturers = await RonyxAdmin.listUsersByRole('lecturer');
+        render();
+      } catch(e) {
+        document.getElementById('lecturerList').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Failed to load.</p></div>';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
+
+
+

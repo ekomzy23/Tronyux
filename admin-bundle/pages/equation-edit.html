@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Edit equation &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="equations.html" class="iconbtn">←</a>
+      <span class="appbar__title" id="pageTitle">New equation</span>
+    </div>
+
+    <div class="app__body">
+      <div class="field">
+        <label class="field__label">Name</label>
+        <input class="input" id="name" placeholder="Quadratic formula">
+      </div>
+      <div class="field">
+        <label class="field__label">Category</label>
+        <select class="input" id="category">
+          <option value="Algebra">Algebra</option>
+          <option value="Geometry">Geometry</option>
+          <option value="Calculus">Calculus</option>
+          <option value="Physics">Physics</option>
+          <option value="Chemistry">Chemistry</option>
+          <option value="Statistics">Statistics</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label">LaTeX formula</label>
+        <textarea class="input" id="latex" rows="3" placeholder="x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}"></textarea>
+      </div>
+      <div class="eqn-preview" id="preview"></div>
+
+      <button class="btn btn--primary" onclick="save()">Save</button>
+      <button class="btn btn--danger" id="delBtn" style="display:none; margin-top: 8px;" onclick="del()">Delete</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    const id = new URLSearchParams(location.search).get('id');
+    const latexEl = document.getElementById('latex');
+    const preEl = document.getElementById('preview');
+
+    function preview() {
+      const tex = latexEl.value;
+      try { katex.render(tex || '\\;', preEl, { throwOnError: false, displayMode: true }); }
+      catch (e) { preEl.textContent = 'Invalid LaTeX'; }
+    }
+    latexEl.addEventListener('input', preview);
+
+    (async function () {
+      if (id) {
+        document.getElementById('pageTitle').textContent = 'Edit equation';
+        document.getElementById('delBtn').style.display = 'block';
+        const e = await RonyxAdmin.getEquation(id);
+        document.getElementById('name').value = e.name || '';
+        document.getElementById('category').value = e.category || 'Other';
+        document.getElementById('latex').value = e.latex || '';
+        preview();
+      }
+    })();
+
+    async function save() {
+      const data = {
+        name: document.getElementById('name').value,
+        category: document.getElementById('category').value,
+        latex: document.getElementById('latex').value,
+      };
+      if (!data.name || !data.latex) return alert('Fill all fields.');
+      if (id) await RonyxAdmin.updateEquation(id, data);
+      else await RonyxAdmin.createEquation(data);
+      location.href = 'equations.html';
+    }
+    async function del() {
+      if (!confirm('Delete?')) return;
+      await RonyxAdmin.deleteEquation(id);
+      location.href = 'equations.html';
+    }
+  </script>
+</body>
+</html>
+
+

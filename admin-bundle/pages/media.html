@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Media Library &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .media-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .media-item { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .media-item__icon { font-size:32px; text-align:center; padding:8px 0; }
+    .media-item__name { font-size:12px; font-weight:600; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .media-item__size { font-size:11px; color:var(--color-muted); }
+    .media-item__del { align-self:flex-end; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="more.html" class="iconbtn">←</a>
+      <span class="appbar__title">Media Library</span>
+      <button class="iconbtn" onclick="document.getElementById('uploadInput').click()">⬆</button>
+      <input type="file" id="uploadInput" style="display:none;" multiple onchange="uploadFiles(this)">
+    </div>
+
+    <div class="app__body">
+
+      <div class="stat-grid mb-4">
+        <div class="stat"><div class="stat__n" id="kImages">&mdash;</div><div class="stat__l">Images</div></div>
+        <div class="stat"><div class="stat__n" id="kDocs">&mdash;</div><div class="stat__l">Documents</div></div>
+        <div class="stat"><div class="stat__n" id="kPdfs">&mdash;</div><div class="stat__l">PDFs</div></div>
+        <div class="stat stat--accent"><div class="stat__n" id="kSize">&mdash;</div><div class="stat__l">Total Size</div></div>
+      </div>
+
+      <div class="search-bar mb-4">
+        <span>🔍</span>
+        <input type="text" id="searchInput" placeholder="Search files&hellip;" oninput="render()">
+      </div>
+
+      <div class="media-grid" id="mediaGrid">
+        <div class="empty" style="grid-column:span 2;"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-nav-admin="more"></nav>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
+  <script src="../js/config.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.js?v=mqye4cj4"></script>
+  <script src="../js/admin-data.js?v=mqye4cj4"></script>
+  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script>
+    requireAdmin();
+    let allFiles = [];
+
+    const typeIcon = (name) => {
+      const ext = (name.split('.').pop() || '').toLowerCase();
+      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '🖼️';
+      if (ext === 'pdf') return '📕';
+      if (['doc','docx'].includes(ext)) return '📝';
+      if (['xls','xlsx'].includes(ext)) return '📊';
+      if (['mp4','mov','avi'].includes(ext)) return '🎬';
+      if (['mp3','wav'].includes(ext)) return '🎵';
+      return '📄';
+    };
+
+    const sizeStr = (bytes) => {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    };
+
+    function render() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const list = q ? allFiles.filter(f => f.name.toLowerCase().includes(q)) : allFiles;
+      const el = document.getElementById('mediaGrid');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">🖼️</div><p>No media files yet.</p></div>';
+        return;
+      }
+      el.innerHTML = list.map(f => `
+        <div class="media-item">
+          <div class="media-item__icon">${typeIcon(f.name)}</div>
+          <div class="media-item__name">${f.name}</div>
+          <div class="media-item__size">${sizeStr(f.sizeOriginal || 0)}</div>
+          <button class="btn btn--sm btn--danger media-item__del" onclick="deleteFile('${f.$id}','${f.name.replace(/'/g,"\\'")}')">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function deleteFile(id, name) {
+      if (!confirm('Delete ' + name + '?')) return;
+      toast('Delete coming soon (connect Appwrite Storage)');
+    }
+
+    async function uploadFiles(input) {
+      if (!RONYX.CONFIGURED) { toast('Appwrite not configured'); return; }
+      const files = Array.from(input.files);
+      if (!files.length) return;
+      toast('Uploading ' + files.length + ' file(s)&hellip;');
+      for (const f of files) {
+        try { await RonyxAdmin.uploadFile(f); }
+        catch(e) { toast('Error: ' + e.message); return; }
+      }
+      toast('Upload complete!');
+      load();
+    }
+
+    async function load() {
+      if (!RONYX.CONFIGURED) {
+        document.getElementById('mediaGrid').innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">⚙️</div><p>Appwrite not configured.</p></div>';
+        document.getElementById('kImages').textContent = '0';
+        document.getElementById('kDocs').textContent = '0';
+        document.getElementById('kPdfs').textContent = '0';
+        document.getElementById('kSize').textContent = '0 B';
+        return;
+      }
+      try {
+        const cfg = window.RONYX_CONFIG || {};
+        const client = new Appwrite.Client().setEndpoint(cfg.ENDPOINT).setProject(cfg.PROJECT_ID);
+        const storage = new Appwrite.Storage(client);
+        const r = await storage.listFiles(cfg.BUCKETS && cfg.BUCKETS.uploads ? cfg.BUCKETS.uploads : 'uploads');
+        allFiles = r.files || [];
+        const images = allFiles.filter(f => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)).length;
+        const pdfs = allFiles.filter(f => /\.pdf$/i.test(f.name)).length;
+        const docs = allFiles.length - images - pdfs;
+        const totalBytes = allFiles.reduce((s, f) => s + (f.sizeOriginal || 0), 0);
+        document.getElementById('kImages').textContent = images;
+        document.getElementById('kDocs').textContent = docs;
+        document.getElementById('kPdfs').textContent = pdfs;
+        document.getElementById('kSize').textContent = sizeStr(totalBytes);
+        render();
+      } catch(e) {
+        document.getElementById('mediaGrid').innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">🖼️</div><p>No media files yet.</p></div>';
+        document.getElementById('kImages').textContent = '0';
+        document.getElementById('kDocs').textContent = '0';
+        document.getElementById('kPdfs').textContent = '0';
+        document.getElementById('kSize').textContent = '0 B';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>
+
+
+

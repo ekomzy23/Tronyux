@@ -1,0 +1,12 @@
+{
+  "name": "ronyx-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "restore": "node build.js --restore"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.1.1"
+  }
+}
