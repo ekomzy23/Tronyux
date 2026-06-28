@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
@@ -13,157 +13,297 @@
   <link rel="stylesheet" href="../css/components.css">
   <style>
     .media-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .media-item { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .media-item {
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:6px;
+    }
     .media-item__icon { font-size:32px; text-align:center; padding:8px 0; }
-    .media-item__name { font-size:12px; font-weight:600; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .media-item__name {
+      font-size:12px; font-weight:600; color:var(--color-text);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
     .media-item__size { font-size:11px; color:var(--color-muted); }
-    .media-item__del { align-self:flex-end; }
+
+    /* ── Publish sheet (slides up from bottom) ── */
+    .sheet-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      z-index:900; display:none; align-items:flex-end;
+    }
+    .sheet-overlay.open { display:flex; }
+    .sheet {
+      background:var(--color-bg); border-radius:20px 20px 0 0;
+      padding:20px 16px 32px; width:100%;
+      max-height:88vh; overflow-y:auto;
+      box-shadow:0 -4px 32px rgba(0,0,0,.4);
+    }
+    .sheet-handle {
+      width:40px; height:4px; border-radius:2px;
+      background:var(--color-stroke); margin:0 auto 16px;
+    }
+    .sheet-title { font-size:16px; font-weight:800; margin-bottom:4px; }
+    .sheet-sub   { font-size:12px; color:var(--color-muted); margin-bottom:18px; }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="appbar">
-      <a href="more.html" class="iconbtn">←</a>
+      <a href="more.html" class="iconbtn">&larr;</a>
       <span class="appbar__title">Media Library</span>
-      <button class="iconbtn" onclick="document.getElementById('uploadInput').click()">⬆</button>
-      <input type="file" id="uploadInput" style="display:none;" multiple onchange="uploadFiles(this)">
+      <button class="iconbtn" title="Upload file"
+              onclick="document.getElementById('uploadInput').click()">&#8679;</button>
+      <input type="file" id="uploadInput" style="display:none;" multiple
+             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.webp"
+             onchange="uploadFiles(this)">
     </div>
 
     <div class="app__body">
 
       <div class="stat-grid mb-4">
         <div class="stat"><div class="stat__n" id="kImages">&mdash;</div><div class="stat__l">Images</div></div>
-        <div class="stat"><div class="stat__n" id="kDocs">&mdash;</div><div class="stat__l">Documents</div></div>
+        <div class="stat"><div class="stat__n" id="kDocs">&mdash;</div><div class="stat__l">Docs</div></div>
         <div class="stat"><div class="stat__n" id="kPdfs">&mdash;</div><div class="stat__l">PDFs</div></div>
-        <div class="stat stat--accent"><div class="stat__n" id="kSize">&mdash;</div><div class="stat__l">Total Size</div></div>
+        <div class="stat stat--accent"><div class="stat__n" id="kTotal">&mdash;</div><div class="stat__l">Total</div></div>
       </div>
 
       <div class="search-bar mb-4">
-        <span>🔍</span>
+        <span>&#128269;</span>
         <input type="text" id="searchInput" placeholder="Search files&hellip;" oninput="render()">
       </div>
 
       <div class="media-grid" id="mediaGrid">
-        <div class="empty" style="grid-column:span 2;"><div class="empty__icon">⏳</div><p>Loading&hellip;</p></div>
+        <div class="empty" style="grid-column:span 2;">
+          <div class="empty__icon">&#8987;</div><p>Loading&hellip;</p>
+        </div>
       </div>
 
     </div>
     <nav class="tabbar" data-nav-admin="more"></nav>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqyevn5j"></script>
-  <script src="../js/config.js?v=mqyevn5j"></script>
-  <script src="../js/appwrite.js?v=mqyevn5j"></script>
-  <script src="../js/admin-data.js?v=mqyevn5j"></script>
-  <script src="../js/theme.js?v=mqyevn5j"></script>
-  <script src="../js/ui.js?v=mqyevn5j"></script>
+  <!-- ── Publish to Library sheet ── -->
+  <div class="sheet-overlay" id="publishOverlay" onclick="closeSheet(event)">
+    <div class="sheet" id="publishSheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">&#128218; Publish to Student Library</div>
+      <div class="sheet-sub" id="sheetFilename">file.pdf</div>
+
+      <div class="field">
+        <label class="field__label">Book Title *</label>
+        <input class="input" id="pubTitle" placeholder="Enter book title">
+      </div>
+      <div class="field">
+        <label class="field__label">Author <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
+        <input class="input" id="pubAuthor" placeholder="e.g. Prof. John Doe">
+      </div>
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Faculty <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
+          <input class="input" id="pubFaculty" placeholder="Faculty of Science">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Department <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
+          <input class="input" id="pubDept" placeholder="Biochemistry">
+        </div>
+      </div>
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Course Code <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
+          <input class="input" id="pubCode" placeholder="BCH301">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Cover emoji</label>
+          <input class="input" id="pubCover" placeholder="&#128214;" maxlength="2" value="&#128196;">
+        </div>
+      </div>
+
+      <button class="btn btn--primary" style="width:100%;margin-top:8px;" onclick="publishBook()">
+        &#128218;&nbsp; Add to Student Library
+      </button>
+      <button class="btn" style="width:100%;margin-top:8px;" onclick="closePublishSheet()">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqyf3hwm"></script>
+  <script src="../js/config.js?v=mqyf3hwm"></script>
+  <script src="../js/appwrite.js?v=mqyf3hwm"></script>
+  <script src="../js/admin-data.js?v=mqyf3hwm"></script>
+  <script src="../js/theme.js?v=mqyf3hwm"></script>
+  <script src="../js/ui.js?v=mqyf3hwm"></script>
   <script>
     requireAdmin();
-    let allFiles = [];
 
-    const typeIcon = (name) => {
-      const ext = (name.split('.').pop() || '').toLowerCase();
-      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '🖼️';
-      if (ext === 'pdf') return '📕';
-      if (['doc','docx'].includes(ext)) return '📝';
-      if (['xls','xlsx'].includes(ext)) return '📊';
-      if (['mp4','mov','avi'].includes(ext)) return '🎬';
-      if (['mp3','wav'].includes(ext)) return '🎵';
-      return '📄';
-    };
+    var allFiles   = [];
+    var _pubFileId = null;
 
-    const sizeStr = (bytes) => {
-      if (bytes < 1024) return bytes + ' B';
+    /* ── Helpers ── */
+    function typeIcon(name) {
+      var ext = (name.split('.').pop() || '').toLowerCase();
+      if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '&#128247;';
+      if (ext === 'pdf')  return '&#128213;';
+      if (['doc','docx'].includes(ext)) return '&#128196;';
+      if (['xls','xlsx'].includes(ext)) return '&#128202;';
+      if (['mp4','mov','avi'].includes(ext)) return '&#127909;';
+      if (['mp3','wav'].includes(ext))       return '&#127925;';
+      return '&#128196;';
+    }
+
+    function isDoc(name) { return /\.(pdf|doc|docx)$/i.test(name); }
+
+    function sizeStr(bytes) {
+      if (!bytes) return '';
+      if (bytes < 1024)    return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / 1048576).toFixed(1) + ' MB';
-    };
+    }
 
-    const isDoc = (name) => /\.(pdf|doc|docx)$/i.test(name);
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
 
+    /* ── Render grid ── */
     function render() {
-      const q = document.getElementById('searchInput').value.toLowerCase();
-      const list = q ? allFiles.filter(f => f.name.toLowerCase().includes(q)) : allFiles;
-      const el = document.getElementById('mediaGrid');
+      var q    = (document.getElementById('searchInput').value || '').toLowerCase();
+      var list = q ? allFiles.filter(function(f){ return f.name.toLowerCase().includes(q); }) : allFiles;
+      var el   = document.getElementById('mediaGrid');
+
       if (!list.length) {
-        el.innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">🖼️</div><p>No media files yet.</p></div>';
+        el.innerHTML = '<div class="empty" style="grid-column:span 2;">' +
+          '<div class="empty__icon">&#128247;</div>' +
+          '<p>No files yet.<br><small>Tap &#8679; in the top-right to upload.</small></p></div>';
         return;
       }
-      el.innerHTML = list.map(f => {
-        const doc = isDoc(f.name);
-        const safeId   = encodeURIComponent(f.$id);
-        const safeName = encodeURIComponent(f.name);
-        const libBtn   = doc
-          ? `<a href="book-edit.html?fileId=${safeId}&fileName=${safeName}" class="btn btn--sm" style="width:100%;text-align:center;margin-top:2px;">📚 Add to Library</a>`
+
+      el.innerHTML = list.map(function(f) {
+        var doc     = isDoc(f.name);
+        var safeId  = f.$id.replace(/'/g, "\\'");
+        var safeName = f.name.replace(/'/g, "\\'");
+        var libBtn  = doc
+          ? '<button class="btn btn--sm" style="width:100%;margin-top:2px;" ' +
+              'onclick="openPublishSheet(\'' + safeId + '\',\'' + safeName + '\')">&#128218; Add to Library</button>'
           : '';
-        return `
-        <div class="media-item">
-          <div class="media-item__icon">${typeIcon(f.name)}</div>
-          <div class="media-item__name" title="${f.name}">${f.name}</div>
-          <div class="media-item__size">${sizeStr(f.sizeOriginal || 0)}</div>
-          ${libBtn}
-          <button class="btn btn--sm btn--danger media-item__del" onclick="deleteFile('${f.$id}','${f.name.replace(/'/g,"\\'")}')">✕</button>
-        </div>`;
+        return '<div class="media-item">' +
+          '<div class="media-item__icon">' + typeIcon(f.name) + '</div>' +
+          '<div class="media-item__name" title="' + esc(f.name) + '">' + esc(f.name) + '</div>' +
+          '<div class="media-item__size">' + sizeStr(f.sizeOriginal) + '</div>' +
+          libBtn +
+          '<button class="btn btn--sm btn--danger" style="align-self:flex-end;margin-top:2px;" ' +
+            'onclick="deleteFile(\'' + safeId + '\',\'' + safeName + '\')">&#10005; Delete</button>' +
+        '</div>';
       }).join('');
     }
 
+    /* ── Publish sheet ── */
+    function openPublishSheet(fileId, fileName) {
+      _pubFileId = fileId;
+      document.getElementById('sheetFilename').textContent = fileName;
+      var suggested = fileName.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+      document.getElementById('pubTitle').value  = suggested;
+      document.getElementById('pubAuthor').value = '';
+      document.getElementById('pubFaculty').value = '';
+      document.getElementById('pubDept').value   = '';
+      document.getElementById('pubCode').value   = '';
+      document.getElementById('pubCover').value  = '📄';
+      document.getElementById('publishOverlay').classList.add('open');
+    }
+
+    function closePublishSheet() {
+      document.getElementById('publishOverlay').classList.remove('open');
+      _pubFileId = null;
+    }
+
+    function closeSheet(e) {
+      if (e.target === document.getElementById('publishOverlay')) closePublishSheet();
+    }
+
+    async function publishBook() {
+      var title = document.getElementById('pubTitle').value.trim();
+      if (!title) { toast('Please enter a book title.'); return; }
+
+      var btn = document.querySelector('#publishSheet .btn--primary');
+      if (btn) { btn.textContent = 'Publishing...'; btn.disabled = true; }
+
+      var data = {
+        title:       title,
+        author:      document.getElementById('pubAuthor').value.trim()  || '',
+        cover:       document.getElementById('pubCover').value.trim()   || '📄',
+        faculty:     document.getElementById('pubFaculty').value.trim() || '',
+        department:  document.getElementById('pubDept').value.trim()    || '',
+        courseCode:  document.getElementById('pubCode').value.trim()    || '',
+        subject:     '',
+        readMinutes: 10,
+        summary:     '',
+        takeaways:   '[]',
+        fileId:      _pubFileId,
+      };
+
+      try {
+        await RonyxAdmin.createBook(data);
+        closePublishSheet();
+        toast('Added to student library!', 'success');
+      } catch(e) {
+        toast('Failed: ' + (e.message || 'Unknown error'), 'error');
+      }
+
+      if (btn) { btn.textContent = '📚 Add to Student Library'; btn.disabled = false; }
+    }
+
+    /* ── Upload ── */
+    async function uploadFiles(input) {
+      var files = Array.from(input.files || []);
+      input.value = '';
+      if (!files.length) return;
+      toast('Uploading ' + files.length + ' file(s)...');
+      var ok = 0;
+      for (var i = 0; i < files.length; i++) {
+        try {
+          await RonyxAdmin.uploadFile(files[i]);
+          ok++;
+        } catch(e) {
+          toast('Error uploading ' + files[i].name + ': ' + e.message, 'error');
+        }
+      }
+      if (ok) { toast('Uploaded ' + ok + ' file(s)!', 'success'); load(); }
+    }
+
+    /* ── Delete ── */
     async function deleteFile(id, name) {
       if (!confirm('Delete ' + name + '?')) return;
       try {
         await RonyxAdmin.deleteFile(id);
         toast('Deleted');
         load();
-      } catch(e) { toast('Delete failed: ' + e.message); }
+      } catch(e) { toast('Delete failed: ' + (e.message || ''), 'error'); }
     }
 
-    async function uploadFiles(input) {
-      if (!RONYX.CONFIGURED) { toast('Appwrite not configured'); return; }
-      const files = Array.from(input.files);
-      if (!files.length) return;
-      toast('Uploading ' + files.length + ' file(s)&hellip;');
-      for (const f of files) {
-        try { await RonyxAdmin.uploadFile(f); }
-        catch(e) { toast('Error: ' + e.message); return; }
-      }
-      toast('Upload complete!');
-      load();
-    }
-
+    /* ── Load ── */
     async function load() {
-      if (!RONYX.CONFIGURED) {
-        document.getElementById('mediaGrid').innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">⚙️</div><p>Appwrite not configured.</p></div>';
-        document.getElementById('kImages').textContent = '0';
-        document.getElementById('kDocs').textContent = '0';
-        document.getElementById('kPdfs').textContent = '0';
-        document.getElementById('kSize').textContent = '0 B';
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) {
+        document.getElementById('mediaGrid').innerHTML =
+          '<div class="empty" style="grid-column:span 2;">' +
+          '<div class="empty__icon">&#9881;</div><p>Appwrite not configured.</p></div>';
         return;
       }
       try {
-        const cfg = window.RONYX_CONFIG || {};
-        const client = new Appwrite.Client().setEndpoint(cfg.ENDPOINT).setProject(cfg.PROJECT_ID);
-        const storage = new Appwrite.Storage(client);
-        const r = await storage.listFiles(cfg.BUCKETS && cfg.BUCKETS.uploads ? cfg.BUCKETS.uploads : 'uploads');
-        allFiles = r.files || [];
-        const images = allFiles.filter(f => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)).length;
-        const pdfs = allFiles.filter(f => /\.pdf$/i.test(f.name)).length;
-        const docs = allFiles.length - images - pdfs;
-        const totalBytes = allFiles.reduce((s, f) => s + (f.sizeOriginal || 0), 0);
+        allFiles = await RonyxAdmin.listFiles();
+        var images = allFiles.filter(function(f){ return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name); }).length;
+        var pdfs   = allFiles.filter(function(f){ return /\.pdf$/i.test(f.name); }).length;
+        var docs   = allFiles.length - images - pdfs;
         document.getElementById('kImages').textContent = images;
-        document.getElementById('kDocs').textContent = docs;
-        document.getElementById('kPdfs').textContent = pdfs;
-        document.getElementById('kSize').textContent = sizeStr(totalBytes);
+        document.getElementById('kDocs').textContent   = docs;
+        document.getElementById('kPdfs').textContent   = pdfs;
+        document.getElementById('kTotal').textContent  = allFiles.length;
         render();
       } catch(e) {
-        document.getElementById('mediaGrid').innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">🖼️</div><p>No media files yet.</p></div>';
-        document.getElementById('kImages').textContent = '0';
-        document.getElementById('kDocs').textContent = '0';
-        document.getElementById('kPdfs').textContent = '0';
-        document.getElementById('kSize').textContent = '0 B';
+        document.getElementById('mediaGrid').innerHTML =
+          '<div class="empty" style="grid-column:span 2;">' +
+          '<div class="empty__icon">&#128247;</div><p>Could not load files.<br><small>' +
+          esc(e.message || '') + '</small></p></div>';
       }
     }
+
     load();
   </script>
 </body>
 </html>
-
-
-
