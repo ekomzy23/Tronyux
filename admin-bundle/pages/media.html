@@ -51,12 +51,12 @@
     <nav class="tabbar" data-nav-admin="more"></nav>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
-  <script src="../js/config.js?v=mqye4cj4"></script>
-  <script src="../js/appwrite.js?v=mqye4cj4"></script>
-  <script src="../js/admin-data.js?v=mqye4cj4"></script>
-  <script src="../js/theme.js?v=mqye4cj4"></script>
-  <script src="../js/ui.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.min.js?v=mqyevn5j"></script>
+  <script src="../js/config.js?v=mqyevn5j"></script>
+  <script src="../js/appwrite.js?v=mqyevn5j"></script>
+  <script src="../js/admin-data.js?v=mqyevn5j"></script>
+  <script src="../js/theme.js?v=mqyevn5j"></script>
+  <script src="../js/ui.js?v=mqyevn5j"></script>
   <script>
     requireAdmin();
     let allFiles = [];
@@ -78,6 +78,8 @@
       return (bytes / 1048576).toFixed(1) + ' MB';
     };
 
+    const isDoc = (name) => /\.(pdf|doc|docx)$/i.test(name);
+
     function render() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const list = q ? allFiles.filter(f => f.name.toLowerCase().includes(q)) : allFiles;
@@ -86,19 +88,31 @@
         el.innerHTML = '<div class="empty" style="grid-column:span 2;"><div class="empty__icon">🖼️</div><p>No media files yet.</p></div>';
         return;
       }
-      el.innerHTML = list.map(f => `
+      el.innerHTML = list.map(f => {
+        const doc = isDoc(f.name);
+        const safeId   = encodeURIComponent(f.$id);
+        const safeName = encodeURIComponent(f.name);
+        const libBtn   = doc
+          ? `<a href="book-edit.html?fileId=${safeId}&fileName=${safeName}" class="btn btn--sm" style="width:100%;text-align:center;margin-top:2px;">📚 Add to Library</a>`
+          : '';
+        return `
         <div class="media-item">
           <div class="media-item__icon">${typeIcon(f.name)}</div>
-          <div class="media-item__name">${f.name}</div>
+          <div class="media-item__name" title="${f.name}">${f.name}</div>
           <div class="media-item__size">${sizeStr(f.sizeOriginal || 0)}</div>
+          ${libBtn}
           <button class="btn btn--sm btn--danger media-item__del" onclick="deleteFile('${f.$id}','${f.name.replace(/'/g,"\\'")}')">✕</button>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
 
     async function deleteFile(id, name) {
       if (!confirm('Delete ' + name + '?')) return;
-      toast('Delete coming soon (connect Appwrite Storage)');
+      try {
+        await RonyxAdmin.deleteFile(id);
+        toast('Deleted');
+        load();
+      } catch(e) { toast('Delete failed: ' + e.message); }
     }
 
     async function uploadFiles(input) {

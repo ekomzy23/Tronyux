@@ -116,11 +116,11 @@
     </div>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqye4cj4"></script>
-  <script src="../js/config.js?v=mqye4cj4"></script>
-  <script src="../js/appwrite.js?v=mqye4cj4"></script>
-  <script src="../js/admin-data.js?v=mqye4cj4"></script>
-  <script src="../js/theme.js?v=mqye4cj4"></script>
+  <script src="../js/appwrite.min.js?v=mqyevn5j"></script>
+  <script src="../js/config.js?v=mqyevn5j"></script>
+  <script src="../js/appwrite.js?v=mqyevn5j"></script>
+  <script src="../js/admin-data.js?v=mqyevn5j"></script>
+  <script src="../js/theme.js?v=mqyevn5j"></script>
   <script>
     requireAdmin();
     const id = new URLSearchParams(location.search).get('id');
@@ -188,8 +188,12 @@
       }
     }
 
-    /* ── Load existing book ── */
+    /* ── Load existing book OR pre-link a file from Media Library ── */
     (async function () {
+      var params      = new URLSearchParams(location.search);
+      var preFileId   = params.get('fileId');
+      var preFileName = params.get('fileName') ? decodeURIComponent(params.get('fileName')) : null;
+
       if (id) {
         document.getElementById('pageTitle').textContent = 'Edit book';
         document.getElementById('delBtn').style.display = 'block';
@@ -205,6 +209,16 @@
         document.getElementById('summary').value = b.summary || '';
         try { document.getElementById('takeaways').value = JSON.parse(b.takeaways || '[]').join('\n'); } catch (e) {}
         if (b.fileId) showCurrentFile(b.fileId, 'Current file (PDF/DOC attached)');
+      } else if (preFileId) {
+        /* Arriving from Media Library — file is already in storage, just link it */
+        _newFileId = preFileId;
+        showCurrentFile(preFileId, preFileName || 'Media Library file');
+        var titleEl = document.getElementById('title');
+        if (!titleEl.value && preFileName) {
+          titleEl.value = preFileName.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+        }
+        var dropLabel = document.getElementById('fileDropLabel');
+        if (dropLabel) dropLabel.textContent = 'Replace with a different file (optional)';
       }
     })();
 
