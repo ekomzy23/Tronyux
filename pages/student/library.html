@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Library — Runyx</title>
+  <title>Library &mdash; Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,83 +11,350 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    @keyframes fadeIn  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .anim-in      { animation: fadeIn .22s ease both; }
+
+    /* ── search ── */
+    .search-wrap { position:relative; margin-bottom:16px; }
+    .search-clear {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%);
+      background:none; border:none; color:var(--color-muted); font-size:18px;
+      cursor:pointer; padding:4px; line-height:1; display:none;
+    }
+
+    /* ── section label ── */
+    .sec-lbl {
+      font-size:10px; font-weight:800; text-transform:uppercase;
+      letter-spacing:.08em; color:var(--color-muted-2);
+      margin:22px 0 10px; display:flex; align-items:center; gap:8px;
+    }
+    .sec-lbl::after { content:''; flex:1; height:1px; background:var(--color-stroke); }
+
+    /* ── faculty grid ── */
+    .fac-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px; }
+    .fac-card {
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      border-radius:16px; padding:20px 14px; cursor:pointer; text-align:center;
+      transition:background .15s, transform .12s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .fac-card:active { background:rgba(109,94,252,.08); transform:scale(.97); }
+    .fac-icon  { font-size:34px; margin-bottom:10px; line-height:1; }
+    .fac-name  { font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:5px; line-height:1.3; }
+    .fac-meta  { font-size:11px; color:var(--color-muted); }
+
+    /* ── breadcrumb ── */
+    .breadcrumb {
+      font-size:12px; color:var(--color-muted);
+      margin-bottom:14px; display:flex; align-items:center; gap:6px;
+      flex-wrap:wrap;
+    }
+    .breadcrumb-sep { opacity:.4; }
+    .breadcrumb-cur { color:var(--color-text); font-weight:700; }
+
+    /* ── dept row ── */
+    .dept-row {
+      display:flex; align-items:center; gap:12px;
+      padding:14px 16px; background:var(--color-surface);
+      border:1px solid var(--color-stroke); border-radius:14px;
+      margin-bottom:8px; cursor:pointer;
+      transition:background .15s; -webkit-tap-highlight-color:transparent;
+    }
+    .dept-row:active { background:rgba(109,94,252,.08); }
+    .dept-row__icon  { font-size:24px; flex-shrink:0; }
+    .dept-row__body  { flex:1; min-width:0; }
+    .dept-row__name  { font-size:14px; font-weight:700; color:var(--color-text); }
+    .dept-row__count { font-size:12px; color:var(--color-muted); }
+    .dept-row__arr   { color:var(--color-muted); font-size:18px; }
+  </style>
 </head>
 <body>
   <div class="app">
     <div class="appbar">
-      <a href="/pages/student/dashboard.html" class="iconbtn">←</a>
-      <span class="appbar__title">Library</span>
+      <a href="/pages/student/dashboard.html" class="iconbtn" id="libBack">&#8592;</a>
+      <span class="appbar__title" id="libTitle">Library</span>
     </div>
 
     <div class="app__body">
-      <p class="text-muted mb-4">Read a quick AI summary before you dive into the full book.</p>
-      <input class="input mb-4" id="search" placeholder="🔍 Search books…">
 
-      <div class="chips mb-4" id="subjectChips">
-        <div class="chip is-active" data-subject="">All</div>
+      <!-- Search bar (always visible) -->
+      <div class="search-wrap">
+        <input class="input" id="search" placeholder="&#128269; Search faculty, dept, course, title&#8230;"
+               oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="search-clear" id="searchClear" onclick="clearSearch()">&#10005;</button>
       </div>
 
-      <div id="bookList">
-        <div class="empty"><div class="empty__icon">📚</div><p>No books yet. They appear here once added in the admin panel.</p></div>
-      </div>
+      <!-- Breadcrumb (dept / books view) -->
+      <div id="breadcrumbBar" style="display:none;" class="breadcrumb"></div>
+
+      <!-- Main content: faculty grid | dept list | book list | search results -->
+      <div id="mainContent"></div>
+
     </div>
 
     <nav class="tabbar" data-nav="library"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
-  <script src="/js/data.js"></script>
-  <script src="/js/ui.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/appwrite.min.js?v=mqycbxxj"></script>
+  <script src="/js/config.js?v=mqycbxxj"></script>
+  <script src="/js/appwrite.js?v=mqycbxxj"></script>
+  <script src="/js/data.js?v=mqycbxxj"></script>
+  <script src="/js/ui.js?v=mqycbxxj"></script>
+  <script src="/js/theme.js?v=mqycbxxj"></script>
   <script>
-    let allBooks = [];
+  'use strict';
 
-    function card(b) {
-      return `
-        <a href="/pages/student/book.html?id=${b.$id}" class="row-card">
-          <div class="row-card__icon" style="font-size:22px;">${b.cover || '📘'}</div>
-          <div class="row-card__meta">
-            <h4>${b.title}</h4>
-            <p>${b.author || 'Unknown'} · ${b.readMinutes || 10} min read</p>
-          </div>
-          <span class="badge badge--violet">Summary</span>
-        </a>`;
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ============================================================
+     LIBRARY STATE MACHINE
+     view: 'faculty' | 'dept' | 'books' | 'search'
+  ============================================================ */
+  var allBooks = [];
+  var groups   = {};   /* { facultyName: { deptName: [book, ...] } } */
+  var state    = { view:'faculty', faculty:'', dept:'' };
+
+  var FAC_ICONS = {
+    science:'&#128300;', engin:'&#9881;', art:'&#127917;',
+    law:'&#9878;', med:'&#129657;', bus:'&#128188;',
+    tech:'&#128187;', edu:'&#127983;', agri:'&#127807;',
+    soc:'&#129309;', other:'&#128218;'
+  };
+  function facIcon(name) {
+    var n=(name||'').toLowerCase();
+    if(n.includes('science'))                     return FAC_ICONS.science;
+    if(n.includes('engin')||n.includes('tech'))   return FAC_ICONS.tech;
+    if(n.includes('art')||n.includes('human'))    return FAC_ICONS.art;
+    if(n.includes('law')||n.includes('legal'))    return FAC_ICONS.law;
+    if(n.includes('med')||n.includes('health')||n.includes('pharm')) return FAC_ICONS.med;
+    if(n.includes('bus')||n.includes('econ')||n.includes('comm'))    return FAC_ICONS.bus;
+    if(n.includes('edu')||n.includes('teach'))    return FAC_ICONS.edu;
+    if(n.includes('agri')||n.includes('farm'))    return FAC_ICONS.agri;
+    if(n.includes('soc')||n.includes('psych'))    return FAC_ICONS.soc;
+    return FAC_ICONS.other;
+  }
+
+  function deptIcon(name) {
+    var n=(name||'').toLowerCase();
+    if(n.includes('chem'))  return '&#9879;';
+    if(n.includes('bio'))   return '&#129516;';
+    if(n.includes('phys'))  return '&#9889;';
+    if(n.includes('math'))  return '&#10010;';
+    if(n.includes('compu')||n.includes('software')) return '&#128187;';
+    if(n.includes('electr')) return '&#128161;';
+    if(n.includes('civil'))  return '&#127959;';
+    if(n.includes('mech'))   return '&#9881;';
+    if(n.includes('nurs')||n.includes('med')) return '&#129657;';
+    if(n.includes('law'))    return '&#9878;';
+    if(n.includes('account')||n.includes('fin')) return '&#128181;';
+    return '&#128218;';
+  }
+
+  function buildGroups(books) {
+    var g = {};
+    books.forEach(function(b) {
+      var f = (b.faculty||'').trim() || 'Other';
+      var d = (b.department||'').trim() || 'General';
+      if (!g[f]) g[f] = {};
+      if (!g[f][d]) g[f][d] = [];
+      g[f][d].push(b);
+    });
+    return g;
+  }
+
+  /* ── Book card — shows PDF badge when admin attached a file ── */
+  function bookCard(b) {
+    var courseTag = b.courseCode
+      ? '<span class="badge" style="background:rgba(245,158,11,.15);color:#F59E0B;border-color:rgba(245,158,11,.3);">'+esc(b.courseCode)+'</span>'
+      : '';
+    var fileBadge = b.fileId
+      ? '<span class="badge" style="background:rgba(16,185,129,.15);color:#10B981;border-color:rgba(16,185,129,.3);">&#128196; PDF</span>'
+      : '<span class="badge badge--violet">Summary</span>';
+    return '<a href="/pages/student/book.html?id='+b.$id+'" class="row-card anim-in" style="text-decoration:none;">'+
+      '<div class="row-card__icon" style="font-size:22px;">'+(b.cover||'&#128218;')+'</div>'+
+      '<div class="row-card__meta">'+
+        '<h4>'+esc(b.title)+'</h4>'+
+        '<p>'+esc(b.author||'Unknown')+' &middot; '+(b.readMinutes||10)+' min</p>'+
+        (courseTag?'<div style="margin-top:4px;">'+courseTag+'</div>':'')+
+      '</div>'+
+      fileBadge+
+    '</a>';
+  }
+
+  function setMain(html)       { document.getElementById('mainContent').innerHTML = html||''; }
+  function setBreadcrumb(html) {
+    var el = document.getElementById('breadcrumbBar');
+    if (html) { el.innerHTML=html; el.style.display='flex'; }
+    else      { el.style.display='none'; }
+  }
+  function setBackTo(href, fn) {
+    var btn = document.getElementById('libBack');
+    if (fn) {
+      btn.href='#'; btn.onclick=function(e){ e.preventDefault(); fn(); };
+    } else {
+      btn.href=href; btn.onclick=null;
+    }
+  }
+
+  /* ── Views ── */
+  function renderFaculties() {
+    setBreadcrumb('');
+    setBackTo('/pages/student/dashboard.html', null);
+    document.getElementById('libTitle').textContent='Library';
+
+    var facNames = Object.keys(groups).sort();
+    if (!facNames.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>No books in the library yet.</p></div>');
+      return;
     }
 
-    function draw(list) {
-      const el = document.getElementById('bookList');
-      el.innerHTML = list.length
-        ? list.map(card).join('')
-        : '<div class="empty"><div class="empty__icon">🔎</div><p>No books match.</p></div>';
+    var cards = facNames.map(function(f) {
+      var depts  = Object.keys(groups[f]);
+      var total  = depts.reduce(function(s,d){ return s+groups[f][d].length; },0);
+      return '<div class="fac-card anim-in" onclick="goFaculty(\''+escAttr(f)+'\')">'+
+        '<div class="fac-icon">'+facIcon(f)+'</div>'+
+        '<div class="fac-name">'+esc(f)+'</div>'+
+        '<div class="fac-meta">'+depts.length+' dept'+(depts.length!==1?'s':'')+' &middot; '+total+' book'+(total!==1?'s':'')+'</div>'+
+      '</div>';
+    }).join('');
+    setMain('<div class="sec-lbl">Browse by Faculty</div><div class="fac-grid">'+cards+'</div>');
+  }
+
+  function renderDepts(faculty) {
+    setBackTo(null, function(){ state={view:'faculty',faculty:'',dept:''}; renderFaculties(); });
+    document.getElementById('libTitle').textContent='';
+    setBreadcrumb(
+      '<span onclick="state={view:\'faculty\',faculty:\'\',dept:\'\'};renderFaculties();" '+
+        'style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span class="breadcrumb-sep">&#8250;</span>'+
+      '<span class="breadcrumb-cur">'+esc(faculty)+'</span>'
+    );
+
+    var deptNames = Object.keys(groups[faculty]||{}).sort();
+    if (!deptNames.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>No departments found.</p></div>');
+      return;
     }
 
-    (async function () {
-      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED) return;
-      allBooks = await RunyxData.listBooks();
-      if (!allBooks.length) return;
-      draw(allBooks);
+    var rows = deptNames.map(function(d) {
+      var count = (groups[faculty][d]||[]).length;
+      return '<div class="dept-row anim-in" onclick="goDept(\''+escAttr(d)+'\')">'+
+        '<div class="dept-row__icon">'+deptIcon(d)+'</div>'+
+        '<div class="dept-row__body">'+
+          '<div class="dept-row__name">'+esc(d)+'</div>'+
+          '<div class="dept-row__count">'+count+' book'+(count!==1?'s':'')+'</div>'+
+        '</div>'+
+        '<div class="dept-row__arr">&#8250;</div>'+
+      '</div>';
+    }).join('');
+    setMain(rows);
+  }
 
-      // build subject filter chips
-      const subjects = [...new Set(allBooks.map(b => b.subject).filter(Boolean))];
-      const chips = document.getElementById('subjectChips');
-      chips.innerHTML = '<div class="chip is-active" data-subject="">All</div>' +
-        subjects.map(s => `<div class="chip" data-subject="${s}">${s}</div>`).join('');
-      chips.addEventListener('click', e => {
-        const chip = e.target.closest('.chip'); if (!chip) return;
-        [...chips.children].forEach(c => c.classList.remove('is-active'));
-        chip.classList.add('is-active');
-        const subj = chip.getAttribute('data-subject');
-        draw(subj ? allBooks.filter(b => b.subject === subj) : allBooks);
-      });
+  function renderBooks(faculty, dept) {
+    setBackTo(null, function(){
+      state={view:'dept',faculty:faculty,dept:''};
+      renderDepts(faculty);
+    });
+    document.getElementById('libTitle').textContent='';
+    setBreadcrumb(
+      '<span onclick="state={view:\'faculty\',faculty:\'\',dept:\'\'};renderFaculties();" '+
+        'style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span class="breadcrumb-sep">&#8250;</span>'+
+      '<span onclick="state={view:\'dept\',faculty:\''+escAttr(faculty)+'\',dept:\'\'};renderDepts(\''+escAttr(faculty)+'\');" '+
+        'style="cursor:pointer;color:var(--color-primary-2);">'+esc(faculty)+'</span>'+
+      '<span class="breadcrumb-sep">&#8250;</span>'+
+      '<span class="breadcrumb-cur">'+esc(dept)+'</span>'
+    );
 
-      // search
-      document.getElementById('search').addEventListener('input', e => {
-        const q = e.target.value.toLowerCase();
-        draw(allBooks.filter(b => (b.title + ' ' + (b.author || '')).toLowerCase().includes(q)));
-      });
-    })();
+    var books = (groups[faculty]&&groups[faculty][dept])||[];
+    if (!books.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>No books in this department yet.</p></div>');
+      return;
+    }
+    setMain(books.map(bookCard).join(''));
+  }
+
+  /* ── Search ── */
+  function onSearch() {
+    var q = document.getElementById('search').value.trim();
+    document.getElementById('searchClear').style.display = q ? '' : 'none';
+    if (!q) { restoreView(); return; }
+    renderSearch(q);
+  }
+
+  function clearSearch() {
+    document.getElementById('search').value='';
+    document.getElementById('searchClear').style.display='none';
+    restoreView();
+  }
+
+  function restoreView() {
+    if (state.view==='faculty')     renderFaculties();
+    else if (state.view==='dept')   renderDepts(state.faculty);
+    else if (state.view==='books')  renderBooks(state.faculty, state.dept);
+  }
+
+  function renderSearch(q) {
+    setBreadcrumb('');
+    setBackTo(null, function(){ document.getElementById('search').value=''; clearSearch(); });
+    document.getElementById('libTitle').textContent='Search';
+
+    var ql = q.toLowerCase();
+    var hits = allBooks.filter(function(b) {
+      return [(b.title||''),(b.author||''),(b.faculty||''),(b.department||''),(b.courseCode||''),(b.subject||'')]
+        .join(' ').toLowerCase().includes(ql);
+    });
+
+    if (!hits.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128270;</div><p>No results for &ldquo;'+esc(q)+'&rdquo;</p></div>');
+      return;
+    }
+
+    var html = '<div class="sec-lbl">Results ('+hits.length+')</div>';
+    html += hits.map(function(b) {
+      var meta = [b.faculty,b.department,b.courseCode].filter(Boolean).join(' · ');
+      var fileBadge = b.fileId
+        ? '<span class="badge" style="background:rgba(16,185,129,.15);color:#10B981;border-color:rgba(16,185,129,.3);">&#128196; PDF</span>'
+        : '<span class="badge badge--violet">Summary</span>';
+      return '<a href="/pages/student/book.html?id='+b.$id+'" class="row-card anim-in" style="text-decoration:none;">'+
+        '<div class="row-card__icon" style="font-size:22px;">'+(b.cover||'&#128218;')+'</div>'+
+        '<div class="row-card__meta">'+
+          '<h4>'+esc(b.title)+'</h4>'+
+          '<p>'+(meta?esc(meta):esc(b.author||'Unknown'))+'</p>'+
+        '</div>'+
+        fileBadge+
+      '</a>';
+    }).join('');
+    setMain(html);
+  }
+
+  /* ── Navigation helpers ── */
+  function escAttr(s) {
+    return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+  function goFaculty(f) {
+    state={view:'dept',faculty:f,dept:''};
+    renderDepts(f);
+  }
+  function goDept(d) {
+    state={view:'books',faculty:state.faculty,dept:d};
+    renderBooks(state.faculty, d);
+  }
+
+  /* ── Init ── */
+  (async function () {
+    if (!window.RONYX_CONFIG||!RONYX_CONFIG.CONFIGURED) {
+      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>Connect Appwrite to browse the library.</p></div>');
+      return;
+    }
+
+    allBooks = await RonyxData.listAllBooks().catch(function(){ return []; });
+    groups   = buildGroups(allBooks);
+    renderFaculties();
+  })();
   </script>
 </body>
 </html>

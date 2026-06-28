@@ -1,0 +1,288 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Edit book &mdash; Ronyx Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body>
+  <div class="app">
+    <div class="appbar">
+      <a href="books.html" class="iconbtn">←</a>
+      <span class="appbar__title" id="pageTitle">New book</span>
+    </div>
+
+    <div class="app__body">
+      <div class="field">
+        <label class="field__label">Title</label>
+        <input class="input" id="title" placeholder="Book title">
+      </div>
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Author</label>
+          <input class="input" id="author" placeholder="Author name">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Cover emoji</label>
+          <input class="input" id="cover" placeholder="📘" maxlength="2">
+        </div>
+      </div>
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Faculty</label>
+          <input class="input" id="faculty" placeholder="Faculty of Science">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Department</label>
+          <input class="input" id="department" placeholder="Biochemistry">
+        </div>
+      </div>
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Course Code</label>
+          <input class="input" id="courseCode" placeholder="BCH301">
+        </div>
+        <div class="field" style="flex:1;">
+          <label class="field__label">Subject</label>
+          <input class="input" id="subject" placeholder="Computer Science">
+        </div>
+      </div>
+      <div class="btn-row">
+        <div class="field" style="flex:1;">
+          <label class="field__label">Read time (min)</label>
+          <input class="input" id="readMinutes" type="number" value="10">
+        </div>
+        <div class="field" style="flex:1;"></div>
+      </div>
+      <div class="field">
+        <label class="field__label">Course Content / Summary</label>
+        <p style="font-size:11px;color:var(--color-muted-2);margin:-2px 0 6px;">Students read this in-app. Use ## Heading, ### Sub-heading, - bullet point, **bold**, > quote. Supports full course notes.</p>
+        <textarea class="input" id="summary" rows="18" placeholder="## Introduction&#10;Write your full course summary or notes here.&#10;&#10;## Chapter 1: Topic&#10;Students see this formatted in the library reader.&#10;&#10;- Key point 1&#10;- Key point 2&#10;&#10;> Important quote or definition"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Key takeaways (one per line — shown as checkmarks)</label>
+        <textarea class="input" id="takeaways" rows="4" placeholder="Key insight 1&#10;Key insight 2&#10;Key insight 3"></textarea>
+      </div>
+
+      <!-- ── Book file upload ── -->
+      <div class="field">
+        <label class="field__label">Book File <span style="color:var(--color-muted);font-weight:400;">(PDF or DOC — students open this in the reader)</span></label>
+
+        <!-- Current file indicator (shown when book already has a file) -->
+        <div id="currentFile" style="display:none; padding:12px 14px; background:var(--color-surface);
+             border:1px solid var(--color-stroke); border-radius:12px; margin-bottom:10px;
+             display:flex; align-items:center; gap:10px;">
+          <span style="font-size:22px;">&#128196;</span>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:700;" id="currentFileName">Current file</div>
+            <div style="font-size:11px; color:var(--color-muted);">Tap Replace to upload a new file</div>
+          </div>
+          <button class="btn btn--sm" onclick="removeCurrentFile()"
+                  style="background:rgba(244,63,94,.1);color:#f43f5e;border:1px solid rgba(244,63,94,.25);flex-shrink:0;">
+            Remove
+          </button>
+        </div>
+
+        <!-- Drop zone -->
+        <label id="fileDropZone" style="display:block; border:2px dashed var(--color-stroke);
+               border-radius:14px; padding:20px; text-align:center; cursor:pointer;
+               transition:border-color .2s, background .2s;">
+          <div style="font-size:34px; margin-bottom:8px;">&#128228;</div>
+          <div style="font-size:14px; font-weight:700; margin-bottom:3px;" id="fileDropLabel">Choose PDF or DOC file</div>
+          <div style="font-size:11px; color:var(--color-muted);">Max 10 MB &middot; PDF, DOC, DOCX</div>
+          <input type="file" id="bookFileInput" style="display:none;"
+                 accept=".pdf,.doc,.docx" onchange="onFileChosen(this)">
+        </label>
+
+        <!-- Upload progress -->
+        <div id="fileProgress" style="display:none; margin-top:10px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:6px;" id="fileProgressMsg">Uploading&#8230;</div>
+          <div style="height:5px; border-radius:3px; background:var(--color-stroke); overflow:hidden;">
+            <div id="fileProgressFill" style="height:100%; width:0%; background:var(--color-primary-2);
+                 border-radius:3px; transition:width .3s;"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn--primary" onclick="save()">Save</button>
+      <button class="btn btn--danger" id="delBtn" style="display:none; margin-top: 8px;" onclick="del()">Delete</button>
+    </div>
+  </div>
+
+  <script src="../js/appwrite.min.js?v=mqycbxxj"></script>
+  <script src="../js/config.js?v=mqycbxxj"></script>
+  <script src="../js/appwrite.js?v=mqycbxxj"></script>
+  <script src="../js/admin-data.js?v=mqycbxxj"></script>
+  <script src="../js/theme.js?v=mqycbxxj"></script>
+  <script>
+    requireAdmin();
+    const id = new URLSearchParams(location.search).get('id');
+
+    /* ── File upload state ── */
+    var _newFileId    = null;  /* fileId of a freshly uploaded file */
+    var _existingFileId = null; /* fileId that was on the book when loaded */
+    var _removeFile   = false; /* user clicked Remove on existing file */
+
+    function showCurrentFile(fileId, label) {
+      _existingFileId = fileId;
+      var el = document.getElementById('currentFile');
+      if (!el) return;
+      el.style.display = 'flex';
+      document.getElementById('currentFileName').textContent = label || 'Attached file';
+    }
+
+    function removeCurrentFile() {
+      _removeFile = true;
+      _existingFileId = null;
+      var el = document.getElementById('currentFile');
+      if (el) el.style.display = 'none';
+    }
+
+    function setProgress(msg, pct) {
+      var wrap = document.getElementById('fileProgress');
+      if (!wrap) return;
+      wrap.style.display = 'block';
+      document.getElementById('fileProgressMsg').textContent = msg || 'Uploading...';
+      document.getElementById('fileProgressFill').style.width = (pct || 0) + '%';
+    }
+    function hideProgress() {
+      var wrap = document.getElementById('fileProgress');
+      if (wrap) wrap.style.display = 'none';
+    }
+
+    async function onFileChosen(input) {
+      var file = input.files[0];
+      if (!file) return;
+
+      var dropZone = document.getElementById('fileDropZone');
+      var dropLabel = document.getElementById('fileDropLabel');
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File too large (max 10 MB). Please compress or split the PDF.');
+        input.value = '';
+        return;
+      }
+
+      setProgress('Uploading ' + file.name + '...', 30);
+      if (dropZone) dropZone.style.borderColor = 'var(--color-primary-2)';
+
+      try {
+        var result = await RonyxAdmin.uploadBookFile(file);
+        _newFileId = result.$id;
+        setProgress('Uploaded! Will save with book.', 100);
+        if (dropLabel) dropLabel.textContent = file.name;
+        setTimeout(hideProgress, 2000);
+        if (dropZone) dropZone.style.borderColor = 'var(--color-success, #34d399)';
+      } catch (e) {
+        hideProgress();
+        if (dropZone) dropZone.style.borderColor = 'var(--color-danger)';
+        alert('Upload failed: ' + (e.message || 'Unknown error') + '\n\nMake sure the uploads storage bucket exists in Appwrite.');
+        input.value = '';
+      }
+    }
+
+    /* ── Load existing book ── */
+    (async function () {
+      if (id) {
+        document.getElementById('pageTitle').textContent = 'Edit book';
+        document.getElementById('delBtn').style.display = 'block';
+        const b = await RonyxAdmin.getBook(id);
+        document.getElementById('title').value = b.title || '';
+        document.getElementById('author').value = b.author || '';
+        document.getElementById('cover').value = b.cover || '📘';
+        document.getElementById('faculty').value = b.faculty || '';
+        document.getElementById('department').value = b.department || '';
+        document.getElementById('courseCode').value = b.courseCode || '';
+        document.getElementById('subject').value = b.subject || '';
+        document.getElementById('readMinutes').value = b.readMinutes || 10;
+        document.getElementById('summary').value = b.summary || '';
+        try { document.getElementById('takeaways').value = JSON.parse(b.takeaways || '[]').join('\n'); } catch (e) {}
+        if (b.fileId) showCurrentFile(b.fileId, 'Current file (PDF/DOC attached)');
+      }
+    })();
+
+    /* ── Save ── */
+    async function save() {
+      const btn = document.querySelector('button.btn.btn--primary');
+      if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+      const takes = document.getElementById('takeaways').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const data = {
+        title:       document.getElementById('title').value.trim(),
+        author:      document.getElementById('author').value.trim(),
+        cover:       document.getElementById('cover').value.trim() || '📘',
+        faculty:     document.getElementById('faculty').value.trim(),
+        department:  document.getElementById('department').value.trim(),
+        courseCode:  document.getElementById('courseCode').value.trim(),
+        subject:     document.getElementById('subject').value.trim(),
+        readMinutes: parseInt(document.getElementById('readMinutes').value) || 10,
+        summary:     document.getElementById('summary').value,
+        takeaways:   JSON.stringify(takes),
+      };
+
+      /* Include file metadata if a new file was uploaded */
+      if (_newFileId) {
+        data.fileId = _newFileId;
+      } else if (_removeFile) {
+        data.fileId = null;
+      }
+
+      if (!data.title) {
+        if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
+        return alert('Title is required.');
+      }
+
+      try {
+        if (id) await RonyxAdmin.updateBook(id, data);
+        else    await RonyxAdmin.createBook(data);
+        location.href = 'books.html';
+        return;
+      } catch (e) {
+        const msg = (e.message || e.response || JSON.stringify(e) || '').toLowerCase();
+
+        const isUnknownAttr = msg.includes('unknown') || msg.includes('attribute') || msg.includes('invalid document');
+        if (isUnknownAttr) {
+          try {
+            const fallback = {
+              title:       data.title,
+              author:      data.author,
+              cover:       data.cover,
+              subject:     data.subject,
+              readMinutes: data.readMinutes,
+              summary:     data.summary,
+              takeaways:   data.takeaways,
+            };
+            if (data.fileId !== undefined) fallback.fileId = data.fileId;
+            if (id) await RonyxAdmin.updateBook(id, fallback);
+            else    await RonyxAdmin.createBook(fallback);
+            alert('Book saved!\n\nNote: Faculty/Department/CourseCode not saved — re-run setup.js to add those fields.');
+            location.href = 'books.html';
+            return;
+          } catch (e2) { /* fall through to error below */ }
+        }
+
+        if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
+        alert('Save failed — ' + (e.message || JSON.stringify(e)));
+      }
+    }
+
+    async function del() {
+      if (!confirm('Delete this book?')) return;
+      /* Clean up the attached file from storage too */
+      var fileId = _existingFileId || _newFileId;
+      if (fileId) await RonyxAdmin.deleteBookFile(fileId).catch(function(){});
+      await RonyxAdmin.deleteBook(id);
+      location.href = 'books.html';
+    }
+  </script>
+</body>
+</html>
+
+

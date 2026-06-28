@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Summary — Runyx</title>
+  <title>Library Reader &mdash; Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,74 +11,551 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    /* â”€â”€ Reader â”€â”€ */
+    .reader-hero { text-align:center; padding:22px 0 16px; border-bottom:1px solid var(--color-stroke); margin-bottom:18px; }
+    .reader-emoji { font-size:56px; line-height:1; }
+    .reader-title { font-size:20px; font-weight:800; margin:10px 0 4px; letter-spacing:-.02em; }
+    .reader-author { font-size:13px; color:var(--color-muted); margin-bottom:10px; }
+    .reader-badges { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+    .reader-body { font-size:15px; line-height:1.9; }
+    .reader-body h2 { font-size:18px; font-weight:800; margin:28px 0 10px; color:var(--color-primary-2); }
+    .reader-body h3 { font-size:15px; font-weight:700; margin:20px 0 8px; }
+    .reader-body p  { margin-bottom:14px; color:var(--color-muted); }
+    .reader-body ul, .reader-body ol { padding-left:22px; margin-bottom:14px; }
+    .reader-body li { margin-bottom:6px; color:var(--color-muted); }
+    .reader-body strong { color:var(--color-text); font-weight:700; }
+    .reader-body hr { border:none; border-top:1px solid var(--color-stroke); margin:24px 0; }
+    .reader-body blockquote { border-left:3px solid var(--color-primary-2); padding-left:14px;
+      color:var(--color-muted-2); font-style:italic; margin:14px 0; }
+    .tts-sent { display:inline; border-radius:3px; }
+    .tts-sent.active { background:rgba(109,94,252,.3); color:#fff !important; padding:0 2px; border-radius:4px; }
+
+    .takeaway-list { margin-bottom:24px; }
+    .takeaway-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
+      border-radius:12px; background:var(--color-surface); border:1px solid var(--color-stroke);
+      margin-bottom:8px; font-size:14px; }
+    .takeaway-check { color:var(--color-success); font-size:16px; flex-shrink:0; margin-top:1px; }
+
+    .section-hd { font-size:10px; font-weight:800; text-transform:uppercase;
+      letter-spacing:.08em; color:var(--color-muted-2); margin:28px 0 12px;
+      display:flex; align-items:center; gap:8px; }
+    .section-hd::after { content:''; flex:1; height:1px; background:var(--color-stroke); }
+
+    /* Admin book file viewer fallback (iframe) */
+    .file-viewer { margin-top:24px; border-radius:16px; overflow:hidden; border:1px solid var(--color-stroke); }
+    .file-viewer iframe { width:100%; height:70vh; border:none; background:#fff; display:block; }
+    .file-viewer-label { padding:10px 14px; font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--color-muted-2); border-bottom:1px solid var(--color-stroke); }
+
+    /* â”€â”€ TOP progress bar (sticky â€” always visible) â”€â”€ */
+    #topProc {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-stroke);
+      padding: 10px 16px 12px;
+      margin: -16px -16px 16px;
+      display: none;
+    }
+    #topProc.on { display: block; }
+    .tp-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .tp-msg { font-size:13px; font-weight:600; color:var(--color-text); }
+    .tp-pct { font-size:12px; color:var(--color-muted); }
+    .tp-track { height:4px; border-radius:2px; background:var(--color-stroke); overflow:hidden; }
+    .tp-fill  { height:100%; width:0%; border-radius:2px; background:var(--color-primary-2); transition:width .35s ease; }
+
+    /* â”€â”€ TTS bar â”€â”€ */
+    .tts-bar {
+      position:fixed; bottom:calc(56px + env(safe-area-inset-bottom,0px));
+      left:0; right:0; z-index:500;
+      background:var(--color-bg); border-top:1px solid var(--color-stroke);
+      padding:8px 14px; display:none;
+    }
+    .tts-bar.on { display:block; }
+    .tts-row { display:flex; align-items:center; gap:8px; }
+    .tts-playbtn { width:44px;height:44px;border-radius:50%;flex-shrink:0;background:var(--color-primary-2);color:#fff;font-size:18px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:monospace; }
+    .tts-iconbtn { width:38px;height:38px;border-radius:50%;flex-shrink:0;background:rgba(109,94,252,.14);color:var(--color-primary-2);font-size:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-weight:700; }
+    .tts-iconbtn:active,.tts-playbtn:active { opacity:.7; }
+    .tts-mid { flex:1;min-width:0; }
+    .tts-track { height:3px;background:var(--color-stroke);border-radius:2px;margin-bottom:4px;overflow:hidden; }
+    .tts-fill  { height:100%;width:0%;background:var(--color-primary-2);border-radius:2px;transition:width .4s; }
+    .tts-info  { font-size:10px;color:var(--color-muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+    .tts-speed { font-size:11px;font-weight:800;color:var(--color-primary-2);background:rgba(109,94,252,.12);border:1px solid rgba(109,94,252,.3);border-radius:6px;padding:4px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent; }
+
+    /* â”€â”€ PDF viewer â”€â”€ */
+    .pdf-viewer { background:var(--color-surface);border:1px solid var(--color-stroke);border-radius:14px;overflow:hidden;margin-bottom:20px; }
+    .pdf-hd { padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-muted-2);border-bottom:1px solid var(--color-stroke);display:flex;align-items:center;gap:8px; }
+    .pdf-hd-left  { flex:1;min-width:0; }
+    .pdf-hd-right { display:flex;align-items:center;gap:6px;flex-shrink:0; }
+    .z-btn { width:28px;height:28px;border-radius:50%;background:rgba(109,94,252,.14);color:var(--color-primary-2);border:1px solid rgba(109,94,252,.3);font-size:18px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;flex-shrink:0; }
+    .z-btn:active { opacity:.65; }
+    #zoomLbl { font-size:11px;font-weight:700;color:var(--color-primary-2);min-width:36px;text-align:center; }
+    .pdf-scroll { overflow:auto;max-height:72vh;-webkit-overflow-scrolling:touch; }
+    .pdf-pages  { width:100%;transition:zoom .15s; }
+    .pdf-pages canvas { width:100%;display:block;margin-bottom:2px;border-radius:3px; }
+
+    /* â”€â”€ Image viewer â”€â”€ */
+    .img-viewer { border-radius:14px;overflow:hidden;border:1px solid var(--color-stroke);margin-bottom:20px;background:var(--color-surface);text-align:center; }
+    .img-viewer img { max-width:100%;max-height:70vh;object-fit:contain;display:block;margin:0 auto; }
+  </style>
 </head>
 <body>
   <div class="app">
     <div class="appbar">
-      <a href="/pages/student/library.html" class="iconbtn">←</a>
-      <span class="appbar__title">Summary</span>
+      <a href="/pages/student/library.html" class="iconbtn">&larr;</a>
+      <span class="appbar__title" id="appbarTitle">Reading</span>
     </div>
 
-    <div class="app__body" id="content">
-      <div class="empty"><div class="empty__icon">📖</div><p>Loading…</p></div>
+    <div class="app__body" id="content" style="padding-bottom:80px;">
+      <div class="empty"><div class="empty__icon">&#128214;</div><p>Loading&hellip;</p></div>
     </div>
+
+    <!-- TTS player bar -->
+    <div class="tts-bar" id="ttsBar">
+      <div class="tts-row">
+        <button class="tts-iconbtn" title="Restart" onclick="TTS.restart()">&#124;&#9664;</button>
+        <button class="tts-playbtn" id="ttsPlay" onclick="TTS.toggle()">&#9654;</button>
+        <button class="tts-iconbtn" title="Stop" onclick="TTS.stop()">&#9632;</button>
+        <div class="tts-mid">
+          <div class="tts-track"><div class="tts-fill" id="ttsFill"></div></div>
+          <div class="tts-info" id="ttsInfo">Tap &#9654; to listen aloud</div>
+        </div>
+        <span class="tts-speed" id="ttsVoice" onclick="TTS.cycleVoice()" title="Switch voice">&#9792;</span>
+        <span class="tts-speed" id="ttsSpd"   onclick="TTS.cycleSpeed()">1x</span>
+      </div>
+    </div>
+
+    <nav class="tabbar" data-nav="library"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/appwrite.js"></script>
-  <script src="/js/data.js"></script>
-  <script src="/js/theme.js"></script>
+  <script src="/js/appwrite.min.js?v=mqycbxxj"></script>
+  <script src="/js/config.js?v=mqycbxxj"></script>
+  <script src="/js/appwrite.js?v=mqycbxxj"></script>
+  <script src="/js/data.js?v=mqycbxxj"></script>
+  <script src="/js/ui.js?v=mqycbxxj"></script>
+  <script src="/js/theme.js?v=mqycbxxj"></script>
   <script>
-    const id = new URLSearchParams(location.search).get('id');
+  /* ============================================================
+     HELPERS
+  ============================================================ */
+  function esc(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function inline(t){
+    return esc(t)
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/`(.+?)`/g,'<code style="background:var(--color-surface);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:13px;">$1</code>');
+  }
+  function renderContent(text){
+    if(!text) return '';
+    var lines=text.split('\n'),html='',inUl=false,inOl=false;
+    lines.forEach(function(raw){
+      var line=raw.trimEnd();
+      if(line.startsWith('## ')){if(inUl){html+='</ul>';inUl=false;}if(inOl){html+='</ol>';inOl=false;}html+='<h2>'+esc(line.slice(3))+'</h2>';}
+      else if(line.startsWith('### ')){if(inUl){html+='</ul>';inUl=false;}if(inOl){html+='</ol>';inOl=false;}html+='<h3>'+esc(line.slice(4))+'</h3>';}
+      else if(line.startsWith('> ')){if(inUl){html+='</ul>';inUl=false;}html+='<blockquote>'+inline(line.slice(2))+'</blockquote>';}
+      else if(line.startsWith('---')){html+='<hr>';}
+      else if(line.startsWith('- ')||line.startsWith('â€¢ ')){if(inOl){html+='</ol>';inOl=false;}if(!inUl){html+='<ul>';inUl=true;}html+='<li>'+inline(line.slice(2))+'</li>';}
+      else if(/^\d+\.\s/.test(line)){if(inUl){html+='</ul>';inUl=false;}if(!inOl){html+='<ol>';inOl=true;}html+='<li>'+inline(line.replace(/^\d+\.\s/,''))+'</li>';}
+      else if(line===''){if(inUl){html+='</ul>';inUl=false;}if(inOl){html+='</ol>';inOl=false;}}
+      else{if(inUl){html+='</ul>';inUl=false;}if(inOl){html+='</ol>';inOl=false;}html+='<p>'+inline(line)+'</p>';}
+    });
+    if(inUl)html+='</ul>';if(inOl)html+='</ol>';
+    return html;
+  }
 
-    function show(b) {
-      const paras = (b.summary || '').split('\n').filter(Boolean)
-        .map(p => `<p class="text-muted" style="margin-bottom:12px; line-height:1.6;">${p}</p>`).join('');
-      let takeaways = [];
-      try { takeaways = JSON.parse(b.takeaways || '[]'); } catch (e) {}
-      const tk = takeaways.map(t => `<div class="feature" style="margin-bottom:10px;"><span class="feature__icon">✓</span> ${t}</div>`).join('');
+  /* ============================================================
+     TTS ENGINE  v2
+  ============================================================ */
+  var TTS=(function(){
+    'use strict';
+    var synth=window.speechSynthesis||null;
+    if(!synth) return{init:function(){},toggle:function(){},stop:function(){},restart:function(){},cycleSpeed:function(){},cycleVoice:function(){}};
+    var SPEEDS=[0.75,1,1.25,1.5,2],spIdx=1;
+    var VPREFS=['auto','female','male'],VICONS={auto:'&#9834;',female:'&#9792;',male:'&#9794;'},VTITLES={auto:'Voice: Auto',female:'Voice: Female',male:'Voice: Male'},vpIdx=0;
+    var chunks=[],cur=0,playing=false,gen=0,lastEnd=0,dog=null;
+    function setInfo(t){var e=document.getElementById('ttsInfo');if(e)e.textContent=t;}
+    function setFill(p){var e=document.getElementById('ttsFill');if(e)e.style.width=Math.max(0,Math.min(100,p))+'%';}
+    function setBtn(h){var e=document.getElementById('ttsPlay');if(e)e.innerHTML=h;}
+    function clearHl(){document.querySelectorAll('.tts-sent.active').forEach(function(n){n.classList.remove('active');});}
+    function highlight(i){var c=chunks[i];if(!c)return;var prev=document.querySelector('.tts-sent.active');if(prev!==c.span){clearHl();c.span.classList.add('active');}setFill(chunks.length>1?Math.round(i/(chunks.length-1)*100):100);setInfo('Reading '+(i+1)+' of '+chunks.length);}
+    var FEMALE_RE=/female|samantha|zira|victoria|karen|lucy|moira|joanna|jenny|aria|salli|kimberly|kendra|ivy|michelle|allison|sora|nicky|fiona|tessa|raveena/i;
+    var MALE_RE=/male|david|daniel|alex|mark|ralph|luca|reed|arthur|brian|jorge|hans|xander|wayne|tom|oliver|guy/i;
+    function pickVoice(){var vs=synth.getVoices();var pref=VPREFS[vpIdx];var en=vs.filter(function(v){return /en/i.test(v.lang);});if(!en.length)en=vs;if(pref==='female')return en.find(function(v){return FEMALE_RE.test(v.name);})||en[0]||null;if(pref==='male')return en.find(function(v){return MALE_RE.test(v.name);})||en[0]||null;return en.find(function(v){return /en[-_]?(US|GB)/i.test(v.lang)&&!v.localService;})||en[0]||null;}
+    function setVoiceBtn(){var e=document.getElementById('ttsVoice');if(e){e.innerHTML=VICONS[VPREFS[vpIdx]];e.title=VTITLES[VPREFS[vpIdx]];}}
+    function speakAt(i,myGen){if(myGen!==gen||!playing)return;if(i>=chunks.length){finish();return;}cur=i;highlight(i);lastEnd=Date.now();var u=new SpeechSynthesisUtterance(chunks[i].text);u.rate=SPEEDS[spIdx];u.pitch=1.0;var v=pickVoice();if(v)u.voice=v;u.onend=function(){lastEnd=Date.now();speakAt(i+1,myGen);};u.onerror=function(e){if(e.error==='interrupted'||e.error==='canceled')return;setTimeout(function(){if(myGen===gen&&playing)speakAt(i,myGen);},300);};synth.speak(u);}
+    function finish(){playing=false;stopDog();clearHl();setFill(100);setBtn('&#9654;');setInfo('Finished â€” tap to replay');cur=0;}
+    function startDog(){stopDog();lastEnd=Date.now();dog=setInterval(function(){if(!playing){stopDog();return;}if(Date.now()-lastEnd>12000&&!synth.speaking){var myGen=++gen;synth.cancel();setTimeout(function(){if(playing&&gen===myGen)speakAt(cur,myGen);},150);lastEnd=Date.now();}},4000);}
+    function stopDog(){clearInterval(dog);dog=null;}
+    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&playing){var myGen=++gen;synth.cancel();setTimeout(function(){if(playing&&gen===myGen)speakAt(cur,myGen);},200);}});
+    function ttsClean(t){return t.replace(/\u2192/g,' to ').replace(/\u2190/g,' from ').replace(/\u2191/g,' up ').replace(/\u2193/g,' down ').replace(/\u21D2/g,' implies ').replace(/\u21D4/g,' if and only if ').replace(/\u2248/g,' approximately ').replace(/\u2260/g,' not equal to ').replace(/\u2264/g,' less than or equal to ').replace(/\u2265/g,' greater than or equal to ').replace(/\u00D7/g,' times ').replace(/\u00F7/g,' divided by ').replace(/\u00B0/g,' degrees ').replace(/\u00B2/g,' squared ').replace(/\u00B3/g,' cubed ').replace(/\u221A/g,' root of ').replace(/\u221E/g,' infinity ').replace(/\u2234/g,' therefore ').replace(/\u2235/g,' because ').replace(/\u03C0/g,' pi ').replace(/\u2211/g,' sum ').replace(/\u222B/g,' integral ').replace(/\u03B1/g,' alpha ').replace(/\u03B2/g,' beta ').replace(/\u03B3/g,' gamma ').replace(/\u03B4/g,' delta ').replace(/\u03B8/g,' theta ').replace(/\u03BB/g,' lambda ').replace(/\u03BC/g,' mu ').replace(/\u03C3/g,' sigma ').replace(/\s+/g,' ').trim();}
+    function splitText(text){var MARK='\uE001';var result=[];var t=text.replace(/\s+/g,' ').trim();t.replace(/([.!?]+)\s+/g,'$1'+MARK).split(MARK).forEach(function(s){s=s.trim();if(!s)return;if(s.length<=180){result.push(s);return;}s.split(/,\s+/).forEach(function(part){part=part.trim();if(!part)return;if(part.length<=180){result.push(part);return;}var words=part.split(' '),buf='';words.forEach(function(w){if(buf.length+w.length+1>180&&buf){result.push(buf);buf=w;}else buf+=(buf?' ':'')+w;});if(buf)result.push(buf);});});return result.length?result:[t];}
+    function buildChunks(bodyEl){var built=[],idx=0;bodyEl.querySelectorAll('p,li,h2,h3,blockquote').forEach(function(el){var text=ttsClean(el.textContent.trim());if(!text)return;var sid='_ts'+(idx++);el.innerHTML='<span class="tts-sent" id="'+sid+'">'+el.innerHTML+'</span>';var span=document.getElementById(sid);splitText(text).forEach(function(s){built.push({text:s,span:span});});});chunks=built;}
+    return{
+      init:function(bodyEl){var go=function(){buildChunks(bodyEl);if(chunks.length){document.getElementById('ttsBar').classList.add('on');setVoiceBtn();setInfo('Tap &#9654; to listen &mdash; '+chunks.length+' segments');}};if(synth.getVoices().length>0)go();else{synth.addEventListener('voiceschanged',go,{once:true});setTimeout(function(){if(!chunks.length)go();},1500);}},
+      toggle:function(){if(!chunks.length)return;if(playing){playing=false;gen++;stopDog();synth.cancel();setBtn('&#9654;');setInfo('Paused at '+(cur+1)+'/'+chunks.length+' â€” tap to continue');}else{playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');startDog();speakAt(cur,myGen);}},
+      stop:function(){playing=false;gen++;stopDog();synth.cancel();cur=0;clearHl();setFill(0);setBtn('&#9654;');setInfo('Tap play to listen aloud');},
+      restart:function(){playing=false;gen++;stopDog();synth.cancel();cur=0;playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');startDog();setTimeout(function(){speakAt(0,myGen);},100);},
+      cycleSpeed:function(){spIdx=(spIdx+1)%SPEEDS.length;var e=document.getElementById('ttsSpd');if(e)e.textContent=SPEEDS[spIdx]+'x';if(playing){var myGen=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===myGen){startDog();speakAt(cur,myGen);}},100);}},
+      cycleVoice:function(){vpIdx=(vpIdx+1)%VPREFS.length;setVoiceBtn();if(playing){var myGen=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===myGen){startDog();speakAt(cur,myGen);}},100);}}
+    };
+  })();
 
-      const fileUrl = b.fileId ? RunyxData.fileViewUrl(b.fileId) : null;
+  /* ============================================================
+     ADMIN BOOK MODE â€” showBook(b)
+  ============================================================ */
+  function showBook(b){
+    document.getElementById('appbarTitle').textContent=b.title||'Reading';
+    document.title=(b.title||'Summary')+' — Ronyx';
+    var takeaways=[];try{takeaways=JSON.parse(b.takeaways||'[]');}catch(e){}
+    var contentHtml=renderContent(b.summary||'');
+    var tkHtml=takeaways.length?'<div class=”section-hd”>Key Takeaways</div><div class=”takeaway-list”>'+takeaways.map(function(t){return '<div class=”takeaway-item”><span class=”takeaway-check”>&#10003;</span><span>'+esc(t)+'</span></div>';}).join('')+'</div>':'';
 
-      document.getElementById('content').innerHTML = `
-        <div class="text-center mb-4">
-          <div style="font-size:56px;">${b.cover || '📘'}</div>
-          <h1 class="title-lg" style="margin-top:8px;">${b.title}</h1>
-          <p class="text-muted">${b.author || 'Unknown'}</p>
-          <div class="row" style="justify-content:center; gap:8px; margin-top:10px;">
-            <span class="badge badge--violet">${b.subject || 'General'}</span>
-            <span class="badge badge--green">${b.readMinutes || 10} min read</span>
-          </div>
-        </div>
-
-        <div class="card card--accent mb-4">
-          <p class="text-tiny" style="margin-bottom:4px;">✨ AI Summary</p>
-          <p class="text-muted" style="font-size:13px;">A condensed version so you grasp the big ideas before reading the full book.</p>
-        </div>
-
-        ${paras}
-
-        ${takeaways.length ? `<h3 class="title-md mb-4 mt-6">Key takeaways</h3>${tk}` : ''}
-
-        ${fileUrl ? `<a href="${fileUrl}" target="_blank" rel="noopener" class="btn btn--primary mt-4">📄 Read full book</a>` : ''}
-      `;
+    /* If admin attached a PDF/DOC, show a proper open button that uses the
+       full PDF reader (OCR + TTS) instead of a basic iframe */
+    var fileHtml = '';
+    if (b.fileId) {
+      var safeTitle = JSON.stringify(b.title||'');
+      var safeId    = JSON.stringify(b.fileId);
+      fileHtml =
+        '<div class=”section-hd”>Full Document</div>'+
+        '<div style=”padding:4px 0 24px;”>'+
+          '<button class=”btn btn--primary” style=”width:100%;padding:16px;” '+
+            'onclick=”openBookPdf('+safeTitle+','+safeId+')”>'+
+            '&#128196;&nbsp; Open Full PDF &mdash; with Text-to-Speech'+
+          '</button>'+
+          '<p style=”font-size:11px;color:var(--color-muted);margin-top:8px;text-align:center;”>'+
+            'Opens the document reader with OCR &amp; TTS support'+
+          '</p>'+
+        '</div>';
     }
 
-    (async function () {
-      if (!window.RUNYX_CONFIG || !RUNYX_CONFIG.CONFIGURED || !id) {
+    document.getElementById('content').innerHTML=
+      '<div class=”reader-hero”>'+
+        '<div class=”reader-emoji”>'+esc(b.cover||'\u{1F4D8}')+'</div>'+
+        '<div class=”reader-title”>'+esc(b.title||'')+'</div>'+
+        '<div class=”reader-author”>'+esc(b.author||'Unknown')+'</div>'+
+        '<div class=”reader-badges”>'+
+          (b.faculty?'<span class=”badge”>'+esc(b.faculty)+'</span>':'')+
+          (b.department?'<span class=”badge”>'+esc(b.department)+'</span>':'')+
+          (b.courseCode?'<span class=”badge” style=”background:rgba(245,158,11,.15);color:#F59E0B;”>'+esc(b.courseCode)+'</span>':'')+
+          (b.subject?'<span class=”badge badge--violet”>'+esc(b.subject)+'</span>':'')+
+          '<span class=”badge badge--green”>'+(b.readMinutes||10)+' min</span>'+
+          (b.pages?'<span class=”badge”>'+b.pages+' pages</span>':'')+
+        '</div>'+
+      '</div>'+
+      (contentHtml?'<div class=”section-hd”>Summary</div><div class=”reader-body” id=”ttsBody”>'+contentHtml+'</div>':'')+
+      tkHtml+fileHtml;
+    if('speechSynthesis' in window){var el=document.getElementById('ttsBody');if(el)TTS.init(el);}
+  }
+
+  function openBookPdf(title, fileId) {
+    if (window.TTS && TTS.stop) TTS.stop();
+    document.getElementById('content').innerHTML = '';
+    handlePdf(title, fileId);
+  }
+
+  /* ============================================================
+     UPLOADED FILE MODE â€” shared helpers
+  ============================================================ */
+
+  /* â”€â”€ Top progress bar â”€â”€ */
+  function showProc(msg, pct, color) {
+    var bar = document.getElementById('topProc');
+    if (!bar) return;
+    bar.classList.add('on');
+    var msgEl = document.getElementById('procMsg');
+    var pctEl = document.getElementById('procPct');
+    var fill  = document.getElementById('procFill');
+    if (msgEl) msgEl.textContent = msg || 'Processingâ€¦';
+    if (pctEl) pctEl.textContent = Math.round(pct || 0) + '%';
+    if (fill)  {
+      fill.style.width = Math.round(pct || 0) + '%';
+      if (color) fill.style.background = color;
+    }
+  }
+  function hideProc() {
+    var bar = document.getElementById('topProc');
+    if (bar) bar.classList.remove('on');
+  }
+
+  /* â”€â”€ Top progress HTML â”€â”€ */
+  function procHtml() {
+    return '<div id="topProc" class="' + /* sticky bar */ '">' +
+      '<div class="tp-row"><span class="tp-msg" id="procMsg">Loadingâ€¦</span><span class="tp-pct" id="procPct">0%</span></div>'+
+      '<div class="tp-track"><div class="tp-fill" id="procFill"></div></div>'+
+    '</div>';
+  }
+
+  /* â”€â”€ Hero HTML â”€â”€ */
+  function heroHtml(title, emoji, meta) {
+    return '<div class="reader-hero">'+
+      '<div class="reader-emoji">'+emoji+'</div>'+
+      '<div class="reader-title">'+esc(title)+'</div>'+
+      '<div class="reader-author">'+esc(meta)+' &middot; My Upload</div>'+
+    '</div>';
+  }
+
+  /* â”€â”€ Hidden TTS element (off-screen, DOM-accessible for TTS engine) â”€â”€ */
+  function ttsBodyHtml() {
+    return '<div id="ttsBody" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true"></div>';
+  }
+
+  /* â”€â”€ Fetch file blob from Appwrite via credentials cookie â”€â”€ */
+  async function fetchBlob(fileId) {
+    var url  = String(RonyxData.fileViewUrl(fileId));
+    var resp = await fetch(url, { credentials:'include', mode:'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return resp.blob();
+  }
+
+  /* â”€â”€ Lazy-load a script (deduplicated by data-rsrc attr) â”€â”€ */
+  function loadScript(src) {
+    return new Promise(function(res, rej) {
+      if (document.querySelector('script[data-rsrc="'+src+'"]')) { res(); return; }
+      var s = document.createElement('script');
+      s.src = src; s.setAttribute('data-rsrc', src);
+      s.onload = res; s.onerror = function(){ rej(new Error('Script load failed: '+src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  /* â”€â”€ Feed cleaned text to TTS via hidden body element â”€â”€ */
+  function initTtsFromText(text) {
+    var el = document.getElementById('ttsBody');
+    if (!el) return;
+    if (!text || !text.trim()) {
+      el.innerHTML = '<p>No readable text was found in this document.</p>';
+    } else {
+      /* Split into paragraphs, create a <p> for each */
+      var paras = text.trim().split(/\n{2,}/).filter(function(p){ return p.trim(); });
+      el.innerHTML = paras.map(function(p){ return '<p>'+esc(p.trim())+'</p>'; }).join('');
+    }
+    if ('speechSynthesis' in window) TTS.init(el);
+  }
+
+  /* â”€â”€ PDF zoom â”€â”€ */
+  var ZOOM_LEVELS = [50, 75, 100, 125, 150, 200, 300];
+  var zoomIdx = 2; /* 100% */
+
+  window.changeZoom = function(dir) {
+    zoomIdx = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, zoomIdx + dir));
+    var pct = ZOOM_LEVELS[zoomIdx];
+    var pages = document.getElementById('pdfPages');
+    if (pages) pages.style.zoom = pct / 100;
+    var lbl = document.getElementById('zoomLbl');
+    if (lbl) lbl.textContent = pct + '%';
+  };
+
+  function setupPinchZoom(el) {
+    var startDist = 0, startZoom = 1.0;
+    el.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 2) {
+        startDist = Math.hypot(
+          e.touches[1].clientX - e.touches[0].clientX,
+          e.touches[1].clientY - e.touches[0].clientY
+        );
+        startZoom = ZOOM_LEVELS[zoomIdx] / 100;
+      }
+    }, { passive: true });
+    el.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 2 && startDist > 0) {
+        var dist = Math.hypot(
+          e.touches[1].clientX - e.touches[0].clientX,
+          e.touches[1].clientY - e.touches[0].clientY
+        );
+        var newZ = Math.max(0.5, Math.min(3, startZoom * dist / startDist));
+        el.style.zoom = newZ;
+        var lbl = document.getElementById('zoomLbl');
+        if (lbl) lbl.textContent = Math.round(newZ * 100) + '%';
+      }
+    }, { passive: true });
+    /* Double-tap to toggle 100% â†” 200% */
+    var lastTap = 0;
+    el.addEventListener('click', function() {
+      var now = Date.now();
+      if (now - lastTap < 320) {
+        zoomIdx = (ZOOM_LEVELS[zoomIdx] > 100) ? 2 : 5;
+        var pct = ZOOM_LEVELS[zoomIdx];
+        el.style.zoom = pct / 100;
+        var lbl = document.getElementById('zoomLbl');
+        if (lbl) lbl.textContent = pct + '%';
+      }
+      lastTap = now;
+    });
+  }
+
+  /* â”€â”€ PDF handler â”€â”€ */
+  async function handlePdf(title, fileId) {
+    /* Build page layout: sticky progress bar first, then content below */
+    document.getElementById('content').innerHTML =
+      procHtml() +
+      heroHtml(title, '&#128196;', 'PDF') +
+      '<div class="pdf-viewer">'+
+        '<div class="pdf-hd">'+
+          '<div class="pdf-hd-left">&#128196; <span id="pdfPageInfo"></span></div>'+
+          '<div class="pdf-hd-right">'+
+            '<button class="z-btn" onclick="changeZoom(-1)" title="Zoom out">&#8722;</button>'+
+            '<span id="zoomLbl">100%</span>'+
+            '<button class="z-btn" onclick="changeZoom(1)"  title="Zoom in">&#43;</button>'+
+          '</div>'+
+        '</div>'+
+        '<div class="pdf-scroll" id="pdfScroll">'+
+          '<div class="pdf-pages" id="pdfPages"></div>'+
+        '</div>'+
+      '</div>'+
+      ttsBodyHtml();
+
+    showProc('Fetching documentâ€¦', 5);
+
+    try {
+      /* Fetch PDF blob â€” uses auth cookie, avoids CORS redirect issues */
+      var blob    = await fetchBlob(fileId);
+      var blobUrl = URL.createObjectURL(blob);
+
+      showProc('Loading PDF engineâ€¦', 12);
+      await loadScript('/js/pdfviewer.js?v=mqycbxxj');
+
+      var pagesEl = document.getElementById('pdfPages');
+      var result  = await window.RonyxPDF.render(blobUrl, pagesEl, function(p) {
+        showProc(p.label, p.pct);
+        var pi = document.getElementById('pdfPageInfo');
+        if (pi) pi.textContent = p.label;
+      });
+      URL.revokeObjectURL(blobUrl);
+
+      /* Setup zoom and pinch gestures */
+      setupPinchZoom(pagesEl);
+
+      var pi = document.getElementById('pdfPageInfo');
+      if (pi) pi.textContent = result.pages + ' page' + (result.pages !== 1 ? 's' : '');
+
+      /* Determine if we need OCR: < 40 chars/page = scanned document */
+      var avgChars = result.pages > 0 ? result.text.length / result.pages : 0;
+
+      if (avgChars < 40 && result.canvases.length) {
+        /* Scanned PDF â€” load OCR engine, which also restores stored rotation on cached visits */
+        showProc('Scanned PDF â€” running OCRâ€¦', 0, '#F59E0B');
+        await loadScript('/js/ocrengine.js?v=mqycbxxj');
+        var ocrKey  = 'ronyx_ocr_' + fileId;
+        var ocrText = await window.RonyxOCR.processCanvases(result.canvases, ocrKey, function(p) {
+          showProc(p.label, p.pct, '#F59E0B');
+        });
+        hideProc();
+        initTtsFromText(ocrText);
+      } else {
+        /* Text PDF: use extracted text directly */
+        hideProc();
+        initTtsFromText(result.text);
+      }
+
+    } catch (err) {
+      hideProc();
+      /* Graceful fallback: open externally */
+      var fallbackUrl = String(RonyxData.fileViewUrl(fileId));
+      document.getElementById('content').innerHTML +=
+        '<div style="margin-top:12px;">'+
+          '<p style="color:var(--color-danger);font-size:13px;margin-bottom:12px;">&#9888; Could not load in-app viewer: '+esc(err.message)+'</p>'+
+          '<a href="'+fallbackUrl+'" target="_blank" rel="noopener" class="btn btn--ghost" style="display:block;text-align:center;">Open PDF externally</a>'+
+        '</div>';
+    }
+  }
+
+  /* â”€â”€ Image handler (OCR) â”€â”€ */
+  async function handleImage(title, fileId, ext) {
+    var imgUrl = String(RonyxData.fileViewUrl(fileId));
+    document.getElementById('content').innerHTML =
+      procHtml() +
+      heroHtml(title, '&#128247;', ext.toUpperCase()) +
+      '<div class="img-viewer"><img src="'+imgUrl+'" alt="'+esc(title)+'" onerror="this.style.display=\'none\'"></div>' +
+      ttsBodyHtml();
+
+    showProc('Loading OCR engineâ€¦', 5, '#10B981');
+
+    try {
+      var blob = await fetchBlob(fileId);
+      await loadScript('/js/ocrengine.js?v=mqycbxxj');
+      var ocrKey = 'ronyx_ocr_' + fileId;
+      var text   = await window.RonyxOCR.processBlob(blob, ocrKey, function(p) {
+        showProc(p.label, p.pct, '#10B981');
+      });
+      hideProc();
+      initTtsFromText(text);
+    } catch (err) {
+      hideProc();
+      document.getElementById('content').innerHTML +=
+        '<p style="color:var(--color-danger);font-size:13px;margin-top:12px;">&#9888; OCR failed: '+esc(err.message)+'</p>';
+    }
+  }
+
+  /* â”€â”€ Text / Markdown handler â”€â”€ */
+  async function handleText(title, fileId) {
+    var book = { title:title, cover:'&#128221;', author:'My Upload', subject:'', readMinutes:0 };
+    try {
+      var url  = String(RonyxData.fileViewUrl(fileId));
+      var resp = await fetch(url, { credentials:'include' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      book.summary = await resp.text();
+    } catch(e) {
+      book.summary = '(Could not load file content â€” please try again.)';
+    }
+    showBook(book);
+  }
+
+  /* ============================================================
+     PAGE INIT
+  ============================================================ */
+  var _params = new URLSearchParams(location.search);
+  var bookId  = _params.get('id');
+  var fileId  = _params.get('file');
+
+  (async function(){
+
+    /* â”€â”€ Uploaded file mode â”€â”€ */
+    if (fileId) {
+      var title    = _params.get('title') ? decodeURIComponent(_params.get('title')) : 'Document';
+      var fileType = (_params.get('type') || 'pdf').toLowerCase();
+      document.getElementById('appbarTitle').textContent = title;
+      document.title = title + ' â€” Ronyx';
+
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED || !window.RonyxData) {
         document.getElementById('content').innerHTML =
-          '<div class="empty"><div class="empty__icon">📖</div><p>Connect Appwrite to read book summaries.</p></div>';
+          '<div class="empty"><div class="empty__icon">&#128196;</div><p>Sign in to view your uploads.</p></div>';
         return;
       }
-      const b = await RunyxData.getBook(id).catch(() => null);
-      if (!b) {
+
+      if (fileType === 'txt' || fileType === 'md' || fileType === 'text') {
+        await handleText(title, fileId);
+      } else if (fileType === 'pdf') {
+        await handlePdf(title, fileId);
+      } else if (/^(jpg|jpeg|png|gif|webp|image)$/.test(fileType)) {
+        await handleImage(title, fileId, fileType);
+      } else {
         document.getElementById('content').innerHTML =
-          '<div class="empty"><div class="empty__icon">📖</div><p>Book not found.</p></div>';
-        return;
+          heroHtml(title, '&#128196;', fileType.toUpperCase()) +
+          '<a href="'+String(RonyxData.fileViewUrl(fileId))+'" target="_blank" rel="noopener" '+
+             'class="btn btn--primary" style="display:block;text-align:center;padding:18px 0;margin-top:24px;">'+
+            '&#128196;&nbsp; Open File</a>';
       }
-      show(b);
-    })();
+      return;
+    }
+
+    /* â”€â”€ Admin book mode â”€â”€ */
+    if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED || !bookId) {
+      document.getElementById('content').innerHTML =
+        '<div class="empty"><div class="empty__icon">&#128214;</div><p>Connect Appwrite to read course materials.</p></div>';
+      return;
+    }
+    var b = await RonyxData.getBook(bookId).catch(function(){ return null; });
+    if (!b) {
+      document.getElementById('content').innerHTML =
+        '<div class="empty"><div class="empty__icon">&#128214;</div><p>Book not found.</p></div>';
+      return;
+    }
+    showBook(b);
+  })();
   </script>
 </body>
 </html>
