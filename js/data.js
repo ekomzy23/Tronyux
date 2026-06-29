@@ -211,11 +211,18 @@
     try { await storage.deleteFile(cfg.BUCKETS.uploads, fileId); } catch(e) {}
   }
 
+  /* File metadata — used to detect MIME type for routing in book.html */
+  async function getFileInfo(fileId) {
+    if (!storage || !fileId) return null;
+    try { return await storage.getFile(cfg.BUCKETS.uploads, fileId); } catch(e) { return null; }
+  }
+
   window.RonyxData = {
     currentUser, getProfile, getLevel, setLevel,
     listExams, getExam, listQuestions,
     startAttempt, saveAnswers, submitAttempt,
     listResults, listNotifications, markNotificationRead, getUnreadCount,
-    listBooks, listAllBooks, getBook, fileViewUrl, uploadFile, uploadMyFile, deleteMyFile,
+    listBooks, listAllBooks, getBook, fileViewUrl, getFileInfo,
+    uploadFile, uploadMyFile, deleteMyFile,
   };
 })();

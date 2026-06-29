@@ -71,13 +71,32 @@
     }
     /* STT status hint */
     #sttHint {
-      position:fixed; bottom:186px; right:68px;
+      position:fixed; bottom:238px; right:68px;
       max-width:210px; font-size:11px; font-weight:600; line-height:1.45;
       background:rgba(0,0,0,.85); color:#fff; border-radius:10px;
       padding:7px 11px; z-index:26; pointer-events:none;
       opacity:0; transition:opacity .25s; text-align:right;
     }
     #sttHint.visible { opacity:1; }
+
+    /* ── Mic state + waveform panel ── */
+    #micPanel {
+      position:fixed; bottom:155px; right:8px; z-index:24;
+      display:none; flex-direction:column; align-items:flex-end; gap:5px;
+    }
+    #micPanel.show { display:flex; }
+    #micChip {
+      font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+      padding:3px 9px; border-radius:20px;
+      background:rgba(109,94,252,.92); color:#fff;
+      transition:background .22s;
+    }
+    #micChip.listening { background:rgba(225,29,72,.92); }
+    #waveCanvas {
+      width:110px; height:26px; border-radius:7px;
+      background:rgba(0,0,0,.45); display:block;
+    }
+
     /* Dictation mode — pulsing red border on textarea */
     textarea.is-dictating {
       border-color:#e11d48 !important;
@@ -135,6 +154,11 @@
     </div>
     <!-- STT status hint bubble -->
     <div id="sttHint"></div>
+    <!-- Mic state chip + waveform -->
+    <div id="micPanel">
+      <div id="micChip">Setting up&hellip;</div>
+      <canvas id="waveCanvas" width="220" height="52"></canvas>
+    </div>
 
     <div class="overlay" id="overlay">
       <div class="overlay__sheet">
@@ -152,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqynzgrq"></script>
+  <script src="/js/appwrite.min.js?v=mqyp3s49"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mqynzgrq"></script>
-  <script src="/js/appwrite.js?v=mqynzgrq"></script>
-  <script src="/js/data.js?v=mqynzgrq"></script>
-  <script src="/js/scikeyboard.js?v=mqynzgrq"></script>
-  <script src="/js/theme.js?v=mqynzgrq"></script>
+  <script src="/js/config.js?v=mqyp3s49"></script>
+  <script src="/js/appwrite.js?v=mqyp3s49"></script>
+  <script src="/js/data.js?v=mqyp3s49"></script>
+  <script src="/js/scikeyboard.js?v=mqyp3s49"></script>
+  <script src="/js/theme.js?v=mqyp3s49"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -568,7 +592,8 @@
     /* STT MODULE - "Speak" button
        Desktop : continuous dictation with live interim preview.
        Mobile  : short non-continuous sessions (restart per phrase)
-                 because Android Chrome kills continuous after ~5 s.    */
+                 because Android Chrome kills continuous after ~5 s.
+       New     : live waveform via Web Audio API, mic state chip.        */
     var STTMode = (function () {
       var SRec      = window.SpeechRecognition || window.webkitSpeechRecognition || null;
       var btn       = document.getElementById('sttBtn');
@@ -577,14 +602,123 @@
       var sttActive = false;
       var hintTimer = null;
       var recBusy   = false;
+      var recStarted = false; /* true once rec.onstart has fired */
 
-      /* Android Chrome kills continuous sessions after ~5 s */
       var isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-      /* Restart delays — mobile needs more time for mic to fully release */
-      var T_NOSPEECH = isMobile ? 800  : 400;
-      var T_END      = isMobile ? 900  : 300;
-      var T_MCQ      = isMobile ? 1000 : 600;
+      /* Reduced delays — modern Android Chrome is faster at releasing the mic */
+      var T_NOSPEECH = isMobile ? 500  : 280;
+      var T_END      = isMobile ? 480  : 220;
+      var T_MCQ      = isMobile ? 600  : 350;
+
+      /* ── Web Audio / waveform ── */
+      var audioCtx   = null;
+      var analyser   = null;
+      var micStream  = null;
+      var waveRaf    = null;
+      var fakePhase  = 0;
+
+      var waveCanvas = document.getElementById('waveCanvas');
+      var micPanel   = document.getElementById('micPanel');
+      var micChip    = document.getElementById('micChip');
+
+      function setMicState(state) {
+        /* state: 'idle' | 'setup' | 'listening' */
+        if (state === 'idle') {
+          if (micPanel) micPanel.classList.remove('show');
+          stopViz();
+        } else if (state === 'setup') {
+          if (micPanel) micPanel.classList.add('show');
+          if (micChip)  { micChip.textContent = 'Speak Now…'; micChip.className = ''; }
+          startFakeWave(); /* animate canvas while mic is initialising */
+        } else if (state === 'listening') {
+          if (micPanel) micPanel.classList.add('show');
+          if (micChip)  { micChip.textContent = 'Listening'; micChip.className = 'listening'; }
+          /* switch to real audio if we have a stream */
+          if (micStream && !analyser) tryRealWave();
+        }
+      }
+
+      function stopViz() {
+        if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = null; }
+        if (micStream) { micStream.getTracks().forEach(function(t){ t.stop(); }); micStream = null; }
+        if (audioCtx)  { try { audioCtx.close(); } catch(e){} audioCtx = null; }
+        analyser = null;
+        if (waveCanvas) {
+          var c = waveCanvas.getContext('2d');
+          c.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+        }
+      }
+
+      /* Fake animated sine wave — shown while mic is setting up */
+      function startFakeWave() {
+        if (!waveCanvas) return;
+        if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = null; }
+        var ctx = waveCanvas.getContext('2d');
+        var W = waveCanvas.width, H = waveCanvas.height;
+        fakePhase = 0;
+        (function draw() {
+          waveRaf = requestAnimationFrame(draw);
+          ctx.clearRect(0,0,W,H);
+          ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          for (var x = 0; x < W; x++) {
+            var y = H/2 + Math.sin(x * 0.06 + fakePhase) * (H * 0.28);
+            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+          fakePhase += 0.10;
+        })();
+      }
+
+      /* Real waveform from microphone via Web Audio API */
+      function tryRealWave() {
+        if (!waveCanvas || !micStream) return;
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          var src = audioCtx.createMediaStreamSource(micStream);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          analyser.smoothingTimeConstant = 0.65;
+          src.connect(analyser);
+          var buf = new Uint8Array(analyser.frequencyBinCount);
+          var ctx = waveCanvas.getContext('2d');
+          var W = waveCanvas.width, H = waveCanvas.height;
+          if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = null; }
+          (function draw() {
+            waveRaf = requestAnimationFrame(draw);
+            analyser.getByteTimeDomainData(buf);
+            ctx.clearRect(0,0,W,H);
+            /* gradient line: purple→red */
+            var grad = ctx.createLinearGradient(0,0,W,0);
+            grad.addColorStop(0, 'rgba(109,94,252,0.9)');
+            grad.addColorStop(1, 'rgba(225,29,72,0.9)');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            var sw = W / buf.length;
+            for (var i = 0; i < buf.length; i++) {
+              var v = buf[i] / 128.0;
+              var y = (v * H) / 2;
+              if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(i * sw, y);
+            }
+            ctx.lineTo(W, H/2);
+            ctx.stroke();
+          })();
+        } catch(e) {
+          /* Web Audio not available — keep fake wave */
+        }
+      }
+
+      /* Request mic stream for visualisation (separate from SpeechRecognition).
+         Resolves instantly if permission is already granted by the browser.    */
+      function requestMicStream(cb) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { cb(null); return; }
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then(function(s) { micStream = s; cb(s); })
+          .catch(function()  { cb(null); });
+      }
 
       if (!btn) return { stop: function(){} };
 
@@ -603,18 +737,30 @@
 
       if (!SRec) {
         btn.addEventListener('click', function() {
-          showHint(isMobile ? 'Voice needs Chrome on Android — Safari is not supported.' : 'Voice input needs Chrome or Edge.', 5000);
+          showHint(isMobile
+            ? 'Voice needs Chrome on Android — Safari is not supported.'
+            : 'Voice input needs Chrome or Edge.', 5000);
         });
         return { stop: function(){} };
       }
 
-      function setIdle()      { btn.classList.remove('audio-fab--listening'); btn.innerHTML = '&#127910;'; recBusy = false; }
-      function setListening() { btn.classList.add('audio-fab--listening');    btn.innerHTML = '&#127908;'; }
-      function clearDictUI()  { var ta = document.getElementById('ans'); if (ta) ta.classList.remove('is-dictating'); }
+      function setIdle() {
+        btn.classList.remove('audio-fab--listening');
+        btn.innerHTML = '&#127910;';
+        recBusy = false;
+        recStarted = false;
+        setMicState('idle');
+      }
+      function setBusy() {
+        btn.classList.add('audio-fab--listening');
+        btn.innerHTML = '&#127908;';
+      }
+      function clearDictUI() { var ta = document.getElementById('ans'); if (ta) ta.classList.remove('is-dictating'); }
 
       function killRec() {
         if (rec) { try { rec.abort(); } catch(e) {} rec = null; }
         recBusy = false;
+        recStarted = false;
       }
 
       function parseVoice(text, qtype) {
@@ -642,7 +788,7 @@
 
       function handleFatalError(code) {
         var MSGS = {
-          'not-allowed'        : 'Mic blocked — tap the lock icon in your browser and allow microphone.',
+          'not-allowed'        : 'Mic blocked — allow microphone in browser settings.',
           'service-not-allowed': 'Mic blocked — allow microphone in browser settings.',
           'audio-capture'      : 'No microphone found on this device.',
           'network'            : 'Network error — voice input needs internet.',
@@ -655,58 +801,69 @@
 
       function startMCQ(q) {
         if (recBusy) return;
-        killRec(); setListening(); recBusy = true;
-        showHint('Listening... say A, B, C, D or True / False', 0);
-        try {
-          rec = new SRec();
-          rec.lang            = 'en-US';
-          rec.continuous      = false;
-          rec.interimResults  = false;
-          rec.maxAlternatives = isMobile ? 3 : 6;
+        killRec(); setBusy(); recBusy = true;
+        setMicState('setup');
 
-          rec.onresult = function(e) {
-            var letter = null, heard = '';
-            outer: for (var ri = 0; ri < e.results.length; ri++) {
-              for (var ai = 0; ai < e.results[ri].length; ai++) {
-                var tr = e.results[ri][ai].transcript || '';
-                if (!heard) heard = tr;
-                letter = parseVoice(tr, q.type);
-                if (letter) break outer;
+        function go() {
+          try {
+            rec = new SRec();
+            rec.lang            = 'en-US';
+            rec.continuous      = false;
+            rec.interimResults  = false;
+            rec.maxAlternatives = isMobile ? 3 : 6;
+
+            rec.onstart = function() {
+              recStarted = true;
+              setMicState('listening');
+              showHint('Say A, B, C, D — or True / False', 0);
+            };
+
+            rec.onresult = function(e) {
+              var letter = null, heard = '';
+              outer: for (var ri = 0; ri < e.results.length; ri++) {
+                for (var ai = 0; ai < e.results[ri].length; ai++) {
+                  var tr = e.results[ri][ai].transcript || '';
+                  if (!heard) heard = tr;
+                  letter = parseVoice(tr, q.type);
+                  if (letter) break outer;
+                }
               }
-            }
-            recBusy = false;
-            if (letter) {
-              showHint('Heard "' + heard + '" -> ' + letter, 2500);
-              sttActive = false; killRec(); setIdle();
-              var sel = document.querySelector('#qbody .opt[data-k="' + letter + '"]');
-              if (sel) setTimeout(function() { sel.click(); }, 120);
-              else showHint('Option ' + letter + ' not on this question.', 3000);
-            } else {
-              showHint('Heard "' + heard + '" - say A, B, C or D', 3500);
+              recBusy = false;
+              if (letter) {
+                showHint('Heard “' + heard + '” → ' + letter, 2500);
+                sttActive = false; killRec(); setIdle();
+                var sel = document.querySelector('#qbody .opt[data-k="' + letter + '"]');
+                if (sel) setTimeout(function() { sel.click(); }, 100);
+                else showHint('Option ' + letter + ' not on this question.', 3000);
+              } else {
+                showHint('Heard “' + heard + '” — say A, B, C or D', 3000);
+                if (sttActive) setTimeout(function() { startMCQ(q); }, T_MCQ);
+              }
+            };
+            rec.onnomatch = function() {
+              recBusy = false;
+              showHint('Could not understand — try again', 2200);
               if (sttActive) setTimeout(function() { startMCQ(q); }, T_MCQ);
-            }
-          };
-          rec.onnomatch = function() {
-            recBusy = false;
-            showHint('Could not understand - try again', 2500);
-            if (sttActive) setTimeout(function() { startMCQ(q); }, T_MCQ);
-          };
-          rec.onerror = function(ev) {
-            recBusy = false;
-            if (ev.error === 'no-speech') {
-              showHint('No speech - still listening...', 0);
-              if (sttActive) setTimeout(function() { startMCQ(q); }, T_NOSPEECH);
-              return;
-            }
-            if (ev.error === 'aborted') { rec = null; return; }
-            handleFatalError(ev.error);
-          };
-          rec.onend = function() { rec = null; recBusy = false; };
-          rec.start();
-        } catch(err) {
-          showHint('Could not start mic: ' + (err.message || err), 4000);
-          sttActive = false; recBusy = false; setIdle();
+            };
+            rec.onerror = function(ev) {
+              recBusy = false;
+              if (ev.error === 'no-speech') {
+                if (sttActive) setTimeout(function() { startMCQ(q); }, T_NOSPEECH);
+                return;
+              }
+              if (ev.error === 'aborted') { rec = null; return; }
+              handleFatalError(ev.error);
+            };
+            rec.onend = function() { rec = null; recBusy = false; };
+            rec.start();
+          } catch(err) {
+            showHint('Could not start mic: ' + (err.message || err), 4000);
+            sttActive = false; recBusy = false; setIdle();
+          }
         }
+
+        /* Get mic stream for visualisation, then kick off recognition */
+        requestMicStream(function() { go(); });
       }
 
       function startDictation(q) {
@@ -715,135 +872,140 @@
         if (!ta) { showHint('Text field not ready yet.', 2500); sttActive = false; setIdle(); return; }
 
         killRec(); recBusy = true;
+        setBusy();
+        ta.classList.add('is-dictating');
+        setMicState('setup');
 
         var base = ta.value;
         if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
         var finalBuf = '';
 
-        setListening();
-        ta.classList.add('is-dictating');
+        function go() {
+          try {
+            rec = new SRec();
+            rec.lang            = 'en-US';
+            rec.maxAlternatives = 1;
 
-        try {
-          rec = new SRec();
-          rec.lang            = 'en-US';
-          rec.maxAlternatives = 1;
-
-          if (isMobile) {
-            /* Mobile: non-continuous sessions, append per phrase.
-               continuous:true on Android Chrome ends after ~5 s and may
-               drop text. false + onend restart gives reliable dictation. */
-            rec.continuous     = false;
-            rec.interimResults = false;
-            showHint('Speak a phrase, pause, speak again. Tap to stop.', 0);
-
-            rec.onresult = function(e) {
-              for (var i = 0; i < e.results.length; i++) {
-                if (e.results[i].isFinal) {
-                  finalBuf += e.results[i][0].transcript;
-                  if (finalBuf && finalBuf[finalBuf.length-1] !== ' ') finalBuf += ' ';
-                }
-              }
-              var ta2 = document.getElementById('ans');
-              if (ta2) {
-                ta2.value = base + finalBuf;
-                ta2.dispatchEvent(new Event('input'));
-                ta2.scrollTop = ta2.scrollHeight;
-              }
-              if (finalBuf) showHint('"' + finalBuf.slice(-50).trimStart() + '"', 0);
+            rec.onstart = function() {
+              recStarted = true;
+              setMicState('listening');
+              if (isMobile) showHint('Speak a phrase, pause, speak again. Tap to stop.', 0);
+              else          showHint('Dictating… speak naturally. Tap to stop.', 0);
             };
 
-            rec.onerror = function(ev) {
-              recBusy = false;
-              if (ev.error === 'no-speech') {
-                var ta2 = document.getElementById('ans');
-                if (ta2 && sttActive) {
-                  base = ta2.value;
-                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
-                }
-                if (sttActive) setTimeout(function() { startDictation(q); }, T_NOSPEECH);
-                return;
-              }
-              if (ev.error === 'aborted') { rec = null; return; }
-              handleFatalError(ev.error);
-            };
+            if (isMobile) {
+              rec.continuous     = false;
+              rec.interimResults = false;
 
-            rec.onend = function() {
-              rec = null; recBusy = false;
-              if (sttActive) {
+              rec.onresult = function(e) {
+                for (var i = 0; i < e.results.length; i++) {
+                  if (e.results[i].isFinal) {
+                    finalBuf += e.results[i][0].transcript;
+                    if (finalBuf && finalBuf[finalBuf.length-1] !== ' ') finalBuf += ' ';
+                  }
+                }
                 var ta2 = document.getElementById('ans');
                 if (ta2) {
-                  base = ta2.value;
-                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                  ta2.value = base + finalBuf;
+                  ta2.dispatchEvent(new Event('input'));
+                  ta2.scrollTop = ta2.scrollHeight;
                 }
-                finalBuf = '';
-                setTimeout(function() { if (sttActive) startDictation(q); }, T_END);
-              } else {
-                clearDictUI();
-              }
-            };
+                if (finalBuf) showHint('“' + finalBuf.slice(-50).trimStart() + '”', 0);
+              };
 
-          } else {
-            /* Desktop: continuous with interim results */
-            rec.continuous     = true;
-            rec.interimResults = true;
-            showHint('Dictating... speak naturally. Tap to stop.', 0);
-
-            rec.onresult = function(e) {
-              var interim = '';
-              for (var i = e.resultIndex; i < e.results.length; i++) {
-                var chunk = e.results[i][0].transcript || '';
-                if (e.results[i].isFinal) {
-                  finalBuf += chunk;
-                  if (finalBuf && finalBuf[finalBuf.length-1] !== ' ') finalBuf += ' ';
-                } else {
-                  interim += chunk;
+              rec.onerror = function(ev) {
+                recBusy = false;
+                if (ev.error === 'no-speech') {
+                  var ta2 = document.getElementById('ans');
+                  if (ta2 && sttActive) {
+                    base = ta2.value;
+                    if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                  }
+                  if (sttActive) setTimeout(function() { startDictation(q); }, T_NOSPEECH);
+                  return;
                 }
-              }
-              var ta2 = document.getElementById('ans');
-              if (ta2) {
-                ta2.value = base + finalBuf + interim;
-                ta2.dispatchEvent(new Event('input'));
-                ta2.scrollTop = ta2.scrollHeight;
-              }
-              if (interim) showHint('"' + interim + '..."', 0);
-              else if (finalBuf) showHint('Got: ' + finalBuf.slice(-60).trimStart(), 1800);
-            };
+                if (ev.error === 'aborted') { rec = null; return; }
+                handleFatalError(ev.error);
+              };
 
-            rec.onerror = function(ev) {
-              recBusy = false;
-              if (ev.error === 'no-speech') {
-                var ta2 = document.getElementById('ans');
-                if (ta2 && sttActive) {
-                  base = ta2.value;
-                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+              rec.onend = function() {
+                rec = null; recBusy = false;
+                if (sttActive) {
+                  var ta2 = document.getElementById('ans');
+                  if (ta2) {
+                    base = ta2.value;
+                    if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                  }
                   finalBuf = '';
+                  setTimeout(function() { if (sttActive) startDictation(q); }, T_END);
+                } else {
+                  clearDictUI();
                 }
-                if (sttActive) setTimeout(function() { startDictation(q); }, T_NOSPEECH);
-                return;
-              }
-              if (ev.error === 'aborted') { rec = null; return; }
-              handleFatalError(ev.error);
-            };
+              };
 
-            rec.onend = function() {
-              rec = null; recBusy = false; clearDictUI();
-              if (sttActive) {
+            } else {
+              rec.continuous     = true;
+              rec.interimResults = true;
+
+              rec.onresult = function(e) {
+                var interim = '';
+                for (var i = e.resultIndex; i < e.results.length; i++) {
+                  var chunk = e.results[i][0].transcript || '';
+                  if (e.results[i].isFinal) {
+                    finalBuf += chunk;
+                    if (finalBuf && finalBuf[finalBuf.length-1] !== ' ') finalBuf += ' ';
+                  } else {
+                    interim += chunk;
+                  }
+                }
                 var ta2 = document.getElementById('ans');
                 if (ta2) {
-                  base = ta2.value;
-                  if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                  ta2.value = base + finalBuf + interim;
+                  ta2.dispatchEvent(new Event('input'));
+                  ta2.scrollTop = ta2.scrollHeight;
                 }
-                finalBuf = '';
-                setTimeout(function() { if (sttActive) startDictation(q); }, T_END);
-              }
-            };
-          }
+                if (interim) showHint('“' + interim + '…”', 0);
+                else if (finalBuf) showHint('Got: ' + finalBuf.slice(-60).trimStart(), 1800);
+              };
 
-          rec.start();
-        } catch(err) {
-          showHint('Could not start mic: ' + (err.message || err), 4000);
-          sttActive = false; recBusy = false; clearDictUI(); setIdle();
+              rec.onerror = function(ev) {
+                recBusy = false;
+                if (ev.error === 'no-speech') {
+                  var ta2 = document.getElementById('ans');
+                  if (ta2 && sttActive) {
+                    base = ta2.value;
+                    if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                    finalBuf = '';
+                  }
+                  if (sttActive) setTimeout(function() { startDictation(q); }, T_NOSPEECH);
+                  return;
+                }
+                if (ev.error === 'aborted') { rec = null; return; }
+                handleFatalError(ev.error);
+              };
+
+              rec.onend = function() {
+                rec = null; recBusy = false; clearDictUI();
+                if (sttActive) {
+                  var ta2 = document.getElementById('ans');
+                  if (ta2) {
+                    base = ta2.value;
+                    if (base && base[base.length-1] !== ' ' && base[base.length-1] !== '\n') base += ' ';
+                  }
+                  finalBuf = '';
+                  setTimeout(function() { if (sttActive) startDictation(q); }, T_END);
+                }
+              };
+            }
+
+            rec.start();
+          } catch(err) {
+            showHint('Could not start mic: ' + (err.message || err), 4000);
+            sttActive = false; recBusy = false; clearDictUI(); setIdle();
+          }
         }
+
+        requestMicStream(function() { go(); });
       }
 
       function startRec() {
@@ -859,10 +1021,6 @@
         }
       }
 
-      /* Button handler.
-         On mobile: touchend fires instantly; the 300 ms ghost click that
-         follows would double-toggle. preventDefault blocks it.
-         A 400 ms debounce (_tapping) prevents accidental double-taps.   */
       var _tapping = false;
       function handleTap() {
         if (_tapping) return;
@@ -870,7 +1028,7 @@
         setTimeout(function() { _tapping = false; }, 400);
         if (sttActive) {
           sttActive = false; killRec(); clearDictUI(); setIdle();
-          showHint('Voice input stopped.', 1800);
+          showHint('Voice input stopped.', 1600);
         } else {
           sttActive = true; startRec();
         }
