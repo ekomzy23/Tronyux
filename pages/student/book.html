@@ -131,12 +131,12 @@
     <nav class="tabbar" data-nav="library"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypih1j"></script>
-  <script src="/js/config.js?v=mqypih1j"></script>
-  <script src="/js/appwrite.js?v=mqypih1j"></script>
-  <script src="/js/data.js?v=mqypih1j"></script>
-  <script src="/js/ui.js?v=mqypih1j"></script>
-  <script src="/js/theme.js?v=mqypih1j"></script>
+  <script src="/js/appwrite.min.js?v=mqypss88"></script>
+  <script src="/js/config.js?v=mqypss88"></script>
+  <script src="/js/appwrite.js?v=mqypss88"></script>
+  <script src="/js/data.js?v=mqypss88"></script>
+  <script src="/js/ui.js?v=mqypss88"></script>
+  <script src="/js/theme.js?v=mqypss88"></script>
   <script>
   /* ============================================================
      HELPERS
@@ -476,7 +476,7 @@
       var blobUrl = URL.createObjectURL(blob);
 
       showProc('Loading PDF engineâ€¦', 12);
-      await loadScript('/js/pdfviewer.js?v=mqypih1j');
+      await loadScript('/js/pdfviewer.js?v=mqypss88');
 
       var pagesEl = document.getElementById('pdfPages');
       var result  = await window.RonyxPDF.render(blobUrl, pagesEl, function(p) {
@@ -498,7 +498,7 @@
       if (avgChars < 40 && result.canvases.length) {
         /* Scanned PDF â€” load OCR engine, which also restores stored rotation on cached visits */
         showProc('Scanned PDF â€” running OCRâ€¦', 0, '#F59E0B');
-        await loadScript('/js/ocrengine.js?v=mqypih1j');
+        await loadScript('/js/ocrengine.js?v=mqypss88');
         var ocrKey  = 'ronyx_ocr_' + fileId;
         var ocrText = await window.RonyxOCR.processCanvases(result.canvases, ocrKey, function(p) {
           showProc(p.label, p.pct, '#F59E0B');
@@ -536,7 +536,7 @@
 
     try {
       var blob = await fetchBlob(fileId);
-      await loadScript('/js/ocrengine.js?v=mqypih1j');
+      await loadScript('/js/ocrengine.js?v=mqypss88');
       var ocrKey = 'ronyx_ocr_' + fileId;
       var text   = await window.RonyxOCR.processBlob(blob, ocrKey, function(p) {
         showProc(p.label, p.pct, '#10B981');

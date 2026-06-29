@@ -176,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypih1j"></script>
+  <script src="/js/appwrite.min.js?v=mqypss88"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mqypih1j"></script>
-  <script src="/js/appwrite.js?v=mqypih1j"></script>
-  <script src="/js/data.js?v=mqypih1j"></script>
-  <script src="/js/scikeyboard.js?v=mqypih1j"></script>
-  <script src="/js/theme.js?v=mqypih1j"></script>
+  <script src="/js/config.js?v=mqypss88"></script>
+  <script src="/js/appwrite.js?v=mqypss88"></script>
+  <script src="/js/data.js?v=mqypss88"></script>
+  <script src="/js/scikeyboard.js?v=mqypss88"></script>
+  <script src="/js/theme.js?v=mqypss88"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -627,113 +627,69 @@
          so the user never sees the mic "shut down" between phrases.       */
       var _isFirstRec = true;
 
-      /* ── Web Audio / waveform ── */
-      var audioCtx   = null;
-      var analyser   = null;
-      var micStream  = null;
-      var waveRaf    = null;
-      var fakePhase  = 0;
+      /* ── Animated waveform (canvas only — no getUserMedia so Chrome STT
+         never conflicts with a second mic grab)                          ── */
+      var waveRaf   = null;
+      var wavePhase = 0;
 
       var waveCanvas = document.getElementById('waveCanvas');
       var micPanel   = document.getElementById('micPanel');
       var micChip    = document.getElementById('micChip');
 
       function setMicState(state) {
-        /* state: 'idle' | 'setup' | 'listening' */
         if (state === 'idle') {
           if (micPanel) micPanel.classList.remove('show');
           stopViz();
         } else if (state === 'setup') {
           if (micPanel) micPanel.classList.add('show');
           if (micChip)  { micChip.textContent = 'Speak Now…'; micChip.className = ''; }
-          startFakeWave(); /* animate canvas while mic is initialising */
+          startAnimWave(false); /* slow purple wave while mic initialises */
         } else if (state === 'listening') {
           if (micPanel) micPanel.classList.add('show');
           if (micChip)  { micChip.textContent = 'Listening'; micChip.className = 'listening'; }
-          /* switch to real audio if we have a stream */
-          if (micStream && !analyser) tryRealWave();
+          startAnimWave(true);  /* energetic red wave when actively recording */
         }
       }
 
       function stopViz() {
         if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = null; }
-        if (micStream) { micStream.getTracks().forEach(function(t){ t.stop(); }); micStream = null; }
-        if (audioCtx)  { try { audioCtx.close(); } catch(e){} audioCtx = null; }
-        analyser = null;
         if (waveCanvas) {
           var c = waveCanvas.getContext('2d');
-          c.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+          c.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
         }
       }
 
-      /* Fake animated sine wave — shown while mic is setting up */
-      function startFakeWave() {
+      /* Two overlapping sines — looks like compressions/rarefactions.
+         energetic=false: slow, dim (setup); true: faster, bright (listening). */
+      function startAnimWave(energetic) {
         if (!waveCanvas) return;
         if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = null; }
-        var ctx = waveCanvas.getContext('2d');
-        var W = waveCanvas.width, H = waveCanvas.height;
-        fakePhase = 0;
+        var ctx   = waveCanvas.getContext('2d');
+        var W     = waveCanvas.width, H = waveCanvas.height;
+        var amp   = energetic ? H * 0.38 : H * 0.16;
+        var spd   = energetic ? 0.18     : 0.07;
+        var col1  = energetic ? 'rgba(225,29,72,.9)'    : 'rgba(109,94,252,.65)';
+        var col2  = energetic ? 'rgba(109,94,252,.55)'  : 'rgba(109,94,252,.28)';
+        wavePhase = 0;
         (function draw() {
           waveRaf = requestAnimationFrame(draw);
-          ctx.clearRect(0,0,W,H);
-          ctx.strokeStyle = 'rgba(255,255,255,0.45)';
-          ctx.lineWidth = 1.8;
-          ctx.beginPath();
-          for (var x = 0; x < W; x++) {
-            var y = H/2 + Math.sin(x * 0.06 + fakePhase) * (H * 0.28);
-            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-          fakePhase += 0.10;
-        })();
-      }
-
-      /* Real waveform from microphone via Web Audio API */
-      function tryRealWave() {
-        if (!waveCanvas || !micStream) return;
-        try {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          var src = audioCtx.createMediaStreamSource(micStream);
-          analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 512;
-          analyser.smoothingTimeConstant = 0.65;
-          src.connect(analyser);
-          var buf = new Uint8Array(analyser.frequencyBinCount);
-          var ctx = waveCanvas.getContext('2d');
-          var W = waveCanvas.width, H = waveCanvas.height;
-          if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = null; }
-          (function draw() {
-            waveRaf = requestAnimationFrame(draw);
-            analyser.getByteTimeDomainData(buf);
-            ctx.clearRect(0,0,W,H);
-            /* gradient line: purple→red */
-            var grad = ctx.createLinearGradient(0,0,W,0);
-            grad.addColorStop(0, 'rgba(109,94,252,0.9)');
-            grad.addColorStop(1, 'rgba(225,29,72,0.9)');
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 2;
+          ctx.clearRect(0, 0, W, H);
+          for (var w = 0; w < 2; w++) {
+            var off   = w * Math.PI * 0.75;
+            var scale = w === 0 ? 1.0 : 0.5;
+            ctx.strokeStyle = w === 0 ? col1 : col2;
+            ctx.lineWidth   = w === 0 ? 2.0 : 1.4;
             ctx.beginPath();
-            var sw = W / buf.length;
-            for (var i = 0; i < buf.length; i++) {
-              var v = buf[i] / 128.0;
-              var y = (v * H) / 2;
-              if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(i * sw, y);
+            for (var x = 0; x < W; x++) {
+              var y = H / 2
+                    + Math.sin(x * 0.055 + wavePhase + off) * amp * scale
+                    + Math.sin(x * 0.110 + wavePhase * 1.8 + off) * amp * 0.22 * scale;
+              if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
-            ctx.lineTo(W, H/2);
             ctx.stroke();
-          })();
-        } catch(e) {
-          /* Web Audio not available — keep fake wave */
-        }
-      }
-
-      /* Request mic stream for visualisation (separate from SpeechRecognition).
-         Resolves instantly if permission is already granted by the browser.    */
-      function requestMicStream(cb) {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { cb(null); return; }
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-          .then(function(s) { micStream = s; cb(s); })
-          .catch(function()  { cb(null); });
+          }
+          wavePhase += spd;
+        })();
       }
 
       if (!btn) return { stop: function(){} };
@@ -880,16 +836,13 @@
           }
         }
 
-        /* First tap: show “Speak Now…” and open the mic stream for visualisation.
-           On restarts within the same session: jump straight to go() so the user
-           never sees the mic appear to shut down between phrases.                 */
+        /* First tap: show “Speak Now…” wave; restarts go straight to go()
+           so the waveform never flickers between phrases.                */
         if (_isFirstRec) {
           _isFirstRec = false;
           setMicState('setup');
-          requestMicStream(function() { go(); });
-        } else {
-          go();
         }
+        go();
       }
 
       function startDictation(q) {
@@ -1031,16 +984,13 @@
           }
         }
 
-        /* First tap: show “Speak Now…” and request the mic stream for
-           visualisation. Subsequent phrase-restarts skip straight to go()
-           so the mic never appears to shut down between phrases.          */
+        /* First tap: show “Speak Now…” wave; restarts go straight to go()
+           so the waveform never flickers between phrases.                */
         if (_isFirstRec) {
           _isFirstRec = false;
           setMicState('setup');
-          requestMicStream(function() { go(); });
-        } else {
-          go();
         }
+        go();
       }
 
       function startRec() {
