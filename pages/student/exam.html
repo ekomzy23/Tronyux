@@ -176,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mr8vxll3"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/data.js?v=mqypss88"></script>
-  <script src="/js/scikeyboard.js?v=mqypss88"></script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/config.js?v=mr8vxll3"></script>
+  <script src="/js/appwrite.js?v=mr8vxll3"></script>
+  <script src="/js/data.js?v=mr8vxll3"></script>
+  <script src="/js/scikeyboard.js?v=mr8vxll3"></script>
+  <script src="/js/theme.js?v=mr8vxll3"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -606,10 +606,9 @@
 
       var isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-      /* Reduced delays — modern Android Chrome is faster at releasing the mic */
-      var T_NOSPEECH = isMobile ? 500  : 280;
-      var T_END      = isMobile ? 480  : 220;
-      var T_MCQ      = isMobile ? 600  : 350;
+      var T_NOSPEECH = isMobile ? 800 : 600;
+      var T_END      = isMobile ? 700 : 500;
+      var T_MCQ      = isMobile ? 800 : 600;
 
       /* Restart guard — prevents double-fires when both onerror:no-speech
          and onend try to schedule the same restart.                       */
@@ -802,33 +801,35 @@
                   if (letter) break outer;
                 }
               }
-              recBusy = false;
+              /* Always stop after one capture — user taps again if needed */
+              sttActive = false; killRec(); setIdle();
               if (letter) {
                 showHint('Heard “' + heard + '” → ' + letter, 2500);
-                sttActive = false; killRec(); setIdle();
                 var sel = document.querySelector('#qbody .opt[data-k=”' + letter + '”]');
-                if (sel) setTimeout(function() { sel.click(); }, 100);
-                else showHint('Option ' + letter + ' not on this question.', 3000);
+                if (sel) setTimeout(function() { sel.click(); }, 80);
+                else showHint('Option ' + letter + ' not found — tap mic to retry.', 3000);
               } else {
-                showHint('Heard “' + heard + '” — say A, B, C or D', 3000);
-                if (sttActive) scheduleRestart(function() { startMCQ(q); }, T_MCQ);
+                showHint(heard ? ('Heard “' + heard + '” — tap mic, say A B C or D') : 'Nothing heard — tap mic to try again', 3000);
               }
             };
             rec.onnomatch = function() {
-              recBusy = false;
-              showHint('Could not understand — try again', 2200);
-              if (sttActive) scheduleRestart(function() { startMCQ(q); }, T_MCQ);
+              sttActive = false; killRec(); setIdle();
+              showHint(“Didn't catch that — tap mic to try again”, 2500);
             };
             rec.onerror = function(ev) {
-              recBusy = false;
+              if (ev.error === 'aborted') { rec = null; recBusy = false; return; }
+              sttActive = false; killRec(); setIdle();
               if (ev.error === 'no-speech') {
-                if (sttActive) scheduleRestart(function() { startMCQ(q); }, T_NOSPEECH);
+                showHint('Nothing heard — tap mic to try again', 2500);
                 return;
               }
-              if (ev.error === 'aborted') { rec = null; return; }
               handleFatalError(ev.error);
             };
-            rec.onend = function() { rec = null; recBusy = false; };
+            rec.onend = function() {
+              /* Clean up only — no auto-restart for MCQ */
+              rec = null; recBusy = false;
+              if (sttActive) { sttActive = false; setIdle(); }
+            };
             rec.start();
           } catch(err) {
             showHint('Could not start mic: ' + (err.message || err), 4000);
@@ -964,7 +965,7 @@
               };
 
               rec.onend = function() {
-                rec = null; recBusy = false; clearDictUI();
+                rec = null; recBusy = false;
                 if (sttActive) {
                   var ta2 = document.getElementById('ans');
                   if (ta2) {
@@ -973,6 +974,8 @@
                   }
                   finalBuf = '';
                   scheduleRestart(function() { if (sttActive) startDictation(q); }, T_END);
+                } else {
+                  clearDictUI();
                 }
               };
             }
