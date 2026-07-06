@@ -176,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mr8vxll3"></script>
+  <script src="/js/appwrite.min.js?v=mr8wampm"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mr8vxll3"></script>
-  <script src="/js/appwrite.js?v=mr8vxll3"></script>
-  <script src="/js/data.js?v=mr8vxll3"></script>
-  <script src="/js/scikeyboard.js?v=mr8vxll3"></script>
-  <script src="/js/theme.js?v=mr8vxll3"></script>
+  <script src="/js/config.js?v=mr8wampm"></script>
+  <script src="/js/appwrite.js?v=mr8wampm"></script>
+  <script src="/js/data.js?v=mr8wampm"></script>
+  <script src="/js/scikeyboard.js?v=mr8wampm"></script>
+  <script src="/js/theme.js?v=mr8wampm"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -788,7 +788,7 @@
             rec.onstart = function() {
               recStarted = true;
               setMicState('listening');
-              showHint('Say A, B, C, D — or True / False', 0);
+              showHint('Say A, B, C, D or True / False', 0);
             };
 
             rec.onresult = function(e) {
@@ -801,32 +801,30 @@
                   if (letter) break outer;
                 }
               }
-              /* Always stop after one capture — user taps again if needed */
               sttActive = false; killRec(); setIdle();
               if (letter) {
-                showHint('Heard “' + heard + '” → ' + letter, 2500);
-                var sel = document.querySelector('#qbody .opt[data-k=”' + letter + '”]');
+                showHint('Heard: ' + heard + ' -> ' + letter, 2500);
+                var sel = document.querySelector('[data-k=' + letter + '].opt');
                 if (sel) setTimeout(function() { sel.click(); }, 80);
-                else showHint('Option ' + letter + ' not found — tap mic to retry.', 3000);
+                else showHint('Option ' + letter + ' not found. Tap mic to retry.', 3000);
               } else {
-                showHint(heard ? ('Heard “' + heard + '” — tap mic, say A B C or D') : 'Nothing heard — tap mic to try again', 3000);
+                showHint(heard ? ('Heard: ' + heard + ' - say A B C or D, tap mic') : 'Nothing heard. Tap mic to try again.', 3000);
               }
             };
             rec.onnomatch = function() {
               sttActive = false; killRec(); setIdle();
-              showHint(“Didn't catch that — tap mic to try again”, 2500);
+              showHint('Did not catch that. Tap mic to try again.', 2500);
             };
             rec.onerror = function(ev) {
               if (ev.error === 'aborted') { rec = null; recBusy = false; return; }
               sttActive = false; killRec(); setIdle();
               if (ev.error === 'no-speech') {
-                showHint('Nothing heard — tap mic to try again', 2500);
+                showHint('Nothing heard. Tap mic to try again.', 2500);
                 return;
               }
               handleFatalError(ev.error);
             };
             rec.onend = function() {
-              /* Clean up only — no auto-restart for MCQ */
               rec = null; recBusy = false;
               if (sttActive) { sttActive = false; setIdle(); }
             };
