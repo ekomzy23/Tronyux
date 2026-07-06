@@ -176,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mr8wampm"></script>
+  <script src="/js/appwrite.min.js?v=mr8x4oj6"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mr8wampm"></script>
-  <script src="/js/appwrite.js?v=mr8wampm"></script>
-  <script src="/js/data.js?v=mr8wampm"></script>
-  <script src="/js/scikeyboard.js?v=mr8wampm"></script>
-  <script src="/js/theme.js?v=mr8wampm"></script>
+  <script src="/js/config.js?v=mr8x4oj6"></script>
+  <script src="/js/appwrite.js?v=mr8x4oj6"></script>
+  <script src="/js/data.js?v=mr8x4oj6"></script>
+  <script src="/js/scikeyboard.js?v=mr8x4oj6"></script>
+  <script src="/js/theme.js?v=mr8x4oj6"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -804,9 +804,31 @@
               sttActive = false; killRec(); setIdle();
               if (letter) {
                 showHint('Heard: ' + heard + ' -> ' + letter, 2500);
-                var sel = document.querySelector('[data-k=' + letter + '].opt');
-                if (sel) setTimeout(function() { sel.click(); }, 80);
-                else showHint('Option ' + letter + ' not found. Tap mic to retry.', 3000);
+                setTimeout(function() {
+                  try {
+                    var body = document.getElementById('qbody');
+                    var sel = null;
+                    try { sel = body ? body.querySelector('.opt[data-k="' + letter + '"]') : null; } catch(e1) {}
+                    if (!sel) { try { sel = document.querySelector('.opt[data-k="' + letter + '"]'); } catch(e2) {} }
+                    if (sel) {
+                      try {
+                        sel.click();
+                      } catch(ce) {
+                        /* click() failed - apply selection directly */
+                        try {
+                          if (body) { var opts = body.querySelectorAll('.opt'); for (var i=0;i<opts.length;i++) opts[i].classList.remove('is-selected'); }
+                          sel.classList.add('is-selected');
+                          setAnswer(q.$id, letter);
+                          showFeedback(q, letter);
+                        } catch(fe) {}
+                      }
+                    } else {
+                      showHint('Option ' + letter + ' not found on this question.', 3000);
+                    }
+                  } catch(e) {
+                    showHint('Heard ' + letter + '. Tap to select manually.', 3000);
+                  }
+                }, 80);
               } else {
                 showHint(heard ? ('Heard: ' + heard + ' - say A B C or D, tap mic') : 'Nothing heard. Tap mic to try again.', 3000);
               }
