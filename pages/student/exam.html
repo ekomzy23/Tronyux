@@ -176,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mr8xrpqj"></script>
+  <script src="/js/appwrite.min.js?v=mra3bmj5"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mr8xrpqj"></script>
-  <script src="/js/appwrite.js?v=mr8xrpqj"></script>
-  <script src="/js/data.js?v=mr8xrpqj"></script>
-  <script src="/js/scikeyboard.js?v=mr8xrpqj"></script>
-  <script src="/js/theme.js?v=mr8xrpqj"></script>
+  <script src="/js/config.js?v=mra3bmj5"></script>
+  <script src="/js/appwrite.js?v=mra3bmj5"></script>
+  <script src="/js/data.js?v=mra3bmj5"></script>
+  <script src="/js/scikeyboard.js?v=mra3bmj5"></script>
+  <script src="/js/theme.js?v=mra3bmj5"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -804,28 +804,68 @@
               sttActive = false; killRec(); setIdle();
               if (letter) {
                 showHint('Heard: ' + heard + ' -> ' + letter, 2500);
+                /* Capture refs now, before the timeout fires */
+                var _q = q;
+                var _letter = letter;
                 setTimeout(function() {
                   try {
                     var body = document.getElementById('qbody');
-                    var allOpts = body ? body.querySelectorAll('.opt') : [];
+                    if (!body) return;
+                    var allOpts = body.querySelectorAll('.opt');
+
+                    /* Find the target option */
                     var sel = null;
                     for (var i = 0; i < allOpts.length; i++) {
-                      if (allOpts[i].dataset.k === letter) { sel = allOpts[i]; break; }
+                      if (String(allOpts[i].dataset.k) === String(_letter)) { sel = allOpts[i]; break; }
                     }
-                    if (sel) {
-                      for (var j = 0; j < allOpts.length; j++) {
-                        allOpts[j].classList.remove('is-selected', 'fb-correct', 'fb-wrong');
-                        var kEl = allOpts[j].querySelector('.opt__key');
-                        if (kEl) kEl.textContent = allOpts[j].dataset.k;
+                    if (!sel) { showHint('Option ' + _letter + ' not on this question.', 3000); return; }
+
+                    /* Reset all options then highlight chosen */
+                    for (var j = 0; j < allOpts.length; j++) {
+                      allOpts[j].classList.remove('is-selected', 'fb-correct', 'fb-wrong');
+                      var kEl = allOpts[j].querySelector('.opt__key');
+                      if (kEl) kEl.textContent = allOpts[j].dataset.k;
+                    }
+                    sel.classList.add('is-selected');
+
+                    /* Save answer */
+                    var qid = (_q && (_q.$id || _q.id)) || '';
+                    if (qid) {
+                      try { answers[qid] = _letter; sessionStorage.setItem(ANSWERS_KEY, JSON.stringify(answers)); } catch(e) {}
+                    }
+
+                    /* Inline feedback - green if correct, red if wrong */
+                    var correctAns = '';
+                    try { correctAns = String((_q && (_q.correctAnswer || _q.answer)) || '').trim(); } catch(e) {}
+                    if (correctAns) {
+                      var cKeys = correctAns.split(',').map(function(s) { return s.trim().toUpperCase(); });
+                      var chosen = String(_letter).toUpperCase();
+                      var isOk   = cKeys.indexOf(chosen) !== -1;
+                      for (var k = 0; k < allOpts.length; k++) {
+                        var dk = String(allOpts[k].dataset.k || '').toUpperCase();
+                        var ke = allOpts[k].querySelector('.opt__key');
+                        if (cKeys.indexOf(dk) !== -1) {
+                          allOpts[k].classList.add('fb-correct');
+                          if (ke) ke.textContent = '\u2713';
+                        } else if (dk === chosen) {
+                          allOpts[k].classList.add('fb-wrong');
+                          if (ke) ke.textContent = '\u2717';
+                        }
                       }
-                      sel.classList.add('is-selected');
-                      try { setAnswer(q.$id, letter); } catch(e) {}
-                      try { showFeedback(q, letter); } catch(e) {}
-                    } else {
-                      showHint('Option ' + letter + ' not on this question.', 3000);
+                      var old = document.getElementById('fbCard');
+                      if (old) old.remove();
+                      var card = document.createElement('div');
+                      card.id = 'fbCard';
+                      card.className = 'feedback-card ' + (isOk ? 'correct' : 'wrong');
+                      var expl = '';
+                      try { expl = String((_q && (_q.explanation || _q.explain)) || '').trim(); } catch(e) {}
+                      var hdTxt = isOk ? '&#9989; Correct!' : '&#10060; Wrong &mdash; correct: <strong>' + correctAns + '</strong>';
+                      card.innerHTML = '<div class="feedback-card__hd">' + hdTxt + '</div>' +
+                        (expl ? '<div class="feedback-card__body">' + expl + '</div>' : '');
+                      body.appendChild(card);
                     }
                   } catch(e) {
-                    showHint('Heard ' + letter + '. Tap to select manually.', 3000);
+                    showHint('Heard ' + _letter + '. Tap to select manually.', 3000);
                   }
                 }, 80);
               } else {
