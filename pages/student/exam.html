@@ -69,6 +69,20 @@
       0%,100%{ box-shadow:0 4px 18px rgba(225,29,72,.4); }
       50%    { box-shadow:0 4px 28px rgba(225,29,72,.85); }
     }
+    /* Speech pop — shows raw transcript on every capture */
+    #speechPop {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85);
+      background:rgba(15,15,30,.96); color:#fff;
+      border:1.5px solid rgba(109,94,252,.6);
+      border-radius:18px; padding:18px 28px; z-index:60;
+      text-align:center; pointer-events:none; min-width:180px;
+      opacity:0; transition:opacity .18s, transform .18s;
+    }
+    #speechPop.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    #speechPop .sp-label { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.5); margin-bottom:6px; }
+    #speechPop .sp-text  { font-size:22px; font-weight:800; color:#fff; word-break:break-word; }
+    #speechPop .sp-match { font-size:13px; margin-top:6px; color:#a78bfa; font-weight:600; }
+
     /* STT status hint */
     #sttHint {
       position:fixed; bottom:238px; right:68px;
@@ -154,6 +168,12 @@
     </div>
     <!-- STT status hint bubble -->
     <div id="sttHint"></div>
+    <!-- Speech pop — raw transcript toast -->
+    <div id="speechPop">
+      <div class="sp-label">I heard</div>
+      <div class="sp-text" id="spText">...</div>
+      <div class="sp-match" id="spMatch"></div>
+    </div>
     <!-- Mic state chip + waveform -->
     <div id="micPanel">
       <div id="micChip">Setting up&hellip;</div>
@@ -176,13 +196,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mra3np0i"></script>
+  <script src="/js/appwrite.min.js?v=mra6sc87"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mra3np0i"></script>
-  <script src="/js/appwrite.js?v=mra3np0i"></script>
-  <script src="/js/data.js?v=mra3np0i"></script>
-  <script src="/js/scikeyboard.js?v=mra3np0i"></script>
-  <script src="/js/theme.js?v=mra3np0i"></script>
+  <script src="/js/config.js?v=mra6sc87"></script>
+  <script src="/js/appwrite.js?v=mra6sc87"></script>
+  <script src="/js/data.js?v=mra6sc87"></script>
+  <script src="/js/scikeyboard.js?v=mra6sc87"></script>
+  <script src="/js/theme.js?v=mra6sc87"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -707,6 +727,20 @@
         hintEl.classList.remove('visible');
       }
 
+      var _popTimer = null;
+      function showSpeechPop(heard, matched) {
+        var pop  = document.getElementById('speechPop');
+        var txt  = document.getElementById('spText');
+        var mtch = document.getElementById('spMatch');
+        if (!pop || !txt) return;
+        txt.textContent  = heard || '(nothing)';
+        mtch.textContent = matched ? ('-> ' + matched) : 'no match - try again';
+        mtch.style.color = matched ? '#34d399' : '#f87171';
+        clearTimeout(_popTimer);
+        pop.classList.add('show');
+        _popTimer = setTimeout(function() { pop.classList.remove('show'); }, 2200);
+      }
+
       if (!SRec) {
         btn.addEventListener('click', function() {
           showHint(isMobile
@@ -802,6 +836,7 @@
                   if (letter) break outer;
                 }
               }
+              showSpeechPop(heard, letter);
               sttActive = false; killRec(); setIdle();
               if (letter) {
                 showHint('Heard: ' + heard + ' -> ' + letter, 2500);
