@@ -176,13 +176,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mra3bmj5"></script>
+  <script src="/js/appwrite.min.js?v=mra3np0i"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mra3bmj5"></script>
-  <script src="/js/appwrite.js?v=mra3bmj5"></script>
-  <script src="/js/data.js?v=mra3bmj5"></script>
-  <script src="/js/scikeyboard.js?v=mra3bmj5"></script>
-  <script src="/js/theme.js?v=mra3bmj5"></script>
+  <script src="/js/config.js?v=mra3np0i"></script>
+  <script src="/js/appwrite.js?v=mra3np0i"></script>
+  <script src="/js/data.js?v=mra3np0i"></script>
+  <script src="/js/scikeyboard.js?v=mra3np0i"></script>
+  <script src="/js/theme.js?v=mra3np0i"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -465,7 +465,8 @@
       if (current < questions.length - 1) { current++; render(); }
       else location.href = '/pages/student/review.html';
     };
-    document.getElementById('flagBtn').onclick = () => {
+    const flagBtnEl = document.getElementById('flagBtn');
+    if (flagBtnEl) flagBtnEl.onclick = () => {
       const id = questions[current].$id;
       marked.has(id) ? marked.delete(id) : marked.add(id);
       sessionStorage.setItem(MARKED_KEY, JSON.stringify([...marked]));
