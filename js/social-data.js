@@ -187,7 +187,18 @@
       content:    content.trim(),
     };
     if (parentId) data.parentId = parentId;
-    const doc = await _db.createDocument(DB, C().social_comments, ID.unique(), data);
+    let doc;
+    try {
+      doc = await _db.createDocument(DB, C().social_comments, ID.unique(), data);
+    } catch(e) {
+      if ((e.code === 400 || e.code === 'unknown') && data.parentId) {
+        /* parentId attr not in schema yet — post as flat comment so it doesn't fail */
+        delete data.parentId;
+        doc = await _db.createDocument(DB, C().social_comments, ID.unique(), data);
+      } else {
+        throw e;
+      }
+    }
     /* Only top-level comments increment the post commentCount */
     if (!parentId) {
       try {
