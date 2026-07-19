@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Post — Ronyx</title>
+<link rel="stylesheet" href="/css/base.css">
+<script>(function(){ var t=localStorage.getItem('ronyx_theme'); if(t) document.documentElement.setAttribute('data-theme',t); })();</script>
+<style>
+:root {
+  --bg:   #06060e; --surf: #0d0d1a; --surf2: #111128;
+  --bdr:  rgba(124,109,245,.15);
+  --p:    #7c6df5; --pk: #ff4d8c; --c: #00d2ff; --g: #00f09a;
+  --txt:  #e2e0ff; --mut: #6868a0; --hdr: rgba(6,6,14,.96);
+}
+@media (prefers-color-scheme:light){ :root{
+  --bg:#f0effe;--surf:#fff;--surf2:#f4f2ff;
+  --bdr:rgba(124,109,245,.18);--txt:#1a1040;--mut:#8080b0;--hdr:rgba(240,239,254,.97);
+}}
+:root[data-theme="light"]{
+  --bg:#f0effe;--surf:#fff;--surf2:#f4f2ff;
+  --bdr:rgba(124,109,245,.18);--txt:#1a1040;--mut:#8080b0;--hdr:rgba(240,239,254,.97);
+}
+:root[data-theme="dark"]{
+  --bg:#06060e;--surf:#0d0d1a;--surf2:#111128;
+  --bdr:rgba(124,109,245,.15);--txt:#e2e0ff;--mut:#6868a0;--hdr:rgba(6,6,14,.96);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{height:100%;}
+body{
+  flex-direction:column !important;
+  align-items:stretch !important;
+  justify-content:flex-start !important;
+  height:100dvh; overflow:hidden;
+  background:var(--bg); color:var(--txt);
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Layout shell ── */
+.pw{
+  display:flex; flex-direction:column;
+  flex:1; min-height:0; overflow:hidden;
+  max-width:600px; width:100%; margin:0 auto;
+  background:var(--surf);
+  border-left:1px solid var(--bdr); border-right:1px solid var(--bdr);
+}
+
+/* ── Header ── */
+.ph{
+  display:flex; align-items:center; gap:10px; padding:11px 14px;
+  background:var(--hdr); backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bdr); flex-shrink:0;
+}
+.ph-back{
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--bdr);background:var(--surf2);
+  color:var(--txt);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;flex-shrink:0;transition:border-color .15s;
+}
+.ph-back:hover{border-color:var(--p);}
+.ph-title{font-size:17px;font-weight:800;flex:1;}
+
+/* ── Scroll area ── */
+.sa{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+
+/* ── Full post card ── */
+.post{padding:16px 14px 12px 17px;border-bottom:3px solid var(--bdr);position:relative;}
+.post::before{
+  content:'';position:absolute;left:0;top:16px;bottom:12px;
+  width:3px;border-radius:0 3px 3px 0;
+}
+.post[data-type="note"]::before    {background:var(--p); box-shadow:0 0 8px var(--p);}
+.post[data-type="question"]::before{background:var(--pk);box-shadow:0 0 8px var(--pk);}
+.post[data-type="formula"]::before {background:var(--c); box-shadow:0 0 8px var(--c);}
+.post[data-type="tip"]::before     {background:var(--g); box-shadow:0 0 8px var(--g);}
+
+.post-hdr{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.post-av{
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:900;border:1.5px solid transparent;cursor:pointer;
+}
+.post-name{font-size:14px;font-weight:800;cursor:pointer;line-height:1.2;}
+.post-time{font-size:11px;color:var(--mut);margin-top:2px;}
+.post-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;margin-top:4px;
+}
+.post-badge--note    {background:rgba(124,109,245,.15);color:var(--p);}
+.post-badge--question{background:rgba(255,77,140,.15); color:var(--pk);}
+.post-badge--formula {background:rgba(0,210,255,.15);  color:var(--c);}
+.post-badge--tip     {background:rgba(0,240,154,.15);  color:var(--g);}
+.post-subj{font-size:12px;font-weight:700;color:var(--p);margin-bottom:8px;}
+.post-body{
+  font-size:15px;line-height:1.65;color:var(--txt);
+  white-space:pre-wrap;word-break:break-word;margin-bottom:12px;
+}
+.post-img{border-radius:12px;overflow:hidden;border:1px solid var(--bdr);margin-bottom:12px;}
+.post-img img{width:100%;max-height:420px;object-fit:cover;display:block;}
+
+/* ── Post action row ── */
+.post-acts{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.pa{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 13px;border-radius:22px;cursor:pointer;
+  border:1px solid var(--bdr);background:var(--surf2);
+  color:var(--mut);font-size:13px;font-weight:700;
+  transition:all .15s;text-decoration:none;
+}
+.pa:hover{border-color:var(--p);color:var(--txt);}
+.pa.liked{background:rgba(255,77,140,.1);border-color:rgba(255,77,140,.3);color:var(--pk);}
+.pa-sep{flex:1;}
+
+/* ── Comments header ── */
+.cmt-hdr2{
+  padding:13px 14px 10px;
+  font-size:14px;font-weight:800;color:var(--txt);
+  border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;gap:7px;
+}
+.cmt-cnt{font-size:12px;font-weight:600;color:var(--mut);}
+
+/* ── Comment item ── */
+.ci{padding:12px 14px 10px;border-bottom:1px solid var(--bdr);}
+.cr{display:flex;gap:10px;}
+.cav{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:900;cursor:pointer;
+}
+.cc{flex:1;min-width:0;}
+.cn{font-size:13px;font-weight:800;cursor:pointer;}
+.ct{font-size:14px;line-height:1.5;color:var(--txt);margin-top:3px;word-break:break-word;}
+.cm{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.ctime{font-size:11px;color:var(--mut);}
+.ca{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;font-weight:700;color:var(--mut);
+  background:none;border:none;cursor:pointer;padding:3px 6px;
+  border-radius:8px;transition:all .12s;
+}
+.ca:hover{background:rgba(124,109,245,.1);color:var(--p);}
+.ca.liked{color:var(--pk);}
+.ca-n{font-size:11px;}
+
+/* ── Replies ── */
+.rep-wrap{
+  margin-left:44px;margin-top:8px;
+  border-left:2px solid var(--bdr);
+  padding-left:12px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.rr{display:flex;gap:8px;}
+.rav{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:900;cursor:pointer;
+}
+.rc{flex:1;min-width:0;}
+.rn{font-size:12px;font-weight:800;cursor:pointer;}
+.rto{font-size:10px;color:var(--mut);margin:1px 0 2px;}
+.rt{font-size:13px;line-height:1.45;color:var(--txt);margin-top:2px;word-break:break-word;}
+.rm{display:flex;align-items:center;gap:8px;margin-top:5px;}
+
+/* ── Empty / spinner ── */
+.spin{
+  width:22px;height:22px;border-radius:50%;margin:36px auto;
+  border:2px solid rgba(124,109,245,.2);border-top-color:var(--p);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:36px 16px;color:var(--mut);font-size:14px;line-height:1.6;}
+
+/* ── Replying-to bar ── */
+.rb{
+  display:none;align-items:center;gap:8px;
+  padding:7px 14px;
+  background:rgba(124,109,245,.08);
+  border-top:1px solid rgba(124,109,245,.2);
+  font-size:12px;color:var(--mut);flex-shrink:0;
+}
+.rb.show{display:flex;}
+.rb-name{font-weight:700;color:var(--p);}
+.rb-x{
+  background:none;border:none;cursor:pointer;
+  color:var(--mut);font-size:17px;padding:2px 5px;
+  margin-left:auto;line-height:1;
+}
+
+/* ── Compose bar ── */
+.compose{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;
+  background:var(--hdr);backdrop-filter:blur(16px);
+  border-top:1px solid var(--bdr);flex-shrink:0;
+}
+.my-av{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:900;
+}
+.ci-inp{
+  flex:1;padding:9px 14px;border:1.5px solid var(--bdr);
+  border-radius:22px;background:var(--surf2);
+  color:var(--txt);font-size:14px;font-family:inherit;
+  outline:none;transition:border-color .15s;
+}
+.ci-inp:focus{border-color:var(--p);}
+.ci-inp::placeholder{color:var(--mut);}
+.ci-send{
+  padding:9px 16px;border-radius:20px;border:none;
+  background:linear-gradient(135deg,var(--p),var(--pk));
+  color:#fff;font-size:13px;font-weight:800;cursor:pointer;flex-shrink:0;
+  transition:opacity .15s;
+}
+.ci-send:disabled{opacity:.4;}
+</style>
+</head>
+<body>
+<div class="pw">
+
+  <!-- Header -->
+  <header class="ph">
+    <a class="ph-back" href="#" onclick="history.length>1?history.back():location.href='/pages/student/nexus/feed.html';return false;">&#8592;</a>
+    <div class="ph-title">Post</div>
+  </header>
+
+  <!-- Scroll area -->
+  <div class="sa" id="sa">
+
+    <!-- Post -->
+    <div id="postArea"><div class="spin"></div></div>
+
+    <!-- Comments -->
+    <div id="cmtWrap" style="display:none;">
+      <div class="cmt-hdr2">💬 Comments <span class="cmt-cnt" id="cmtCnt"></span></div>
+      <div id="cmtList"></div>
+    </div>
+
+  </div><!-- /sa -->
+
+  <!-- Replying bar -->
+  <div class="rb" id="rb">
+    ↩ Replying to <span class="rb-name" id="rbName"></span>
+    <button class="rb-x" onclick="cancelReply()">✕</button>
+  </div>
+
+  <!-- Compose -->
+  <div class="compose">
+    <div class="my-av" id="myAv" style="background:#7c6df520;color:#7c6df5;">?</div>
+    <input class="ci-inp" id="inp" placeholder="Add a comment…" maxlength="500"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}">
+    <button class="ci-send" id="sendBtn" onclick="send()">Send</button>
+  </div>
+
+</div><!-- /pw -->
+
+<script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="/js/config.js?v=mrr39s6t"></script>
+<script src="/js/appwrite.js?v=mrr39s6t"></script>
+<script src="/js/social-data.js?v=mrr39s6t"></script>
+<script>
+/* ── Helpers ── */
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function init2(name){
+  const p=(name||'?').split(/[\s\-]/);
+  return p.length>=2&&p[0]&&p[1]?(p[0][0]+p[1][0]).toUpperCase():(name||'?').slice(0,2).toUpperCase();
+}
+function ago(iso){
+  const d=Math.floor((Date.now()-new Date(iso))/1000);
+  if(d<60) return 'now';
+  if(d<3600) return Math.floor(d/60)+'m';
+  if(d<86400) return Math.floor(d/3600)+'h';
+  return Math.floor(d/86400)+'d';
+}
+const TYPE_META={
+  note:    {icon:'📝',label:'Note',    cls:'note'},
+  question:{icon:'❓',label:'Question',cls:'question'},
+  formula: {icon:'🔢',label:'Formula', cls:'formula'},
+  tip:     {icon:'💡',label:'Tip',     cls:'tip'},
+};
+
+/* ── State ── */
+const pid = new URLSearchParams(location.search).get('id');
+let myId=null, post=null, allCmts=[], activeParentId=null;
+
+/* ── Boot ── */
+(function boot(){
+  if(!pid){
+    document.getElementById('postArea').innerHTML='<div class="empty">Post not found.</div>';
+    return;
+  }
+  const iv=setInterval(function(){
+    if(window.SocialData&&window.account){clearInterval(iv);init();}
+  },80);
+})();
+
+async function init(){
+  const me=await SocialData.getMe();
+  if(me){
+    myId=me.$id;
+    const col=SocialData.userColor(myId);
+    const av=document.getElementById('myAv');
+    av.textContent=init2(me.name||'Me');
+    av.style.background=col+'20'; av.style.color=col;
+  }
+  await Promise.all([loadPost(), loadCmts()]);
+}
+
+/* ── Post ── */
+async function loadPost(){
+  try{
+    post=await SocialData.getPost(pid);
+    document.getElementById('postArea').innerHTML=renderPost(post);
+  }catch(_){
+    document.getElementById('postArea').innerHTML='<div class="empty">Could not load post.</div>';
+  }
+}
+
+function renderPost(p){
+  const type=p.type||'note';
+  const meta=TYPE_META[type]||TYPE_META.note;
+  const liked=SocialData.isLiked(p.$id);
+  const col=p.userColor||'#7c6df5';
+  const name=p.userName||p.userHandle||'Student';
+  const ini=init2(name);
+  const mk='__img__:';
+  const ix=p.content.indexOf(mk);
+  const text=ix===-1?p.content:p.content.slice(0,ix).trim();
+  const imgUrl=ix===-1?null:p.content.slice(ix+mk.length).trim().split('\n')[0];
+  const own=p.userId===myId;
+  return `
+<div class="post" data-type="${type}">
+  <div class="post-hdr">
+    <div class="post-av" style="background:${col}20;border-color:${col}40;color:${col};"
+         onclick="goProfile('${p.userId}')">${ini}</div>
+    <div style="flex:1;min-width:0;">
+      <div class="post-name" style="color:${col};" onclick="goProfile('${p.userId}')">${esc(name)}</div>
+      <div class="post-time">${ago(p.$createdAt)}</div>
+      <span class="post-badge post-badge--${meta.cls}">${meta.icon} ${meta.label}</span>
+    </div>
+    ${own?`<button onclick="doDelete()" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:8px;">🗑️</button>`:''}
+  </div>
+  ${p.subject?`<div class="post-subj"># ${esc(p.subject)}</div>`:''}
+  ${text?`<div class="post-body">${esc(text)}</div>`:''}
+  ${imgUrl?`<div class="post-img"><img src="${esc(imgUrl)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
+  <div class="post-acts">
+    <button class="pa ${liked?'liked':''}" id="pLikeBtn" onclick="togglePostLike()">
+      ${liked?'❤️':'🤍'} <span id="pLikeN">${p.likes||0}</span>
+    </button>
+    <button class="pa">
+      💬 <span id="pCmtN">${p.commentCount||0}</span>
+    </button>
+    <span class="pa-sep"></span>
+    <button class="pa" onclick="shareWa()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Share
+    </button>
+  </div>
+</div>`;
+}
+
+async function togglePostLike(){
+  if(!post) return;
+  const was=SocialData.isLiked(post.$id);
+  const btn=document.getElementById('pLikeBtn');
+  const n=document.getElementById('pLikeN');
+  const old=parseInt(n.textContent||'0');
+  /* Optimistic — update immediately */
+  if(was){
+    n.textContent=Math.max(0,old-1);
+    btn.classList.remove('liked'); btn.firstChild.textContent='🤍 ';
+  }else{
+    n.textContent=old+1;
+    btn.classList.add('liked'); btn.firstChild.textContent='❤️ ';
+  }
+  try{
+    if(was) await SocialData.unlikePost(post.$id);
+    else     await SocialData.likePost(post.$id);
+  }catch(_){
+    /* Revert on failure */
+    n.textContent=old;
+    if(was){ btn.classList.add('liked'); btn.firstChild.textContent='❤️ '; }
+    else   { btn.classList.remove('liked'); btn.firstChild.textContent='🤍 '; }
+  }
+}
+
+/* ── Comments ── */
+async function loadCmts(){
+  const list=document.getElementById('cmtList');
+  list.innerHTML='<div class="spin"></div>';
+  document.getElementById('cmtWrap').style.display='';
+  try{
+    allCmts=await SocialData.listComments(pid,200);
+    renderCmts();
+  }catch(_){
+    list.innerHTML='<div class="empty">Could not load comments.</div>';
+  }
+}
+
+function renderCmts(){
+  const list=document.getElementById('cmtList');
+  const roots=allCmts.filter(c=>!c.parentId);
+  const byP={};
+  allCmts.filter(c=>c.parentId).forEach(c=>{
+    if(!byP[c.parentId]) byP[c.parentId]=[];
+    byP[c.parentId].push(c);
+  });
+
+  const cnt=roots.length;
+  document.getElementById('cmtCnt').textContent=cnt?'('+cnt+')':'';
+  const pcn=document.getElementById('pCmtN');
+  if(pcn) pcn.textContent=cnt;
+
+  if(!allCmts.length){
+    list.innerHTML='<div class="empty">No comments yet.<br>Be the first to comment!</div>';
+    return;
+  }
+
+  list.innerHTML=roots.map(c=>{
+    const reps=byP[c.$id]||[];
+    return `<div class="ci">
+      ${renderCmtRow(c,false,null)}
+      ${reps.length?`<div class="rep-wrap">${reps.map(r=>renderCmtRow(r,true,c)).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderCmtRow(c,isRep,parent){
+  const col=c.userColor||'#7c6df5';
+  const name=c.userName||c.userHandle||'Student';
+  const ini=init2(name);
+  const liked=SocialData.isCommentLiked(c.$id);
+  const likes=c.likes||0;
+  if(isRep){
+    return `<div class="rr" id="cr-${c.$id}">
+      <div class="rav" style="background:${col}20;color:${col};" onclick="goProfile('${c.userId}')">${ini}</div>
+      <div class="rc">
+        <div class="rn" style="color:${col};" onclick="goProfile('${c.userId}')">${esc(name)}</div>
+        ${parent?`<div class="rto">↩ ${esc(parent.userName||'Student')}</div>`:''}
+        <div class="rt">${esc(c.content)}</div>
+        <div class="rm">
+          <span class="ctime">${ago(c.$createdAt)}</span>
+          <button class="ca ${liked?'liked':''}" onclick="toggleCLike('${c.$id}')">
+            ${liked?'❤️':'🤍'} <span class="ca-n" id="cl-${c.$id}">${likes}</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return `<div class="cr" id="cr-${c.$id}">
+    <div class="cav" style="background:${col}20;color:${col};" onclick="goProfile('${c.userId}')">${ini}</div>
+    <div class="cc">
+      <div class="cn" style="color:${col};" onclick="goProfile('${c.userId}')">${esc(name)}</div>
+      <div class="ct">${esc(c.content)}</div>
+      <div class="cm">
+        <span class="ctime">${ago(c.$createdAt)}</span>
+        <button class="ca ${liked?'liked':''}" onclick="toggleCLike('${c.$id}')">
+          ${liked?'❤️':'🤍'} <span class="ca-n" id="cl-${c.$id}">${likes}</span>
+        </button>
+        <button class="ca" onclick="startReply('${c.$id}','${esc(name)}')">Reply</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Like / reply ── */
+async function toggleCLike(cid){
+  const was=SocialData.isCommentLiked(cid);
+  const n=document.getElementById('cl-'+cid);
+  const btn=n&&n.closest('.ca');
+  const old=parseInt(n?.textContent||'0');
+  /* Optimistic — update immediately */
+  if(was){
+    if(n) n.textContent=Math.max(0,old-1);
+    if(btn){btn.classList.remove('liked');btn.firstChild.textContent='🤍 ';}
+  }else{
+    if(n) n.textContent=old+1;
+    if(btn){btn.classList.add('liked');btn.firstChild.textContent='❤️ ';}
+  }
+  try{
+    if(was) await SocialData.unlikeComment(cid);
+    else     await SocialData.likeComment(cid);
+  }catch(_){
+    /* Revert on failure */
+    if(n) n.textContent=old;
+    if(was){ if(btn){btn.classList.add('liked');btn.firstChild.textContent='❤️ ';} }
+    else   { if(btn){btn.classList.remove('liked');btn.firstChild.textContent='🤍 ';} }
+  }
+}
+
+function startReply(cid,name){
+  activeParentId=cid;
+  document.getElementById('rbName').textContent=name;
+  document.getElementById('rb').classList.add('show');
+  const inp=document.getElementById('inp');
+  inp.placeholder='Reply to '+name+'…';
+  inp.focus();
+}
+
+function cancelReply(){
+  activeParentId=null;
+  document.getElementById('rb').classList.remove('show');
+  document.getElementById('inp').placeholder='Add a comment…';
+}
+
+async function send(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();
+  if(!text) return;
+  const parentId=activeParentId;
+  inp.value=''; cancelReply();
+  const btn=document.getElementById('sendBtn');
+  btn.disabled=true;
+  try{
+    await SocialData.createComment(pid,text,parentId);
+    await loadCmts();
+    /* scroll to latest comment */
+    const last=document.getElementById('cmtList').lastElementChild;
+    if(last) last.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){
+    inp.value=text;
+    if(window.toast) toast('Could not post. Try again.');
+  }finally{ btn.disabled=false; }
+}
+
+/* ── Delete post ── */
+async function doDelete(){
+  if(!confirm('Delete this post?')) return;
+  try{ await SocialData.deletePost(pid); history.back(); }catch(_){}
+}
+
+/* ── Helpers ── */
+function goProfile(uid){ location.href='/pages/student/nexus/profile.html?id='+uid; }
+function shareWa(){
+  const url=encodeURIComponent(location.href);
+  window.open('https://wa.me/?text='+url,'_blank');
+}
+</script>
+</body>
+</html>

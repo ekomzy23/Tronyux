@@ -10,6 +10,7 @@
     "api/push.js":       { "maxDuration": 10 }
   },
   "redirects": [
+    { "source": "/favicon.ico", "destination": "/favicon.svg", "permanent": false },
     { "source": "/admin-bundle", "destination": "/admin-bundle/pages/login.html", "permanent": false },
     { "source": "/admin-bundle/", "destination": "/admin-bundle/pages/login.html", "permanent": false }
   ],

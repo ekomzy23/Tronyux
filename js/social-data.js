@@ -43,7 +43,7 @@
     return `hsl(${h % 360},70%,62%)`;
   }
 
-  /* ── Likes (localStorage tracking to avoid DB per-like docs) ── */
+  /* ── Post likes (localStorage) ── */
   function getLiked() {
     try { return JSON.parse(localStorage.getItem('ronyx_liked') || '{}'); } catch(_) { return {}; }
   }
@@ -51,6 +51,37 @@
     try { localStorage.setItem('ronyx_liked', JSON.stringify(map)); } catch(_){}
   }
   function isLiked(postId) { return !!getLiked()[postId]; }
+
+  /* ── Comment likes (localStorage) ── */
+  function getCmtLiked() {
+    try { return JSON.parse(localStorage.getItem('ronyx_clikes') || '{}'); } catch(_) { return {}; }
+  }
+  function setCmtLiked(map) {
+    try { localStorage.setItem('ronyx_clikes', JSON.stringify(map)); } catch(_){}
+  }
+  function isCommentLiked(cid) { return !!getCmtLiked()[cid]; }
+
+  async function likeComment(cid) {
+    const liked = getCmtLiked();
+    if (liked[cid]) return;
+    try {
+      const c = await _db.getDocument(DB, C().social_comments, cid);
+      await _db.updateDocument(DB, C().social_comments, cid, { likes: (c.likes || 0) + 1 });
+    } catch(_) {}
+    liked[cid] = 1;
+    setCmtLiked(liked);
+  }
+
+  async function unlikeComment(cid) {
+    const liked = getCmtLiked();
+    if (!liked[cid]) return;
+    try {
+      const c = await _db.getDocument(DB, C().social_comments, cid);
+      await _db.updateDocument(DB, C().social_comments, cid, { likes: Math.max(0, (c.likes || 1) - 1) });
+    } catch(_) {}
+    delete liked[cid];
+    setCmtLiked(liked);
+  }
 
   /* ── Posts ────────────────────────────────────────────── */
 
@@ -144,22 +175,26 @@
     return res.documents;
   }
 
-  async function createComment(postId, content) {
+  async function createComment(postId, content, parentId) {
     const me = await getMe();
     if (!me) throw new Error('Not authenticated');
-    const doc = await _db.createDocument(DB, C().social_comments, ID.unique(), {
+    const data = {
       postId,
       userId:     me.$id,
       userHandle: nexusHandle(me.$id),
       userColor:  userColor(me.$id),
       userName:   me.name || 'Student',
       content:    content.trim(),
-    });
-    /* increment commentCount */
-    try {
-      const post = await _db.getDocument(DB, C().social_posts, postId);
-      await _db.updateDocument(DB, C().social_posts, postId, { commentCount: (post.commentCount||0)+1 });
-    } catch(_){}
+    };
+    if (parentId) data.parentId = parentId;
+    const doc = await _db.createDocument(DB, C().social_comments, ID.unique(), data);
+    /* Only top-level comments increment the post commentCount */
+    if (!parentId) {
+      try {
+        const post = await _db.getDocument(DB, C().social_posts, postId);
+        await _db.updateDocument(DB, C().social_posts, postId, { commentCount: (post.commentCount||0)+1 });
+      } catch(_){}
+    }
     return doc;
   }
 
@@ -232,9 +267,11 @@
 
   /* ── Exports ───────────────────────────────────────────── */
   window.SocialData = {
-    getMe, nexusHandle, userColor, isLiked,
+    getMe, nexusHandle, userColor,
+    isLiked, isCommentLiked,
     createPost, listFeed, listFollowingFeed, getUserPosts, getPost, deletePost,
     likePost, unlikePost,
+    likeComment, unlikeComment,
     listComments, createComment,
     followUser, unfollowUser, isFollowing, getFollowCounts, listFollowers,
     getProfile, getPostCount,

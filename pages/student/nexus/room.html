@@ -1499,6 +1499,11 @@ function _cleanupVc(){
   _vcActive=false;_vcPeerId=null;_vcParticipants={};
   _vcMicOn=true;_vcCamOn=true;_vcHandUp=false;_vcScreenOn=false;
   _vcStopTimer();
+  /* Release srcObject on every video element FIRST — this tells the browser
+     to close the camera/mic indicator light before we stop the tracks */
+  const pipVid=document.getElementById('vcPipVid');
+  if(pipVid){pipVid.srcObject=null;}
+  document.querySelectorAll('#vcGrid video').forEach(v=>{v.srcObject=null;});
   if(_vcScreenStream){_vcScreenStream.getTracks().forEach(t=>t.stop());_vcScreenStream=null;}
   if(_vcStream){_vcStream.getTracks().forEach(t=>t.stop());_vcStream=null;}
   if(_vcPeer){try{_vcPeer.destroy();}catch(_){}_vcPeer=null;}

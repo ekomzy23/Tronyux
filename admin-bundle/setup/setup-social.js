@@ -74,6 +74,8 @@ async function run() {
   await aStr('social_comments', 'userColor',  20);
   await aStr('social_comments', 'userName',   128);
   await aStr('social_comments', 'content',    1000, true);
+  await aStr('social_comments', 'parentId',   64);       // reply-to comment ID
+  await aInt('social_comments', 'likes',      false, 0); // comment like count
 
   console.log('\n⏳ waiting for attributes…');
   await sleep(8000);
@@ -91,6 +93,8 @@ async function run() {
     () => databases.createIndex(DB,'social_follows','unique',IndexType.Unique,['followerId','followingId']));
   await safe('social_comments.byPost',
     () => databases.createIndex(DB,'social_comments','byPost',IndexType.Key,['postId']));
+  await safe('social_comments.byParent',
+    () => databases.createIndex(DB,'social_comments','byParent',IndexType.Key,['parentId']));
 
   console.log('\n✅  Social schema ready. Run setup-social.js once more if any index failed.');
 }
