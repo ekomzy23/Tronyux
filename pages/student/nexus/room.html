@@ -647,7 +647,7 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
     <div class="vc-topbar__right">
       <button class="vc-top-btn" id="vcPanelBtn" onclick="vcTogglePanel()" title="Participants">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span id="vcPCount">1</span>
+        <span id="vcPCount">1</span><span style="opacity:.5">/12</span>
       </button>
       <button class="vc-top-btn" onclick="openWhiteboard()" title="Whiteboard">🎨 Board</button>
       <button class="vc-top-btn" onclick="vcMinimize()" title="Minimize">⤡</button>
@@ -1430,9 +1430,11 @@ async function _doStartVideoClass(){
     }catch(e){toast('Could not notify members.');}
   });
   peer.on('call',(call)=>{
+    /* Reject when class is full (12 slots — keeps PeerJS quality stable) */
+    if(Object.keys(_vcConns).length>=12){call.close();return;}
     call.answer(_vcStream);
     call.on('stream',(rs)=>{
-      const nm='Student '+Object.keys(_vcConns).length;
+      const nm='Student '+(Object.keys(_vcConns).length+1);
       _addVcTile(call.peer,rs,nm,false);
       _vcParticipants[call.peer]={name:nm,micOn:true,handUp:false};
       _vcRenderParticipants();
@@ -1470,8 +1472,17 @@ async function joinVideoClass(peerId){
     _vcStartTimer();
     _vcRenderParticipants();
     const call=peer.call(peerId,stream);
-    call.on('stream',(rs)=>_addVcTile('host',rs,'Host ★',false));
-    call.on('close',()=>{_removeVcTile('host');delete _vcParticipants['host'];toast('Host ended the class.');_cleanupVc();});
+    let _gotStream=false;
+    call.on('stream',(rs)=>{_gotStream=true;_addVcTile('host',rs,'Host ★',false);});
+    call.on('close',()=>{
+      _removeVcTile('host');delete _vcParticipants['host'];
+      if(!_gotStream){
+        toast('📹 Class is full (12/12) — follow along in the chat');
+      }else{
+        toast('Host ended the class.');
+      }
+      _cleanupVc();
+    });
     _vcConns['host']=call;
   });
   peer.on('error',(e)=>toast('Could not connect to class: '+(e.type||e.message)));
