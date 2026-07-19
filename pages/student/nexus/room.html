@@ -342,17 +342,78 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
 .vc-start-cancel{width:100%;background:transparent;border:1.5px solid var(--nx-bdr);
   border-radius:12px;padding:10px;color:var(--nx-mut);font-size:13px;cursor:pointer;}
 
-/* ── Video Class Modal (live grid) ── */
-.vc-modal{position:fixed;inset:0;background:#000;z-index:400;display:none;flex-direction:column;}
+/* ══ Video Class — Google Meet style ══ */
+.vc-modal{position:fixed;inset:0;background:#202124;z-index:400;display:none;flex-direction:column;font-family:'Segoe UI',system-ui,sans-serif;}
 .vc-modal.open{display:flex}
-.vc-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,0,0,.85);flex-shrink:0;}
-.vc-hdr h4{flex:1;font-size:13px;font-weight:800;color:#fff;margin:0}
-.vc-action{padding:7px 12px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:700;color:#fff;transition:opacity .15s}
-.vc-action:hover{opacity:.8}
-.vc-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px;padding:4px;background:#111;align-content:start;}
-.vc-tile{position:relative;background:#1a1a2e;border-radius:10px;overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;}
-.vc-tile video{width:100%;height:100%;object-fit:cover;}
-.vc-tile__name{position:absolute;bottom:6px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;}
+
+/* Top bar */
+.vc-topbar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(0,0,0,.4);flex-shrink:0;min-height:50px;}
+.vc-topbar__left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.vc-meeting-name{color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;}
+.vc-live-dot{width:8px;height:8px;border-radius:50%;background:#ea4335;flex-shrink:0;animation:vc-pulse 2s infinite;}
+@keyframes vc-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.vc-timer{color:rgba(255,255,255,.55);font-size:12px;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.vc-topbar__right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.vc-top-btn{background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:5px;transition:background .15s;white-space:nowrap;}
+.vc-top-btn:hover{background:rgba(255,255,255,.2);}
+.vc-top-btn.active{background:rgba(124,109,245,.45);}
+
+/* Video grid */
+.vc-grid{flex:1;min-height:0;padding:6px;background:#202124;display:grid;gap:5px;align-items:center;justify-items:center;}
+.vc-grid[data-n="1"]{grid-template-columns:1fr;}
+.vc-grid[data-n="2"]{grid-template-columns:1fr 1fr;}
+.vc-grid[data-n="3"]{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+.vc-grid[data-n="4"]{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+.vc-grid[data-n="5"],.vc-grid[data-n="6"]{grid-template-columns:repeat(3,1fr);}
+.vc-grid[data-n="many"]{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));align-content:start;overflow-y:auto;}
+.vc-tile{position:relative;background:#3c4043;border-radius:12px;overflow:hidden;width:100%;height:100%;min-height:110px;display:flex;align-items:center;justify-content:center;}
+.vc-tile video{width:100%;height:100%;object-fit:cover;display:block;}
+.vc-tile__avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#7c6df5,#ff4d8c);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;}
+.vc-tile__name{position:absolute;bottom:8px;left:10px;background:rgba(0,0,0,.7);color:#fff;backdrop-filter:blur(4px);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.vc-tile__hand{position:absolute;top:8px;right:8px;font-size:20px;display:none;filter:drop-shadow(0 0 5px rgba(0,0,0,.7));}
+.vc-tile__hand.on{display:block;}
+.vc-tile__muted{position:absolute;top:8px;left:8px;background:rgba(220,53,69,.85);border-radius:50%;width:24px;height:24px;display:none;align-items:center;justify-content:center;}
+.vc-tile__muted.on{display:flex;}
+
+/* Bottom controls */
+.vc-controls{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;background:rgba(0,0,0,.5);flex-shrink:0;flex-wrap:wrap;position:relative;}
+.vc-ctrl{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:12px;padding:9px 14px;cursor:pointer;font-size:10px;font-weight:600;transition:all .15s;min-width:50px;}
+.vc-ctrl:hover{background:rgba(255,255,255,.18);}
+.vc-ctrl.off{background:#ea4335;}
+.vc-ctrl.on{background:rgba(124,109,245,.5);border:1px solid rgba(124,109,245,.7);}
+.vc-ctrl svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.vc-ctrl--danger{background:rgba(234,67,53,.85);min-width:64px;}
+.vc-ctrl--danger:hover{background:#ea4335;}
+.vc-sep{width:1px;height:36px;background:rgba(255,255,255,.12);}
+
+/* Reaction picker */
+.vc-react-picker{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#3c4043;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:8px 12px;display:none;gap:8px;z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.5);}
+.vc-react-picker.open{display:flex;}
+.vc-react-opt{background:none;border:none;font-size:24px;cursor:pointer;border-radius:8px;padding:4px 6px;transition:transform .1s;}
+.vc-react-opt:hover{transform:scale(1.25);}
+/* Floating reactions */
+@keyframes vcFloat{0%{opacity:1;transform:translateY(0) scale(1)}80%{opacity:.9;transform:translateY(-90px) scale(1.4)}100%{opacity:0;transform:translateY(-110px) scale(.8)}}
+.vc-reaction-float{position:absolute;font-size:34px;pointer-events:none;animation:vcFloat 2.2s ease-out forwards;z-index:20;}
+
+/* Participants side panel */
+.vc-side{position:absolute;top:50px;right:0;bottom:68px;width:270px;background:#2d2e30;border-left:1px solid rgba(255,255,255,.08);display:none;flex-direction:column;z-index:5;}
+.vc-side.open{display:flex;}
+.vc-side-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);color:#fff;font-size:13px;font-weight:700;flex-shrink:0;}
+.vc-side-x{background:none;border:none;color:rgba(255,255,255,.5);font-size:18px;cursor:pointer;}
+.vc-p-list{flex:1;overflow-y:auto;padding:6px;}
+.vc-p-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;color:#fff;font-size:13px;}
+.vc-p-item:hover{background:rgba(255,255,255,.06);}
+.vc-p-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c6df5,#ff4d8c);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.vc-p-nm{flex:1;font-weight:600;}
+.vc-p-ic{font-size:14px;}
+
+/* Minimized picture-in-picture */
+.vc-pip{position:fixed;bottom:92px;right:14px;width:176px;height:100px;background:#000;border-radius:12px;overflow:hidden;z-index:600;display:none;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.6);border:2px solid rgba(124,109,245,.45);}
+.vc-pip.show{display:block;}
+.vc-pip video{width:100%;height:100%;object-fit:cover;}
+.vc-pip-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);padding:4px 8px;display:flex;align-items:center;justify-content:space-between;}
+.vc-pip-lbl{color:#fff;font-size:10px;font-weight:700;}
+.vc-pip-x{background:none;border:none;color:#fff;font-size:13px;cursor:pointer;padding:0;}
 
 /* ── VC Join Notification (members only) ── */
 .vc-notif{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -573,16 +634,101 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
   </div>
 </div>
 
-<!-- Video Class Modal -->
+<!-- Video Class Modal — Google Meet style -->
 <div class="vc-modal" id="vcModal">
-  <div class="vc-hdr">
-    <span style="font-size:18px;">📹</span>
-    <h4 id="vcLabel">Virtual Classroom</h4>
-    <button class="vc-action" style="background:rgba(0,240,154,.4);" onclick="openWhiteboard()">🎨 Board</button>
-    <button class="vc-action" id="vcEndBtn" style="background:rgba(255,77,140,.6);display:none;" onclick="endVideoClass()">⏹ End Class</button>
-    <button class="vc-action" id="vcLeaveBtn" style="background:rgba(255,140,0,.5);" onclick="leaveVideoClass()">✕ Leave</button>
+
+  <!-- Top bar -->
+  <div class="vc-topbar">
+    <div class="vc-topbar__left">
+      <div class="vc-live-dot"></div>
+      <div class="vc-meeting-name" id="vcLabel">Virtual Classroom</div>
+      <div class="vc-timer" id="vcTimer">00:00</div>
+    </div>
+    <div class="vc-topbar__right">
+      <button class="vc-top-btn" id="vcPanelBtn" onclick="vcTogglePanel()" title="Participants">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="vcPCount">1</span>
+      </button>
+      <button class="vc-top-btn" onclick="openWhiteboard()" title="Whiteboard">🎨 Board</button>
+      <button class="vc-top-btn" onclick="vcMinimize()" title="Minimize">⤡</button>
+    </div>
   </div>
-  <div class="vc-grid" id="vcGrid"></div>
+
+  <!-- Video grid -->
+  <div class="vc-grid" id="vcGrid" data-n="1"></div>
+
+  <!-- Floating reactions layer -->
+  <div id="vcFloatLayer" style="position:absolute;inset:0;pointer-events:none;z-index:15;overflow:hidden;"></div>
+
+  <!-- Participants side panel -->
+  <div class="vc-side" id="vcSidePanel">
+    <div class="vc-side-hd">
+      <span>Participants&ensp;<span id="vcPCountPanel">1</span></span>
+      <button class="vc-side-x" onclick="vcTogglePanel()">✕</button>
+    </div>
+    <div class="vc-p-list" id="vcPList"></div>
+  </div>
+
+  <!-- Reaction picker (floats above controls) -->
+  <div class="vc-react-picker" id="vcReactPicker">
+    <button class="vc-react-opt" onclick="vcReact('👍')">👍</button>
+    <button class="vc-react-opt" onclick="vcReact('❤️')">❤️</button>
+    <button class="vc-react-opt" onclick="vcReact('😂')">😂</button>
+    <button class="vc-react-opt" onclick="vcReact('😮')">😮</button>
+    <button class="vc-react-opt" onclick="vcReact('🎉')">🎉</button>
+    <button class="vc-react-opt" onclick="vcReact('👏')">👏</button>
+    <button class="vc-react-opt" onclick="vcReact('🔥')">🔥</button>
+  </div>
+
+  <!-- Bottom controls bar -->
+  <div class="vc-controls" id="vcControls">
+    <!-- Mic -->
+    <button class="vc-ctrl" id="vcMicBtn" onclick="vcToggleMic()" title="Mute/Unmute">
+      <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <span>Mute</span>
+    </button>
+    <!-- Camera -->
+    <button class="vc-ctrl" id="vcCamBtn" onclick="vcToggleCam()" title="Camera on/off">
+      <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      <span>Stop video</span>
+    </button>
+    <div class="vc-sep"></div>
+    <!-- Screen share -->
+    <button class="vc-ctrl" id="vcScreenBtn" onclick="vcShareScreen()" title="Present screen">
+      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+      <span>Present</span>
+    </button>
+    <!-- Raise hand -->
+    <button class="vc-ctrl" id="vcHandBtn" onclick="vcRaiseHand()" title="Raise hand">
+      <svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v3M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+      <span>Hand</span>
+    </button>
+    <!-- Reactions -->
+    <button class="vc-ctrl" id="vcReactBtn" onclick="vcToggleReactions()" title="React">
+      <span style="font-size:20px;line-height:1.1">😊</span>
+      <span>React</span>
+    </button>
+    <div class="vc-sep"></div>
+    <!-- End (host only) -->
+    <button class="vc-ctrl vc-ctrl--danger" id="vcEndBtn" style="display:none" onclick="endVideoClass()">
+      <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <span>End</span>
+    </button>
+    <!-- Leave -->
+    <button class="vc-ctrl vc-ctrl--danger" id="vcLeaveBtn" onclick="leaveVideoClass()">
+      <svg viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <span>Leave</span>
+    </button>
+  </div>
+</div>
+
+<!-- Minimized PiP window -->
+<div class="vc-pip" id="vcPip">
+  <video id="vcPipVid" autoplay muted playsinline></video>
+  <div class="vc-pip-bar">
+    <span class="vc-pip-lbl">🔴 Live</span>
+    <button class="vc-pip-x" onclick="vcRestore()">⤢ Restore</button>
+  </div>
 </div>
 
 <!-- VC Join Notification Popup -->
@@ -1219,9 +1365,14 @@ function toggleTheme(){
   if(btn)btn.textContent=next==='dark'?'🌙':'☀️';
 }
 
-/* ════════ VIDEO CLASS (PeerJS — no account required) ════════ */
-let _vcPeer=null,_vcStream=null,_vcPeerId=null,_vcActive=false,_vcConns={};
+/* ════════ VIDEO CLASS — Google Meet style (PeerJS) ════════ */
+let _vcPeer=null,_vcStream=null,_vcScreenStream=null;
+let _vcPeerId=null,_vcActive=false,_vcConns={};
+let _vcMicOn=true,_vcCamOn=true,_vcHandUp=false,_vcScreenOn=false;
+let _vcTimerTick=null,_vcTimerStart=null;
+let _vcParticipants={}; /* id → {name,micOn,handUp} */
 
+/* ── Loader ── */
 function _loadScript(src){
   return new Promise((resolve,reject)=>{
     const s=document.createElement('script');s.src=src;
@@ -1229,14 +1380,13 @@ function _loadScript(src){
     document.head.appendChild(s);
   });
 }
-
 async function _ensurePeerJS(){
   if(window.Peer)return true;
   try{await _loadScript('https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js');return true;}
   catch(e){toast('Failed to load video library. Check your connection.');return false;}
 }
 
-/* Show the host's pre-start confirmation card */
+/* ── Pre-start card (host only) ── */
 function startVideoClass(){
   if(!isHost){toast('Only the room Keeper can start a Video Class.');return;}
   if(_vcActive){document.getElementById('vcModal').classList.add('open');return;}
@@ -1246,123 +1396,301 @@ function startVideoClass(){
   if(linkInp)linkInp.value=window.location.href;
   document.getElementById('vcStartBg').classList.add('open');
 }
-
 function copyVcLink(){
   const v=document.getElementById('vcRoomLinkInp');if(!v)return;
-  navigator.clipboard.writeText(v.value)
-    .then(()=>toast('Room link copied!'))
-    .catch(()=>{v.select();document.execCommand('copy');toast('Room link copied!');});
+  navigator.clipboard.writeText(v.value).then(()=>toast('Room link copied!')).catch(()=>{v.select();document.execCommand('copy');toast('Room link copied!');});
 }
 
-/* Host confirmed — actually start PeerJS session */
+/* ── Host goes live ── */
 async function _doStartVideoClass(){
   document.getElementById('vcStartBg').classList.remove('open');
   if(!await _ensurePeerJS())return;
-
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}
   catch(e){toast('Camera/mic access denied — please allow and try again.');return;}
-
   _vcStream=stream;
   const hostPeerId='rxvc'+Date.now().toString(36);
   _vcPeerId=hostPeerId;
-
   const peer=new Peer(hostPeerId,{debug:1});
   _vcPeer=peer;
-
   peer.on('open',async(id)=>{
     _vcActive=true;
+    _vcParticipants['local']={name:(myHandle||'You')+' ★',micOn:true,handUp:false};
     _addVcTile('local',stream,(myHandle||'You')+' ★',true);
     document.getElementById('vcModal').classList.add('open');
     document.getElementById('vcLabel').textContent=(roomTitle||'Hive')+' — Live Class';
     document.getElementById('vcEndBtn').style.display='';
     document.getElementById('vcLeaveBtn').style.display='none';
+    _vcStartTimer();
+    _vcRenderParticipants();
     try{
       await NexusData.sendMessage(roomId,
         (myHandle||'Host')+' started a Video Class — tap Join to enter!',
         'vc_started',{peerId:id,hostName:myHandle||'Host'});
     }catch(e){toast('Could not notify members.');}
   });
-
   peer.on('call',(call)=>{
     call.answer(_vcStream);
-    /* Use the joining member's peerId as their display handle when we don't know their name */
-    call.on('stream',(rs)=>_addVcTile(call.peer,rs,call.peer,false));
-    call.on('close',()=>_removeVcTile(call.peer));
+    call.on('stream',(rs)=>{
+      const nm='Student '+Object.keys(_vcConns).length;
+      _addVcTile(call.peer,rs,nm,false);
+      _vcParticipants[call.peer]={name:nm,micOn:true,handUp:false};
+      _vcRenderParticipants();
+    });
+    call.on('close',()=>{
+      _removeVcTile(call.peer);
+      delete _vcParticipants[call.peer];
+      _vcRenderParticipants();
+    });
     _vcConns[call.peer]=call;
   });
   peer.on('error',(e)=>toast('Video error: '+(e.type||e.message)));
 }
 
+/* ── Member joins ── */
 async function joinVideoClass(peerId){
   peerId=peerId||_vcPeerId;
   if(!peerId){toast('No active class found in this room.');return;}
   hideVcNotif();
   if(!await _ensurePeerJS())return;
-
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}
   catch(e){toast('Camera/mic access denied — please allow and try again.');return;}
-
   _vcStream=stream;
   const peer=new Peer({debug:1});
   _vcPeer=peer;
-
   peer.on('open',()=>{
     _vcActive=true;
+    _vcParticipants['local']={name:myHandle||'You',micOn:true,handUp:false};
+    _vcParticipants['host']={name:'Host ★',micOn:true,handUp:false};
     _addVcTile('local',stream,myHandle||'You',false);
     document.getElementById('vcModal').classList.add('open');
     document.getElementById('vcLabel').textContent=(roomTitle||'Hive')+' — Live Class';
     document.getElementById('vcLeaveBtn').style.display='';
-
+    _vcStartTimer();
+    _vcRenderParticipants();
     const call=peer.call(peerId,stream);
     call.on('stream',(rs)=>_addVcTile('host',rs,'Host ★',false));
-    call.on('close',()=>{_removeVcTile('host');toast('Host ended the class.');_cleanupVc();});
+    call.on('close',()=>{_removeVcTile('host');delete _vcParticipants['host'];toast('Host ended the class.');_cleanupVc();});
     _vcConns['host']=call;
   });
   peer.on('error',(e)=>toast('Could not connect to class: '+(e.type||e.message)));
 }
 
+/* ── End / Leave ── */
 function endVideoClass(){
   try{NexusData.sendMessage(roomId,'Video class ended.','vc_ended',{});}catch(_){}
   _cleanupVc();
 }
-
 function leaveVideoClass(){_cleanupVc();}
 
 function _cleanupVc(){
-  _vcActive=false;_vcPeerId=null;
+  _vcActive=false;_vcPeerId=null;_vcParticipants={};
+  _vcMicOn=true;_vcCamOn=true;_vcHandUp=false;_vcScreenOn=false;
+  _vcStopTimer();
+  if(_vcScreenStream){_vcScreenStream.getTracks().forEach(t=>t.stop());_vcScreenStream=null;}
   if(_vcStream){_vcStream.getTracks().forEach(t=>t.stop());_vcStream=null;}
   if(_vcPeer){try{_vcPeer.destroy();}catch(_){}_vcPeer=null;}
   _vcConns={};
   document.getElementById('vcModal').classList.remove('open');
   document.getElementById('vcGrid').innerHTML='';
+  document.getElementById('vcPip').classList.remove('show');
+  document.getElementById('vcSidePanel').classList.remove('open');
+  document.getElementById('vcReactPicker').classList.remove('open');
   document.getElementById('vcEndBtn').style.display='none';
   document.getElementById('vcLeaveBtn').style.display='';
+  /* Reset button states */
+  _vcSetBtn('vcMicBtn',false,'Mute');
+  _vcSetBtn('vcCamBtn',false,'Stop video');
+  _vcSetBtn('vcScreenBtn',false,'Present');
+  _vcSetBtn('vcHandBtn',false,'Hand');
 }
 
+/* ── Tile management ── */
 function _addVcTile(id,stream,label,muted){
   const grid=document.getElementById('vcGrid');
   let tile=document.getElementById('vct-'+id);
   if(!tile){
+    const init=(label||'?').charAt(0).toUpperCase();
     tile=document.createElement('div');tile.className='vc-tile';tile.id='vct-'+id;
-    tile.innerHTML=`<video autoplay playsinline></video><div class="vc-tile__name">${esc(label)}</div>`;
+    tile.innerHTML=`<div class="vc-tile__avatar">${init}</div>
+      <video autoplay playsinline style="display:none"></video>
+      <div class="vc-tile__name">${esc(label)}</div>
+      <div class="vc-tile__hand" id="vchand-${id}">✋</div>
+      <div class="vc-tile__muted" id="vcmuted-${id}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8"/></svg>
+      </div>`;
     grid.appendChild(tile);
   }
-  const v=tile.querySelector('video');v.srcObject=stream;if(muted)v.muted=true;
+  const v=tile.querySelector('video');
+  v.srcObject=stream;
+  if(muted)v.muted=true;
+  v.style.display='';
+  const av=tile.querySelector('.vc-tile__avatar');
+  if(av)av.style.display='none';
+  _vcUpdateGrid();
+  /* Mirror pip if local */
+  if(id==='local'){const pv=document.getElementById('vcPipVid');if(pv)pv.srcObject=stream;}
 }
 
-function _removeVcTile(id){const t=document.getElementById('vct-'+id);if(t)t.remove();}
+function _removeVcTile(id){
+  const t=document.getElementById('vct-'+id);if(t)t.remove();
+  _vcUpdateGrid();
+}
 
+function _vcUpdateGrid(){
+  const grid=document.getElementById('vcGrid');
+  const n=grid.children.length;
+  grid.setAttribute('data-n',n<=6?String(n):'many');
+  const c=String(n);
+  ['vcPCount','vcPCountPanel'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=c;});
+}
+
+/* ── Timer ── */
+function _vcStartTimer(){
+  _vcTimerStart=Date.now();
+  _vcTimerTick=setInterval(()=>{
+    const s=Math.floor((Date.now()-_vcTimerStart)/1000);
+    const el=document.getElementById('vcTimer');
+    if(el)el.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  },1000);
+}
+function _vcStopTimer(){
+  if(_vcTimerTick){clearInterval(_vcTimerTick);_vcTimerTick=null;}
+  const el=document.getElementById('vcTimer');if(el)el.textContent='00:00';
+}
+
+/* ── Controls ── */
+function _vcSetBtn(id,active,label){
+  const btn=document.getElementById(id);if(!btn)return;
+  btn.classList.toggle('off',active===false&&id!=='vcScreenBtn'&&id!=='vcHandBtn');
+  btn.classList.toggle('on',active===true);
+  const sp=btn.querySelector('span:last-child');if(sp&&label)sp.textContent=label;
+}
+
+function vcToggleMic(){
+  if(!_vcStream)return;
+  _vcMicOn=!_vcMicOn;
+  _vcStream.getAudioTracks().forEach(t=>t.enabled=_vcMicOn);
+  _vcSetBtn('vcMicBtn',!_vcMicOn,_vcMicOn?'Mute':'Unmute');
+  if(!_vcMicOn)document.getElementById('vcMicBtn').classList.add('off');
+  else document.getElementById('vcMicBtn').classList.remove('off');
+  const mi=document.getElementById('vcmuted-local');if(mi)mi.classList.toggle('on',!_vcMicOn);
+  if(_vcParticipants['local'])_vcParticipants['local'].micOn=_vcMicOn;
+  _vcRenderParticipants();
+}
+
+function vcToggleCam(){
+  if(!_vcStream)return;
+  _vcCamOn=!_vcCamOn;
+  _vcStream.getVideoTracks().forEach(t=>t.enabled=_vcCamOn);
+  _vcSetBtn('vcCamBtn',!_vcCamOn,_vcCamOn?'Stop video':'Start video');
+  if(!_vcCamOn)document.getElementById('vcCamBtn').classList.add('off');
+  else document.getElementById('vcCamBtn').classList.remove('off');
+  const tile=document.getElementById('vct-local');
+  if(tile){
+    tile.querySelector('video').style.display=_vcCamOn?'':'none';
+    const av=tile.querySelector('.vc-tile__avatar');if(av)av.style.display=_vcCamOn?'none':'';
+  }
+}
+
+async function vcShareScreen(){
+  if(_vcScreenOn){
+    if(_vcScreenStream){_vcScreenStream.getTracks().forEach(t=>t.stop());_vcScreenStream=null;}
+    const camTrack=_vcStream&&_vcStream.getVideoTracks()[0];
+    Object.values(_vcConns).forEach(c=>{
+      const pc=c.peerConnection;if(!pc)return;
+      const s=pc.getSenders().find(s=>s.track&&s.track.kind==='video');
+      if(s&&camTrack)s.replaceTrack(camTrack);
+    });
+    _vcScreenOn=false;
+    document.getElementById('vcScreenBtn').classList.remove('on');
+    document.getElementById('vcScreenBtn').querySelector('span:last-child').textContent='Present';
+    return;
+  }
+  let ss;
+  try{ss=await navigator.mediaDevices.getDisplayMedia({video:{cursor:'always'},audio:true});}
+  catch(e){toast('Screen share cancelled or not supported.');return;}
+  _vcScreenStream=ss;
+  const st=ss.getVideoTracks()[0];
+  Object.values(_vcConns).forEach(c=>{
+    const pc=c.peerConnection;if(!pc)return;
+    const s=pc.getSenders().find(s=>s.track&&s.track.kind==='video');
+    if(s)s.replaceTrack(st);
+  });
+  _vcScreenOn=true;
+  document.getElementById('vcScreenBtn').classList.add('on');
+  document.getElementById('vcScreenBtn').querySelector('span:last-child').textContent='Stop';
+  st.onended=()=>vcShareScreen(); /* user clicks browser "stop sharing" */
+}
+
+function vcRaiseHand(){
+  _vcHandUp=!_vcHandUp;
+  const btn=document.getElementById('vcHandBtn');
+  if(btn){btn.classList.toggle('on',_vcHandUp);btn.querySelector('span:last-child').textContent=_vcHandUp?'Lower hand':'Hand';}
+  const h=document.getElementById('vchand-local');if(h)h.classList.toggle('on',_vcHandUp);
+  if(_vcParticipants['local'])_vcParticipants['local'].handUp=_vcHandUp;
+  _vcRenderParticipants();
+  if(_vcHandUp)toast('✋ Hand raised — the host can see this');
+}
+
+function vcToggleReactions(){
+  const p=document.getElementById('vcReactPicker');if(!p)return;
+  p.classList.toggle('open');
+  document.getElementById('vcReactBtn').classList.toggle('on',p.classList.contains('open'));
+}
+
+function vcReact(emoji){
+  document.getElementById('vcReactPicker').classList.remove('open');
+  document.getElementById('vcReactBtn').classList.remove('on');
+  const layer=document.getElementById('vcFloatLayer');if(!layer)return;
+  const el=document.createElement('div');
+  el.className='vc-reaction-float';
+  el.textContent=emoji;
+  el.style.left=(15+Math.random()*65)+'%';
+  el.style.bottom='10px';
+  layer.appendChild(el);
+  setTimeout(()=>el.remove(),2400);
+}
+
+/* ── Participants panel ── */
+function vcTogglePanel(){
+  const p=document.getElementById('vcSidePanel');if(!p)return;
+  p.classList.toggle('open');
+  document.getElementById('vcPanelBtn').classList.toggle('active',p.classList.contains('open'));
+}
+
+function _vcRenderParticipants(){
+  const list=document.getElementById('vcPList');if(!list)return;
+  const entries=Object.entries(_vcParticipants);
+  if(!entries.length){list.innerHTML='<div style="color:rgba(255,255,255,.35);font-size:12px;padding:10px">No participants yet</div>';return;}
+  list.innerHTML=entries.map(([id,p])=>`
+    <div class="vc-p-item">
+      <div class="vc-p-av">${(p.name||'?').charAt(0).toUpperCase()}</div>
+      <div class="vc-p-nm">${esc(p.name||id)}</div>
+      <div class="vc-p-ic">${p.handUp?'✋':''}${p.micOn===false?'🔇':''}</div>
+    </div>`).join('');
+}
+
+/* ── Minimize / Restore ── */
+function vcMinimize(){
+  if(!_vcActive)return;
+  document.getElementById('vcModal').classList.remove('open');
+  document.getElementById('vcPip').classList.add('show');
+}
+function vcRestore(){
+  document.getElementById('vcPip').classList.remove('show');
+  document.getElementById('vcModal').classList.add('open');
+}
+
+/* ── VC join notification ── */
 function showVcNotif(peerId,hostName){
   _vcPeerId=peerId;
-  const el=document.getElementById('vcNotifTitle');
-  const sub=document.getElementById('vcNotifSub');
+  const el=document.getElementById('vcNotifTitle');const sub=document.getElementById('vcNotifSub');
   if(el)el.textContent=(hostName||'Host')+' started a Video Class';
   if(sub)sub.textContent='Tap Join to enter the live class';
   document.getElementById('vcNotif').classList.add('show');
 }
-
 function hideVcNotif(){document.getElementById('vcNotif').classList.remove('show');}
 
 /* ════════ WHITEBOARD ════════ */
