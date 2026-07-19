@@ -303,7 +303,8 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
 .ai-fab{
   position:fixed;bottom:88px;right:14px;z-index:120;
   width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;
-  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;font-size:20px;
+  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;
+  font-size:20px;font-weight:900;letter-spacing:-.5px;
   display:none;align-items:center;justify-content:center;
   box-shadow:0 0 20px rgba(124,109,245,.5),0 4px 16px rgba(0,0,0,.4);
   transition:transform .15s;
@@ -311,6 +312,11 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
 .ai-fab:hover{transform:scale(1.08)}
 .ai-fab:active{transform:scale(.94)}
 @media(max-width:680px){.ai-fab{display:flex}}
+/* ── Ronyx AI "R" badge ── */
+.ai-r{display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:5px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));
+  color:#fff;font-size:11px;font-weight:900;vertical-align:middle;margin-right:3px;}
 
 /* ── Video Class — Pre-start card ── */
 .vc-start-bg{position:fixed;inset:0;background:rgba(4,4,12,.92);backdrop-filter:blur(14px);
@@ -531,10 +537,10 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
   <!-- Right — AI -->
   <aside class="nx-rp" id="rightPanel">
     <div class="mob-panel-hdr" style="display:none" id="mobAiHdr">
-      <h4>✦ Ronyx AI</h4>
+      <h4><span class="ai-r">R</span> Ronyx AI</h4>
       <button class="mob-close" onclick="toggleRight()">Close ✕</button>
     </div>
-    <div class="panel-hd">✦ Ronyx AI</div>
+    <div class="panel-hd"><span class="ai-r">R</span> Ronyx AI</div>
     <div class="ai-box" id="aiBox">
       <div class="ai-msg"><strong>Ronyx AI</strong>Ask me anything — formulas, concepts, summaries. I'm here.</div>
     </div>
@@ -550,7 +556,7 @@ html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt
 </div>
 
 <!-- AI FAB (mobile) -->
-<button class="ai-fab" onclick="toggleRight()" title="Ask Ronyx AI">✦</button>
+<button class="ai-fab" onclick="toggleRight()" title="Ask Ronyx AI">R</button>
 
 <!-- VC Pre-Start Card (host only — shown before going live) -->
 <div class="vc-start-bg" id="vcStartBg">
