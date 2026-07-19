@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Competition — Ronyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .banner-emoji { font-size: 52px; display: block; margin-bottom: 8px; }
+    .countdown-box {
+      display: flex; gap: 10px; justify-content: center;
+      margin: 14px 0 4px;
+    }
+    .cdown-unit {
+      background: rgba(0,0,0,.25);
+      border-radius: 10px;
+      padding: 8px 12px;
+      text-align: center;
+      min-width: 52px;
+    }
+    .cdown-unit__n { font-size: 24px; font-weight: 800; line-height: 1; font-family: var(--font-display); }
+    .cdown-unit__l { font-size: 10px; opacity: .65; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+    .prize-pts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .prize-pts__item {
+      background: var(--surface-2, rgba(255,255,255,.05));
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .prize-pts__medal { font-size: 20px; }
+    .prize-pts__n { font-size: 18px; font-weight: 700; font-family: var(--font-display); color: var(--color-primary); }
+    .prize-pts__l { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .lb-row--me { border-color: rgba(109,94,252,.6); background: rgba(109,94,252,.1); }
+    .lb-rank { font-size: 16px; font-weight: 800; min-width: 28px; text-align: center; }
+    .lb-name { flex: 1; }
+    .lb-name__n { font-size: 14px; font-weight: 600; }
+    .lb-name__d { font-size: 11px; color: var(--text-muted); }
+    .lb-score { font-size: 15px; font-weight: 700; color: var(--color-primary); }
+    .lb-grade { font-size: 11px; color: var(--text-muted); }
+    .medal-1 { color: #fbbf24; }
+    .medal-2 { color: #94a3b8; }
+    .medal-3 { color: #d97706; }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <button onclick="history.back()" class="iconbtn" style="font-size:20px;">&#8592;</button>
+      <h2 style="font-family:var(--font-display);font-size:17px;font-weight:700;flex:1;text-align:center;" id="pageTitle">Competition</h2>
+      <a href="/pages/student/launch/wallet.html" class="iconbtn" title="My Wallet">&#127881;</a>
+    </div>
+
+    <div class="app__body">
+
+      <div id="mainContent">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading…</p></div>
+      </div>
+
+      <div style="height:32px;"></div>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/launch-data.js"></script>
+  <script>
+    (async function () {
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) return;
+      const user = await RonyxData.currentUser();
+      if (!user) { location.href = '/pages/auth/login.html'; return; }
+
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      if (!id) { location.href = '/pages/student/launch/competitions.html'; return; }
+
+      let comp;
+      try { comp = await RonyxLaunch.getCompetition(id); }
+      catch (e) { document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Competition not found.</p></div>'; return; }
+
+      document.getElementById('pageTitle').textContent = comp.title.slice(0, 22) + (comp.title.length > 22 ? '…' : '');
+
+      /* ── countdown timer ──────────────────────────────── */
+      let countdownInterval = null;
+      function renderCountdown(el, targetDate) {
+        if (!targetDate) { el.innerHTML = ''; return; }
+        function update() {
+          const ms = new Date(targetDate) - Date.now();
+          if (ms <= 0) { el.innerHTML = '<p style="opacity:.6;font-size:13px;">Ended</p>'; clearInterval(countdownInterval); return; }
+          const d = Math.floor(ms / 86400000);
+          const h = Math.floor((ms % 86400000) / 3600000);
+          const m = Math.floor((ms % 3600000) / 60000);
+          const s = Math.floor((ms % 60000) / 1000);
+          el.innerHTML = '<div class="countdown-box">'
+            + (d > 0 ? '<div class="cdown-unit"><div class="cdown-unit__n">' + d + '</div><div class="cdown-unit__l">days</div></div>' : '')
+            + '<div class="cdown-unit"><div class="cdown-unit__n">' + String(h).padStart(2,'0') + '</div><div class="cdown-unit__l">hrs</div></div>'
+            + '<div class="cdown-unit"><div class="cdown-unit__n">' + String(m).padStart(2,'0') + '</div><div class="cdown-unit__l">min</div></div>'
+            + '<div class="cdown-unit"><div class="cdown-unit__n">' + String(s).padStart(2,'0') + '</div><div class="cdown-unit__l">sec</div></div>'
+            + '</div>';
+        }
+        update();
+        countdownInterval = setInterval(update, 1000);
+      }
+
+      /* ── leaderboard ──────────────────────────────────── */
+      const lbData = await RonyxLaunch.getCompetitionLeaderboard(comp);
+
+      function medalOrRank(rank) {
+        if (rank === 1) return '<span class="medal-1">🥇</span>';
+        if (rank === 2) return '<span class="medal-2">🥈</span>';
+        if (rank === 3) return '<span class="medal-3">🥉</span>';
+        return '<span style="font-size:13px;font-weight:700;">#' + rank + '</span>';
+      }
+
+      const lbHtml = lbData.length
+        ? lbData.slice(0, 50).map(function(r) {
+            const isMe = r.userId === user.$id;
+            return '<div class="lb-row' + (isMe ? ' lb-row--me' : '') + '">'
+              + '<div class="lb-rank">' + medalOrRank(r.rank) + '</div>'
+              + '<div class="lb-name">'
+              +   '<div class="lb-name__n">' + (r.userId === user.$id ? 'You 👈' : (r.userId || 'Student')) + '</div>'
+              + '</div>'
+              + '<div style="text-align:right;">'
+              +   '<div class="lb-score">' + (r.score || 0) + ' pts</div>'
+              +   '<div class="lb-grade">' + (r.grade || '—') + ' · ' + (r.percentage != null ? Math.round(r.percentage) + '%' : '—') + '</div>'
+              + '</div>'
+              + '</div>';
+          }).join('')
+        : '<div class="empty" style="padding:24px 0;"><div class="empty__icon">🏅</div><p>No entries yet — be the first!</p></div>';
+
+      /* ── exam CTA link ────────────────────────────────── */
+      const examLink = comp.examId
+        ? '/pages/student/instructions.html?examId=' + comp.examId
+        : '/pages/student/exams.html';
+      const ctaLabel = comp.status === 'ended' ? '📊 View Results' : '📝 Take Exam Now';
+
+      /* ── main render ──────────────────────────────────── */
+      const mainEl = document.getElementById('mainContent');
+      mainEl.innerHTML =
+        /* Banner */
+        '<div class="card card--brand" style="text-align:center;">'
+        + '<span class="banner-emoji">' + (comp.bannerEmoji || '🏆') + '</span>'
+        + '<h2 style="font-size:20px;font-weight:800;margin-bottom:6px;">' + comp.title + '</h2>'
+        + (comp.description ? '<p style="font-size:13px;opacity:.85;line-height:1.5;">' + comp.description + '</p>' : '')
+        + (comp.examTitle   ? '<p style="font-size:12px;margin-top:8px;opacity:.75;">📝 ' + comp.examTitle + '</p>' : '')
+        + '<div id="countdownEl"></div>'
+        + '</div>'
+
+        /* Prize + points breakdown */
+        + '<div class="card" style="margin-top:12px;">'
+        + (comp.prizeDescription ? '<p style="font-size:14px;font-weight:600;margin-bottom:8px;">🎁 ' + comp.prizeDescription + '</p>' : '')
+        + '<div class="prize-pts">'
+        + '<div class="prize-pts__item"><div class="prize-pts__medal">🥇</div><div class="prize-pts__n">' + (comp.pointsFirst||100) + '</div><div class="prize-pts__l">1st place pts</div></div>'
+        + '<div class="prize-pts__item"><div class="prize-pts__medal">🥈</div><div class="prize-pts__n">' + (comp.pointsSecond||50) + '</div><div class="prize-pts__l">2nd place pts</div></div>'
+        + '<div class="prize-pts__item"><div class="prize-pts__medal">🥉</div><div class="prize-pts__n">' + (comp.pointsThird||25) + '</div><div class="prize-pts__l">3rd place pts</div></div>'
+        + '<div class="prize-pts__item"><div class="prize-pts__medal">🎗️</div><div class="prize-pts__n">' + (comp.pointsParticipant||5) + '</div><div class="prize-pts__l">participation pts</div></div>'
+        + '</div>'
+        + '</div>'
+
+        /* CTA */
+        + (comp.status !== 'ended'
+            ? '<a href="' + examLink + '" class="btn" style="width:100%;margin-top:12px;display:block;text-align:center;text-decoration:none;">' + ctaLabel + '</a>'
+            : '<div class="card" style="margin-top:12px;text-align:center;"><p style="font-size:13px;opacity:.7;">This competition has ended.</p></div>'
+          )
+
+        /* Leaderboard */
+        + '<h3 class="title-md mt-6 mb-4">🏅 Leaderboard</h3>'
+        + lbHtml;
+
+      /* Start countdown after inserting HTML */
+      renderCountdown(document.getElementById('countdownEl'), comp.status === 'active' ? comp.endDate : comp.startDate);
+    })();
+  </script>
+</body>
+</html>

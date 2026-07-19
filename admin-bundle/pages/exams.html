@@ -28,18 +28,29 @@
     <nav class="tabbar" data-nav-admin="exams"></nav>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqypss88"></script>
-  <script src="../js/config.js?v=mqypss88"></script>
-  <script src="../js/appwrite.js?v=mqypss88"></script>
-  <script src="../js/admin-data.js?v=mqypss88"></script>
-  <script src="../js/realtime.js?v=mqypss88"></script>
-  <script src="../js/theme.js?v=mqypss88"></script>
-  <script src="../js/ui.js?v=mqypss88"></script>
+  <script src="../js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="../js/config.js?v=mrr39s6t"></script>
+  <script src="../js/appwrite.js?v=mrr39s6t"></script>
+  <script src="../js/admin-data.js?v=mrr39s6t"></script>
+  <script src="../js/realtime.js?v=mrr39s6t"></script>
+  <script src="../js/theme.js?v=mrr39s6t"></script>
+  <script src="../js/ui.js?v=mrr39s6t"></script>
   <script>
     requireAdmin();
     async function load() {
-      const exams = await RonyxAdmin.listExams();
       const el = document.getElementById('examList');
+      let exams;
+      try {
+        exams = await Promise.race([
+          RonyxAdmin.listExams(),
+          new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 10000); })
+        ]);
+      } catch(e) {
+        el.innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>' +
+          (e.message === 'timeout' ? 'Timed out — check connection and reload.' : 'Failed to load exams: ' + e.message) +
+          '</p></div>';
+        return;
+      }
       if (!exams.length) {
         el.innerHTML = '<div class="empty"><div class="empty__icon">📚</div><p>No exams yet. Tap ＋ to create one.</p></div>';
         return;
@@ -63,19 +74,19 @@
           <div style="display:flex;align-items:flex-start;gap:10px;">
             <div style="font-size:22px;flex-shrink:0;">${TYPE_ICON[e.type]||'📄'}</div>
             <div style="flex:1;min-width:0;">
-              <h4 style="font-size:14px;font-weight:700;margin-bottom:2px;">${e.title}</h4>
-              <p style="font-size:11px;color:var(--color-muted);">${meta}</p>
-              ${e.department||e.faculty ? `<p style="font-size:10px;color:var(--color-muted-2);margin-top:2px;">${[e.department,e.faculty].filter(Boolean).join(' · ')}</p>` : ''}
+              <h4 style="font-size:14px;font-weight:700;margin-bottom:2px;">${esc(e.title)}</h4>
+              <p style="font-size:11px;color:var(--color-muted);">${esc(meta)}</p>
+              ${e.department||e.faculty ? `<p style="font-size:10px;color:var(--color-muted-2);margin-top:2px;">${esc([e.department,e.faculty].filter(Boolean).join(' · '))}</p>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-              <span class="badge ${SB(e.status)}">${e.status}</span>
+              <span class="badge ${SB(e.status)}">${esc(e.status)}</span>
               ${fmtBadge}
             </div>
           </div>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn--sm" style="flex:1;" onclick="location.href='questions.html?examId=${e.$id}'">📝 Questions</button>
-            <button class="btn btn--sm" style="flex:1;" onclick="location.href='exam-edit.html?id=${e.$id}'">✏️ Edit</button>
-            <button class="btn btn--sm btn--danger" onclick="delExam('${e.$id}')">✕</button>
+            <button class="btn btn--sm" style="flex:1;" onclick="location.href='questions.html?examId=${esc(e.$id)}'">📝 Questions</button>
+            <button class="btn btn--sm" style="flex:1;" onclick="location.href='exam-edit.html?id=${esc(e.$id)}'">✏️ Edit</button>
+            <button class="btn btn--sm btn--danger" onclick="delExam('${esc(e.$id)}')">✕</button>
           </div>
         </div>`;
       }).join('');

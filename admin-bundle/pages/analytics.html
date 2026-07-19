@@ -82,12 +82,12 @@
     <nav class="tabbar" data-nav-admin="analytics"></nav>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqypss88"></script>
-  <script src="../js/config.js?v=mqypss88"></script>
-  <script src="../js/appwrite.js?v=mqypss88"></script>
-  <script src="../js/admin-data.js?v=mqypss88"></script>
-  <script src="../js/theme.js?v=mqypss88"></script>
-  <script src="../js/ui.js?v=mqypss88"></script>
+  <script src="../js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="../js/config.js?v=mrr39s6t"></script>
+  <script src="../js/appwrite.js?v=mrr39s6t"></script>
+  <script src="../js/admin-data.js?v=mrr39s6t"></script>
+  <script src="../js/theme.js?v=mrr39s6t"></script>
+  <script src="../js/ui.js?v=mrr39s6t"></script>
   <script>
     requireAdmin();
 
@@ -135,10 +135,10 @@
                                 e.status === 'live'      ? 'badge--violet' : 'badge--yellow';
             return `<div class="row-card" style="margin-bottom:8px;">
               <div class="row-card__meta" style="flex:1;">
-                <h4 style="margin:0 0 2px;">${e.title}</h4>
-                <p style="margin:0;">${e.courseCode || ''} &middot; ${e.questionsCount || 0} questions &middot; ${e.durationMinutes || 0} min</p>
+                <h4 style="margin:0 0 2px;">${esc(e.title)}</h4>
+                <p style="margin:0;">${esc(e.courseCode || '')} &middot; ${esc(e.questionsCount || 0)} questions &middot; ${esc(e.durationMinutes || 0)} min</p>
               </div>
-              <span class="badge ${statusColor}" style="flex-shrink:0;">${e.status}</span>
+              <span class="badge ${statusColor}" style="flex-shrink:0;">${esc(e.status)}</span>
             </div>`;
           }).join('');
         } else {
@@ -176,7 +176,7 @@
           deptEl.innerHTML = sorted.map(([dept, cnt]) => {
             const pct = Math.round((cnt / total) * 100);
             return `<div class="prog-row">
-              <div class="prog-row__hd"><span class="prog-row__label">${dept}</span><span class="prog-row__val">${cnt}</span></div>
+              <div class="prog-row__hd"><span class="prog-row__label">${esc(dept)}</span><span class="prog-row__val">${esc(cnt)}</span></div>
               <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
             </div>`;
           }).join('');

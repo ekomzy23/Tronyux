@@ -42,6 +42,14 @@ body {
     height: 90dvh;
   }
 }
+/* Desktop: expand phone frame so the app fills more of the screen */
+@media (min-width: 768px) {
+  :root { --app-max-width: min(92vw, 860px); }
+  .app  { max-height: 95vh; max-height: 95dvh; border-radius: 28px; }
+}
+@media (min-width: 1200px) {
+  :root { --app-max-width: min(85vw, 1000px); }
+}
 
 /* Scrollable content region inside the shell */
 .app__body {

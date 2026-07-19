@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Verify — Ronyx</title>
+  <title>Verify your email — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,66 +11,214 @@
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .verify-email-box {
+      background: rgba(109,94,252,.07);
+      border: 1px solid rgba(109,94,252,.22);
+      border-radius: 14px;
+      padding: 13px 15px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 11px;
+      align-items: flex-start;
+    }
+    .verify-email-box__icon { font-size: 22px; flex-shrink: 0; line-height: 1.3; }
+    .verify-email-box__body { font-size: 12.5px; color: var(--color-muted); line-height: 1.6; }
+    .verify-email-box__body b { color: var(--color-text); }
+    .verify-email-box__addr {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-primary-2, #6d5efc);
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+
+    .spam-hint {
+      background: rgba(245,158,11,.07);
+      border: 1px solid rgba(245,158,11,.22);
+      border-radius: 12px;
+      padding: 10px 13px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--color-muted);
+      line-height: 1.55;
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+    }
+    .spam-hint__icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .spam-hint b { color: var(--color-text); }
+
+    .otp-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    #otpErr {
+      font-size: 13px;
+      color: var(--color-danger, #f43f5e);
+      text-align: center;
+      margin-bottom: 12px;
+      display: none;
+      background: rgba(244,63,94,.08);
+      border: 1px solid rgba(244,63,94,.2);
+      border-radius: 10px;
+      padding: 9px 12px;
+      line-height: 1.5;
+    }
+
+    .resend-row {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+    .resend-row b { color: var(--color-primary-2); }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--color-muted);
+    }
+    .back-link a { color: var(--color-muted); text-decoration: underline; }
+
+    .verify-success {
+      text-align: center;
+      padding: 24px 0;
+      display: none;
+    }
+    .verify-success__check {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: rgba(52,211,153,.15);
+      border: 2px solid rgba(52,211,153,.4);
+      display: grid; place-items: center;
+      font-size: 24px;
+      margin: 0 auto 14px;
+    }
+  </style>
 </head>
 <body>
   <div class="app">
 
     <div class="appbar">
-      <a href="/pages/auth/signup.html" class="iconbtn">←</a>
-      <span class="appbar__title"></span>
+      <a href="/pages/auth/signup.html" class="iconbtn" id="backBtn">&#8592;</a>
+      <span class="appbar__title">Verify email</span>
     </div>
 
     <div class="app__body">
-      <p class="eyebrow">Verify your email</p>
-      <h1 class="title-lg mb-4">Enter the 6-digit code</h1>
-      <p class="text-muted mb-4">We sent a code to <b style="color: var(--color-text);" id="emailLabel">your email</b></p>
 
-      <div class="otp" id="otpRow">
-        <input maxlength="1" inputmode="numeric">
-        <input maxlength="1" inputmode="numeric">
-        <input maxlength="1" inputmode="numeric">
-        <input maxlength="1" inputmode="numeric">
-        <input maxlength="1" inputmode="numeric">
-        <input maxlength="1" inputmode="numeric">
+      <!-- ── Main content (shown during verification) ── -->
+      <div id="verifyBody">
+        <p class="eyebrow">Step 2 of 2</p>
+        <h1 class="title-lg mb-4">Check your inbox</h1>
+
+        <!-- Email info box -->
+        <div class="verify-email-box">
+          <span class="verify-email-box__icon">&#128140;</span>
+          <div class="verify-email-box__body">
+            We sent a 6-digit code to:
+            <b class="verify-email-box__addr" id="emailLabel">your email address</b>
+            Enter it below to verify your account.
+          </div>
+        </div>
+
+        <!-- Gmail / spam reminder -->
+        <div class="spam-hint">
+          <span class="spam-hint__icon">&#9888;&#65039;</span>
+          <div>
+            <b>Not in your inbox?</b> Check your <b>Spam</b> or <b>Junk</b> folder. The code is delivered by <b>Appwrite</b>, our authentication provider &mdash; some inboxes may filter it automatically.
+          </div>
+        </div>
+
+        <!-- OTP inputs -->
+        <span class="otp-label">Enter 6-digit code</span>
+        <div class="otp" id="otpRow">
+          <input maxlength="1" inputmode="numeric" autocomplete="one-time-code">
+          <input maxlength="1" inputmode="numeric">
+          <input maxlength="1" inputmode="numeric">
+          <input maxlength="1" inputmode="numeric">
+          <input maxlength="1" inputmode="numeric">
+          <input maxlength="1" inputmode="numeric">
+        </div>
+
+        <div id="otpErr"></div>
+
+        <button class="btn btn--primary" id="verifyBtn" data-label="Verify &amp; continue" onclick="doVerify()">Verify &amp; continue</button>
+
+        <!-- Resend -->
+        <div class="resend-row" id="resendLine">
+          Didn&rsquo;t get it? Resend in <b id="resendTimer">00:60</b>
+        </div>
+
+        <!-- Back link -->
+        <p class="back-link">
+          Wrong email? <a href="/pages/auth/signup.html">Go back and start over</a>
+        </p>
       </div>
 
-      <button class="btn btn--primary" id="verifyBtn" onclick="doVerify()">Verify</button>
-      <p class="text-center text-muted mt-4" id="resendLine">
-        Resend code in <b style="color: var(--color-primary-2);" id="resendTimer">00:30</b>
-      </p>
+      <!-- ── Success state ── -->
+      <div class="verify-success" id="successBody">
+        <div class="verify-success__check">&#10003;</div>
+        <h2 class="title-md mb-2">Email verified!</h2>
+        <p class="text-muted">Setting up your account&hellip;</p>
+      </div>
+
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
   <script>
-    var savedEmail = sessionStorage.getItem('ronyx_email');
+  (function () {
+    /* ── Restore email in header ── */
+    var savedEmail = sessionStorage.getItem('ronyx_email') || '';
     if (savedEmail) document.getElementById('emailLabel').textContent = savedEmail;
 
-    /* Auto-advance between boxes */
+    /* If no session data, redirect back to signup */
+    if (!sessionStorage.getItem('ronyx_userId')) {
+      window.location.replace('/pages/auth/signup.html');
+    }
+
+    /* ── OTP box — auto-advance, paste, backspace ── */
     var boxes = document.querySelectorAll('#otpRow input');
     boxes.forEach(function(box, i) {
       box.addEventListener('input', function() {
-        /* Accept paste of full code */
+        /* Handle paste of full 6-digit code */
         if (box.value.length > 1) {
           var digits = box.value.replace(/\D/g, '').slice(0, 6);
           boxes.forEach(function(b, j) { b.value = digits[j] || ''; });
-          boxes[Math.min(digits.length, 5)].focus();
+          var focus = Math.min(digits.length, 5);
+          boxes[focus].focus();
+          if (digits.length === 6) doVerify();
           return;
         }
+        box.value = box.value.replace(/\D/g, '');
         if (box.value && boxes[i + 1]) boxes[i + 1].focus();
       });
       box.addEventListener('keydown', function(e) {
-        if (e.key === 'Backspace' && !box.value && boxes[i - 1]) boxes[i - 1].focus();
+        if (e.key === 'Backspace' && !box.value && boxes[i - 1]) {
+          boxes[i - 1].focus();
+          boxes[i - 1].value = '';
+        }
         if (e.key === 'Enter') doVerify();
       });
     });
     boxes[0].focus();
 
-    /* Resend countdown */
-    var seconds = 30;
+    /* ── Resend countdown (60 s) ── */
+    var seconds = 60;
     var timerEl = document.getElementById('resendTimer');
     var resendLine = document.getElementById('resendLine');
     var countdownId = setInterval(function() {
@@ -79,21 +227,39 @@
         timerEl.textContent = '00:' + String(seconds).padStart(2, '0');
       } else {
         clearInterval(countdownId);
-        resendLine.innerHTML = '<b style="color:var(--color-primary-2);cursor:pointer;" onclick="doResend()">Tap to resend code</b>';
+        resendLine.innerHTML =
+          '<b style="color:var(--color-primary-2);cursor:pointer;" onclick="doResend()">' +
+          '&#8635; Resend code</b>';
       }
     }, 1000);
 
-    /* Verify */
+    /* ── Error display ── */
+    function showErr(msg) {
+      if (typeof toast === 'function') return toast(msg);
+      var el = document.getElementById('otpErr');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = '';
+    }
+    function clearErr() {
+      var el = document.getElementById('otpErr');
+      if (el) el.style.display = 'none';
+    }
+
+    /* ── Verify ── */
     async function doVerify() {
+      clearErr();
       var code = Array.from(boxes).map(function(b) { return b.value; }).join('');
-      if (code.length !== 6 || !/^\d+$/.test(code)) {
+      if (code.length !== 6 || !/^\d{6}$/.test(code)) {
         return showErr('Enter the full 6-digit code from your email.');
       }
 
       var userId = sessionStorage.getItem('ronyx_userId');
       if (!userId) {
-        showErr('Session expired. Please sign up again.');
-        return (window.location.href = '/pages/auth/signup.html');
+        showErr('Your session expired. Please sign up again.');
+        return setTimeout(function() {
+          window.location.href = '/pages/auth/signup.html';
+        }, 1500);
       }
 
       var btn = document.getElementById('verifyBtn');
@@ -107,22 +273,75 @@
           .setProject(cfg.PROJECT_ID);
         var acc = new Appwrite.Account(client);
         try { await acc.deleteSession('current'); } catch(e) {}
-        await acc.createSession(userId, code);
-        window.location.href = '/pages/student/dashboard.html';
+
+        /* ── Step 1: Verify the OTP ── */
+        var _sess = await acc.createSession(userId, code);
+
+        /* Store session secret so cross-origin requests work (Appwrite cookie fallback) */
+        if (_sess && _sess.secret && window.localStorage) {
+          try {
+            var _ck = 'a_session_' + (cfg.PROJECT_ID || '').toLowerCase();
+            localStorage.setItem('cookieFallback', JSON.stringify({ [_ck]: _sess.secret }));
+          } catch(e) {}
+        }
+
+        /* ── Step 2: Finalise account — set password and display name ── */
+        var savedPassword = sessionStorage.getItem('ronyx_password');
+        var savedName     = sessionStorage.getItem('ronyx_name') || '';
+        if (savedPassword) {
+          try { await acc.updatePassword(savedPassword); } catch(e) {}
+          try { sessionStorage.removeItem('ronyx_password'); } catch(e) {}
+        }
+        if (savedName) {
+          try { await acc.updateName(savedName); } catch(e) {}
+        }
+
+        /* ── Step 3: Create student profile document NOW, not lazily later.
+           Only verified users reach this point, so the database never contains
+           unverified accounts.                                                ── */
+        var dept  = sessionStorage.getItem('ronyx_department') || '';
+        var level = parseInt(sessionStorage.getItem('ronyx_level') || '1') || 1;
+        if (window.RonyxData && window.RonyxData.createStudentProfile) {
+          try {
+            await window.RonyxData.createStudentProfile(savedName, savedEmail, dept, level);
+          } catch(e) {}
+        }
+        /* Clean up signup sessionStorage */
+        ['ronyx_department','ronyx_level','ronyx_name'].forEach(function(k) {
+          try { sessionStorage.removeItem(k); } catch(e) {}
+        });
+
+        /* ── Step 4: Show success then redirect ── */
+        document.getElementById('verifyBody').style.display = 'none';
+        document.getElementById('successBody').style.display = 'block';
+        document.getElementById('backBtn').style.display = 'none';
+        setTimeout(function() {
+          window.location.href = '/pages/student/dashboard.html';
+        }, 1200);
+
       } catch(err) {
         console.error('[Ronyx OTP error]', err);
         btn.disabled = false;
-        btn.textContent = 'Verify';
+        btn.textContent = 'Verify & continue';
+        /* Clear the boxes on wrong code so user can re-enter cleanly */
+        boxes.forEach(function(b) { b.value = ''; });
+        boxes[0].focus();
         var map = {
-          'user_invalid_token':          'That code is wrong or has expired — request a new one.',
+          'user_invalid_token':          'That code is incorrect or has expired. Request a new one below.',
+          'user_invalid_credentials':    'That code is incorrect or has expired. Request a new one below.',
           'general_rate_limit_exceeded': 'Too many attempts — wait a moment and try again.',
+          'user_not_found':              'Session expired. Please sign up again.',
         };
         showErr(map[err.type] || err.message || 'Verification failed. Try again.');
       }
     }
 
-    /* Resend */
+    /* Expose for onclick attribute */
+    window.doVerify = doVerify;
+
+    /* ── Resend ── */
     async function doResend() {
+      clearErr();
       var email = sessionStorage.getItem('ronyx_email');
       if (!email) {
         showErr('Session expired — please sign up again.');
@@ -131,7 +350,7 @@
 
       var cfg = window.RONYX_CONFIG;
       if (!cfg || !cfg.CONFIGURED || !window.Appwrite) {
-        showErr('Could not send code — please reload the page and try again.');
+        showErr('Could not resend — please reload and try again.');
         return;
       }
 
@@ -144,36 +363,44 @@
         var acc = new Appwrite.Account(client);
         var token = await acc.createEmailToken(Appwrite.ID.unique(), email);
         sessionStorage.setItem('ronyx_userId', token.userId);
-        resendLine.innerHTML = '<b style="color:#34d399;">Code sent! Check your inbox — and spam folder.</b>';
-        /* Restart 30-s countdown then re-show resend link */
-        seconds = 30;
+
+        resendLine.innerHTML =
+          '<b style="color:#34d399;">&#10003; Code sent! Check your inbox and spam folder.</b>';
+
+        /* Restart the 60-second countdown */
+        seconds = 60;
         setTimeout(function() {
-          resendLine.innerHTML = 'Resend code in <b style="color:var(--color-primary-2);" id="resendTimer">00:30</b>';
+          resendLine.innerHTML =
+            'Didn&rsquo;t get it? Resend in <b id="resendTimer">01:00</b>';
           timerEl = document.getElementById('resendTimer');
           countdownId = setInterval(function() {
             seconds--;
-            if (seconds > 0) {
-              timerEl.textContent = '00:' + String(seconds).padStart(2, '0');
-            } else {
+            timerEl.textContent = '00:' + String(seconds).padStart(2, '0');
+            if (seconds <= 0) {
               clearInterval(countdownId);
-              resendLine.innerHTML = '<b style="color:var(--color-primary-2);cursor:pointer;" onclick="doResend()">Tap to resend code</b>';
+              resendLine.innerHTML =
+                '<b style="color:var(--color-primary-2);cursor:pointer;" onclick="doResend()">' +
+                '&#8635; Resend code</b>';
             }
           }, 1000);
         }, 3000);
+
+        boxes.forEach(function(b) { b.value = ''; });
+        boxes[0].focus();
       } catch(err) {
         var map = {
           'general_rate_limit_exceeded': 'Too many attempts — wait a minute before resending.',
-          'user_not_found': 'No account found. Please sign up first.',
+          'user_not_found': 'No account found with that email. Please sign up again.',
         };
-        resendLine.innerHTML = '<b style="color:var(--color-primary-2);cursor:pointer;" onclick="doResend()">Tap to resend code</b>';
-        showErr(map[err.type] || err.message || 'Could not resend code. Try again.');
+        resendLine.innerHTML =
+          '<b style="color:var(--color-primary-2);cursor:pointer;" onclick="doResend()">' +
+          '&#8635; Resend code</b>';
+        showErr(map[err.type] || err.message || 'Could not resend. Try again.');
       }
     }
 
-    function showErr(msg) {
-      if (typeof toast === 'function') return toast(msg);
-      alert(msg);
-    }
+    window.doResend = doResend;
+  })();
   </script>
 </body>
 </html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Study Room — Ronyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    /* Remove default app body padding so video fills the top */
+    .app__body { padding-top: 0 !important; }
+    .video-wrap {
+      width: 100%;
+      height: 58vh;
+      min-height: 280px;
+      background: #000;
+      position: relative;
+    }
+    .video-wrap iframe {
+      width: 100%; height: 100%; border: none; display: block;
+    }
+    .video-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; background: #111;
+    }
+    .video-placeholder__icon { font-size: 48px; }
+    .room-info-body { padding: 16px; }
+    .attendee-live {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(52,211,153,.12);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px; font-weight: 700; color: #34d399;
+    }
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #34d399;
+      animation: pulse 1.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .25; }
+    }
+    .share-btn {
+      background: var(--surface-2, rgba(255,255,255,.07));
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .ended-overlay {
+      background: rgba(0,0,0,.85);
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 10px;
+      text-align: center; padding: 24px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" style="overflow:hidden;">
+
+    <div class="appbar" style="z-index:10;position:relative;">
+      <button onclick="leaveRoom()" class="iconbtn" style="font-size:20px;">&#8592;</button>
+      <h2 style="font-family:var(--font-display);font-size:17px;font-weight:700;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="roomTitle">Study Room</h2>
+      <button onclick="shareRoom()" class="iconbtn" title="Share">&#128279;</button>
+    </div>
+
+    <!-- Jitsi video area -->
+    <div class="video-wrap" id="videoWrap">
+      <div class="video-placeholder" id="videoPlaceholder">
+        <div class="video-placeholder__icon">📹</div>
+        <p style="color:#fff;font-size:14px;font-weight:600;">Loading video call…</p>
+        <p style="color:rgba(255,255,255,.5);font-size:12px;">Allow camera &amp; microphone when prompted</p>
+      </div>
+      <div class="ended-overlay" id="endedOverlay">
+        <p style="font-size:32px;">🚪</p>
+        <p style="color:#fff;font-size:16px;font-weight:700;">Room Ended</p>
+        <p style="color:rgba(255,255,255,.6);font-size:13px;">The host has closed this session.</p>
+        <a href="/pages/student/launch/study-rooms.html" class="btn" style="margin-top:8px;">Find Another Room</a>
+      </div>
+    </div>
+
+    <!-- Room info -->
+    <div class="app__body" style="padding-top:16px;overflow-y:auto;flex:1;">
+
+      <div class="between mb-4">
+        <div id="liveIndicator" class="attendee-live">
+          <div class="live-dot"></div>
+          <span id="attendeeText">0 in room</span>
+        </div>
+        <button onclick="shareRoom()" class="share-btn">🔗 Share Room</button>
+      </div>
+
+      <div class="card" id="roomCard">
+        <div class="empty" style="padding:12px 0;"><p>Loading…</p></div>
+      </div>
+
+      <div id="hostControls" style="display:none;margin-top:10px;">
+        <button onclick="endRoom()" class="btn btn--outline" style="width:100%;color:var(--danger,#f87171);border-color:var(--danger,#f87171);">End Room for Everyone</button>
+      </div>
+
+      <div style="height:32px;"></div>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/launch-data.js"></script>
+  <script>
+    var _room = null;
+    var _user = null;
+    var _isHost = false;
+    var _joinedAt = Date.now();
+
+    (async function () {
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) return;
+      _user = await RonyxData.currentUser();
+      if (!_user) { location.href = '/pages/auth/login.html'; return; }
+
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+      if (!id) { location.href = '/pages/student/launch/study-rooms.html'; return; }
+
+      try { _room = await RonyxLaunch.getStudyRoom(id); }
+      catch (e) {
+        document.getElementById('roomCard').innerHTML = '<div class="empty"><div class="empty__icon">⚠️</div><p>Room not found.</p></div>';
+        return;
+      }
+
+      if (_room.status === 'ended') {
+        document.getElementById('endedOverlay').style.display = 'flex';
+        document.getElementById('videoPlaceholder').style.display = 'none';
+        return;
+      }
+
+      _isHost = _room.hostId === _user.$id;
+      document.getElementById('roomTitle').textContent = _room.title;
+
+      /* Update attendee count */
+      if (!_isHost) await RonyxLaunch.incrementAttendees(id);
+
+      /* Render room info */
+      const cnt  = (_room.attendeeCount || 0) + (_isHost ? 0 : 1);
+      document.getElementById('attendeeText').textContent = cnt + ' in room';
+      document.getElementById('roomCard').innerHTML =
+        '<h4 style="font-size:15px;font-weight:700;margin-bottom:6px;">' + _room.title + '</h4>'
+        + ((_room.description)
+            ? '<p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">' + _room.description + '</p>'
+            : '')
+        + '<div class="between">'
+        +   '<div><p style="font-size:11px;color:var(--text-muted);">Host</p><p style="font-size:14px;font-weight:600;">' + (_room.hostName || 'Host') + (_isHost ? ' (you)' : '') + '</p></div>'
+        +   (_room.level > 0 ? '<span class="text-tiny" style="background:var(--surface-2,rgba(255,255,255,.07));border-radius:20px;padding:4px 10px;">Year ' + _room.level + '</span>' : '')
+        + '</div>'
+        + (_room.bookTitle
+            ? '<a href="/pages/student/library.html" class="row-card mt-4" style="margin-top:10px;text-decoration:none;">'
+            +   '<div class="row-card__icon">📖</div>'
+            +   '<div class="row-card__meta"><h4>' + _room.bookTitle + '</h4><p>Study material</p></div>'
+            +   '<span>›</span>'
+            + '</a>'
+            : '');
+
+      if (_isHost) document.getElementById('hostControls').style.display = 'block';
+
+      /* Launch Jitsi */
+      launchJitsi(_room.jitsiRoom);
+
+      /* Award points for joining (non-host, first time) */
+      if (!_isHost) {
+        await RonyxLaunch.awardPoints(3, 'Joined study room: ' + _room.title, 'study_room', _room.$id);
+      }
+    })();
+
+    function launchJitsi(slug) {
+      var wrap = document.getElementById('videoWrap');
+      var placeholder = document.getElementById('videoPlaceholder');
+      var iframe = document.createElement('iframe');
+      iframe.src = 'https://meet.jit.si/' + encodeURIComponent(slug)
+        + '#config.startWithAudioMuted=false'
+        + '&config.startWithVideoMuted=false'
+        + '&config.disableDeepLinking=true'
+        + '&interfaceConfig.SHOW_JITSI_WATERMARK=false'
+        + '&interfaceConfig.SHOW_BRAND_WATERMARK=false';
+      iframe.allow = 'camera; microphone; display-capture; fullscreen; speaker-selection';
+      iframe.style.cssText = 'width:100%;height:100%;border:none;';
+      iframe.onload = function() { placeholder.style.display = 'none'; };
+      wrap.insertBefore(iframe, wrap.firstChild);
+    }
+
+    async function endRoom() {
+      if (!_room || !_isHost) return;
+      if (!confirm('End this room for everyone?')) return;
+      await RonyxLaunch.endStudyRoom(_room.$id);
+      location.href = '/pages/student/launch/study-rooms.html';
+    }
+
+    function leaveRoom() {
+      history.back();
+    }
+
+    function shareRoom() {
+      const url = location.href;
+      if (navigator.share) {
+        navigator.share({ title: _room ? _room.title : 'Study Room', url }).catch(function(){});
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+        alert('Room link copied to clipboard!');
+      } else {
+        prompt('Copy this link:', url);
+      }
+    }
+  </script>
+</body>
+</html>

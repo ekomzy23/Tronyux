@@ -361,11 +361,11 @@
   </div>
 </div>
 
-<script src="../js/appwrite.min.js?v=mqypss88"></script>
-<script src="../js/config.js?v=mqypss88"></script>
-<script src="../js/appwrite.js?v=mqypss88"></script>
-<script src="../js/admin-data.js?v=mqypss88"></script>
-<script src="../js/theme.js?v=mqypss88"></script>
+<script src="../js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="../js/config.js?v=mrr39s6t"></script>
+<script src="../js/appwrite.js?v=mrr39s6t"></script>
+<script src="../js/admin-data.js?v=mrr39s6t"></script>
+<script src="../js/theme.js?v=mrr39s6t"></script>
 <script>
 requireAdmin();
 
@@ -925,7 +925,7 @@ window.jsonFillForm = function jsonFillForm() {
   if (q.difficulty) document.getElementById('difficulty').value = q.difficulty;
   if (q.topic) document.getElementById('topic').value = q.topic || '';
   if (q.outcome) document.getElementById('outcome').value = q.outcome || '';
-  if (q.explanation) document.getElementById('explanation').value = q.explanation || '';
+  if (q.explanation || q.explain) document.getElementById('explanation').value = q.explanation || q.explain || '';
   if (q.status) setSt(q.status);
 
   /* Trigger type-specific sections */
@@ -936,7 +936,7 @@ window.jsonFillForm = function jsonFillForm() {
     document.getElementById('optList').innerHTML = '';
     optCount = 0; correctSet.clear();
     var LETTERS_L = ['A','B','C','D','E','F','G','H'];
-    var corrects = (q.correctAnswer || '').split(',').map(function(s){ return s.trim().toUpperCase(); });
+    var corrects = (q.correctAnswer || q.answer || '').split(',').map(function(s){ return s.trim().toUpperCase(); });
     q.options.forEach(function(o, i) {
       var txt  = typeof o === 'string' ? o : (o.text || '');
       var exp  = typeof o === 'object' ? (o.explain || o.exp || '') : '';
@@ -947,8 +947,8 @@ window.jsonFillForm = function jsonFillForm() {
 
   /* True/False */
   if (q.type === 'truefalse') {
-    setTF(q.correctAnswer || 'True');
-    if (q.explanation) document.getElementById('tfExpl').value = q.explanation;
+    setTF(q.correctAnswer || q.answer || 'True');
+    if (q.explanation || q.explain) document.getElementById('tfExpl').value = q.explanation || q.explain;
   }
 
   /* Fill */
@@ -1007,13 +1007,13 @@ window.jsonSubmitDirect = async function jsonSubmitDirect() {
         type:          q.type,
         text:          q.text,
         options:       optsStr,
-        correctAnswer: q.correctAnswer || null,
+        correctAnswer: q.correctAnswer || q.answer  || null,
         marks:         q.marks != null  ? parseFloat(q.marks) : 1,
         difficulty:    q.difficulty     || 'medium',
         topic:         q.topic          || null,
         subject:       q.subject        || null,
         outcome:       q.outcome        || null,
-        explanation:   q.explanation    || null,
+        explanation:   q.explanation   || q.explain || null,
         status:        q.status         || 'published',
       };
       Object.keys(data).forEach(function(k){ if (data[k] === null) delete data[k]; });

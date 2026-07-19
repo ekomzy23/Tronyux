@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Competitions — Ronyx Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    .comp-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .comp-row:last-child { border-bottom: none; }
+    .comp-row__emoji { font-size: 28px; flex-shrink: 0; }
+    .comp-row__info  { flex: 1; min-width: 0; }
+    .comp-row__title { font-size: 15px; font-weight: 700; }
+    .comp-row__meta  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .comp-row__actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .status-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 20px; text-transform: uppercase;
+    }
+    .status-badge--draft  { background: rgba(251,191,36,.15); color: #fbbf24; }
+    .status-badge--active { background: rgba(52,211,153,.15); color: #34d399; }
+    .status-badge--ended  { background: rgba(148,163,184,.12); color: #94a3b8; }
+    /* Leaderboard panel */
+    .lb-panel { display: none; }
+    .lb-panel.open { display: block; }
+    .lb-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .lb-table th { text-align: left; padding: 8px 10px; font-weight: 600; border-bottom: 1px solid var(--border); }
+    .lb-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.05); }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Competitions</h1>
+          <p class="page-subtitle">Create and manage student competitions</p>
+        </div>
+        <button onclick="openCreate()" class="btn">+ New Competition</button>
+      </div>
+
+      <!-- Competition list -->
+      <div class="card" id="compListCard">
+        <div class="empty"><p>Loading…</p></div>
+      </div>
+
+      <!-- Leaderboard panel -->
+      <div class="lb-panel card" id="lbPanel" style="margin-top:16px;">
+        <div class="between mb-4">
+          <h3 style="font-size:16px;font-weight:700;" id="lbTitle">Leaderboard</h3>
+          <div style="display:flex;gap:8px;">
+            <button onclick="awardPoints()" id="awardBtn" class="btn" style="font-size:13px;">🏆 Award Points</button>
+            <button onclick="closeLb()" class="btn btn--outline" style="font-size:13px;">Close</button>
+          </div>
+        </div>
+        <div id="lbContent"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Create / Edit modal -->
+  <div class="modal-backdrop" id="formModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;">
+    <div class="card" style="width:min(580px,95vw);max-height:90vh;overflow-y:auto;border-radius:16px;padding:24px;">
+      <div class="between mb-4">
+        <h3 style="font-size:17px;font-weight:700;" id="formTitle">New Competition</h3>
+        <button onclick="closeForm()" class="iconbtn">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="grid-column:1/-1;">
+          <label class="field-label">Title *</label>
+          <input class="field" id="fTitle" placeholder="e.g. Chemistry Week Challenge" maxlength="200">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label class="field-label">Description</label>
+          <textarea class="field" id="fDesc" rows="3" placeholder="Tell students what this is about…"></textarea>
+        </div>
+        <div>
+          <label class="field-label">Exam ID</label>
+          <input class="field" id="fExamId" placeholder="Paste Appwrite exam document ID">
+        </div>
+        <div>
+          <label class="field-label">Exam Title (display)</label>
+          <input class="field" id="fExamTitle" placeholder="e.g. CHM 201 Mid-Semester">
+        </div>
+        <div>
+          <label class="field-label">Start Date</label>
+          <input class="field" type="datetime-local" id="fStart">
+        </div>
+        <div>
+          <label class="field-label">End Date</label>
+          <input class="field" type="datetime-local" id="fEnd">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label class="field-label">Prize Description</label>
+          <input class="field" id="fPrize" placeholder="e.g. Airtime recharge + certificate">
+        </div>
+        <div>
+          <label class="field-label">1st Place Points</label>
+          <input class="field" type="number" id="fPts1" value="100">
+        </div>
+        <div>
+          <label class="field-label">2nd Place Points</label>
+          <input class="field" type="number" id="fPts2" value="50">
+        </div>
+        <div>
+          <label class="field-label">3rd Place Points</label>
+          <input class="field" type="number" id="fPts3" value="25">
+        </div>
+        <div>
+          <label class="field-label">Participant Points</label>
+          <input class="field" type="number" id="fPtsP" value="5">
+        </div>
+        <div>
+          <label class="field-label">Eligible Year (0 = All)</label>
+          <input class="field" type="number" id="fLevel" value="0" min="0" max="5">
+        </div>
+        <div>
+          <label class="field-label">Banner Emoji</label>
+          <input class="field" id="fEmoji" value="🏆" maxlength="4">
+        </div>
+        <div>
+          <label class="field-label">Status</label>
+          <select class="field" id="fStatus">
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+            <option value="ended">Ended</option>
+          </select>
+        </div>
+      </div>
+      <p id="formErr" style="color:#f87171;font-size:12px;min-height:18px;margin-top:8px;"></p>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="submitForm()" id="formSubmitBtn" class="btn" style="flex:1;">Save Competition</button>
+        <button onclick="closeForm()" class="btn btn--outline">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/appwrite.js"></script>
+  <script src="../js/admin-data.js"></script>
+  <script src="../js/launch-admin-data.js"></script>
+  <script src="../js/admin-ui.js"></script>
+  <script>
+    var _editId = null;
+    var _activeLbComp = null;
+
+    (async function () {
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) return;
+      await loadList();
+    })();
+
+    async function loadList() {
+      const card = document.getElementById('compListCard');
+      const comps = await RonyxLaunchAdmin.listCompetitions();
+      if (!comps.length) {
+        card.innerHTML = '<div class="empty"><p>No competitions yet — click "+ New Competition" to create one.</p></div>';
+        return;
+      }
+      card.innerHTML = comps.map(function(c) {
+        return '<div class="comp-row">'
+          + '<div class="comp-row__emoji">' + (c.bannerEmoji || '🏆') + '</div>'
+          + '<div class="comp-row__info">'
+          +   '<div class="comp-row__title">' + c.title + '</div>'
+          +   '<div class="comp-row__meta">'
+          +     (c.examTitle ? '📝 ' + c.examTitle + ' · ' : '')
+          +     (c.endDate ? 'Ends ' + new Date(c.endDate).toLocaleDateString() : 'No end date')
+          +     (c.pointsAwarded ? ' · ✅ Points awarded' : '')
+          +   '</div>'
+          + '</div>'
+          + '<span class="status-badge status-badge--' + c.status + '">' + c.status + '</span>'
+          + '<div class="comp-row__actions">'
+          +   '<button onclick="viewLb(\'' + c.$id + '\')" class="btn btn--sm btn--outline">Leaderboard</button>'
+          +   '<button onclick="openEdit(\'' + c.$id + '\')" class="btn btn--sm btn--outline">Edit</button>'
+          +   (c.status === 'active'
+                ? '<button onclick="endComp(\'' + c.$id + '\')" class="btn btn--sm" style="background:#ef4444;">End</button>'
+                : '')
+          +   '<button onclick="deleteComp(\'' + c.$id + '\')" class="btn btn--sm btn--outline" style="color:#f87171;border-color:#f87171;">Delete</button>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    /* ── FORM ─────────────────────────────────────────────── */
+    function openCreate() {
+      _editId = null;
+      document.getElementById('formTitle').textContent = 'New Competition';
+      ['fTitle','fDesc','fExamId','fExamTitle','fPrize','fEmoji'].forEach(function(id) {
+        document.getElementById(id).value = id === 'fEmoji' ? '🏆' : '';
+      });
+      ['fPts1','fPts2','fPts3','fPtsP','fLevel'].forEach(function(id, i) {
+        document.getElementById(id).value = [100,50,25,5,0][i];
+      });
+      document.getElementById('fStatus').value = 'draft';
+      document.getElementById('formErr').textContent = '';
+      document.getElementById('formModal').style.display = 'flex';
+    }
+
+    async function openEdit(id) {
+      const comps = await RonyxLaunchAdmin.listCompetitions();
+      const c = comps.find(function(x) { return x.$id === id; });
+      if (!c) return;
+      _editId = id;
+      document.getElementById('formTitle').textContent = 'Edit Competition';
+      document.getElementById('fTitle').value    = c.title    || '';
+      document.getElementById('fDesc').value     = c.description || '';
+      document.getElementById('fExamId').value   = c.examId   || '';
+      document.getElementById('fExamTitle').value= c.examTitle|| '';
+      document.getElementById('fPrize').value    = c.prizeDescription || '';
+      document.getElementById('fEmoji').value    = c.bannerEmoji || '🏆';
+      document.getElementById('fPts1').value     = c.pointsFirst || 100;
+      document.getElementById('fPts2').value     = c.pointsSecond || 50;
+      document.getElementById('fPts3').value     = c.pointsThird || 25;
+      document.getElementById('fPtsP').value     = c.pointsParticipant || 5;
+      document.getElementById('fLevel').value    = c.eligibleLevel || 0;
+      document.getElementById('fStatus').value   = c.status || 'draft';
+      /* Format dates for datetime-local input */
+      if (c.startDate) document.getElementById('fStart').value = c.startDate.slice(0,16);
+      if (c.endDate)   document.getElementById('fEnd').value   = c.endDate.slice(0,16);
+      document.getElementById('formErr').textContent = '';
+      document.getElementById('formModal').style.display = 'flex';
+    }
+
+    function closeForm() {
+      document.getElementById('formModal').style.display = 'none';
+    }
+
+    async function submitForm() {
+      const title = document.getElementById('fTitle').value.trim();
+      const err   = document.getElementById('formErr');
+      if (!title) { err.textContent = 'Title is required.'; return; }
+
+      const btn = document.getElementById('formSubmitBtn');
+      btn.disabled = true; btn.textContent = 'Saving…';
+
+      const data = {
+        title,
+        description:       document.getElementById('fDesc').value.trim(),
+        examId:            document.getElementById('fExamId').value.trim() || null,
+        examTitle:         document.getElementById('fExamTitle').value.trim(),
+        prizeDescription:  document.getElementById('fPrize').value.trim(),
+        bannerEmoji:       document.getElementById('fEmoji').value.trim() || '🏆',
+        pointsFirst:       parseInt(document.getElementById('fPts1').value) || 100,
+        pointsSecond:      parseInt(document.getElementById('fPts2').value) || 50,
+        pointsThird:       parseInt(document.getElementById('fPts3').value) || 25,
+        pointsParticipant: parseInt(document.getElementById('fPtsP').value) || 5,
+        eligibleLevel:     parseInt(document.getElementById('fLevel').value) || 0,
+        status:            document.getElementById('fStatus').value,
+        startDate:         document.getElementById('fStart').value ? new Date(document.getElementById('fStart').value).toISOString() : null,
+        endDate:           document.getElementById('fEnd').value   ? new Date(document.getElementById('fEnd').value).toISOString()   : null,
+      };
+
+      try {
+        if (_editId) await RonyxLaunchAdmin.updateCompetition(_editId, data);
+        else         await RonyxLaunchAdmin.createCompetition(data);
+        closeForm();
+        await loadList();
+        toast(_editId ? 'Competition updated.' : 'Competition created!', 'success');
+      } catch (e) {
+        err.textContent = e.message || 'Save failed.';
+      }
+      btn.disabled = false; btn.textContent = 'Save Competition';
+    }
+
+    /* ── LEADERBOARD ─────────────────────────────────────── */
+    async function viewLb(id) {
+      const comps = await RonyxLaunchAdmin.listCompetitions();
+      _activeLbComp = comps.find(function(x) { return x.$id === id; });
+      if (!_activeLbComp) return;
+
+      document.getElementById('lbTitle').textContent = '🏅 ' + _activeLbComp.title;
+      document.getElementById('lbContent').innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Loading…</p>';
+      document.getElementById('lbPanel').classList.add('open');
+      document.getElementById('awardBtn').style.display = _activeLbComp.pointsAwarded ? 'none' : '';
+
+      const lb = await RonyxLaunchAdmin.getCompetitionLeaderboard(_activeLbComp);
+      if (!lb.length) {
+        document.getElementById('lbContent').innerHTML = '<p style="color:var(--text-muted);font-size:13px;">No entries yet.</p>';
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      document.getElementById('lbContent').innerHTML =
+        '<table class="lb-table"><thead><tr><th>#</th><th>User ID</th><th>Score</th><th>Grade</th><th>%</th><th>Points to award</th></tr></thead><tbody>'
+        + lb.slice(0, 100).map(function(r) {
+            const tier = r.rank <= 3 ? [_activeLbComp.pointsFirst, _activeLbComp.pointsSecond, _activeLbComp.pointsThird][r.rank-1] : _activeLbComp.pointsParticipant;
+            return '<tr>'
+              + '<td>' + (medals[r.rank-1] || r.rank) + '</td>'
+              + '<td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;">' + (r.userId || '—') + '</td>'
+              + '<td style="font-weight:700;">' + (r.score || 0) + '</td>'
+              + '<td>' + (r.grade || '—') + '</td>'
+              + '<td>' + (r.percentage != null ? Math.round(r.percentage) + '%' : '—') + '</td>'
+              + '<td style="color:var(--color-primary);font-weight:600;">+' + tier + '</td>'
+              + '</tr>';
+          }).join('')
+        + '</tbody></table>';
+    }
+
+    function closeLb() {
+      document.getElementById('lbPanel').classList.remove('open');
+      _activeLbComp = null;
+    }
+
+    async function awardPoints() {
+      if (!_activeLbComp) return;
+      if (!confirm('Award points to all ' + (_activeLbComp.title) + ' participants? This cannot be undone.')) return;
+      const btn = document.getElementById('awardBtn');
+      btn.disabled = true; btn.textContent = 'Awarding…';
+      try {
+        const lb = await RonyxLaunchAdmin.getCompetitionLeaderboard(_activeLbComp);
+        const res = await RonyxLaunchAdmin.awardCompetitionPoints(_activeLbComp, lb);
+        if (res.ok) {
+          toast('Points awarded to ' + res.awarded + ' participants!', 'success');
+          btn.style.display = 'none';
+          closeLb();
+          await loadList();
+        } else {
+          toast(res.msg || 'Could not award points.', 'error');
+        }
+      } catch (e) {
+        toast(e.message || 'Error awarding points.', 'error');
+      }
+      btn.disabled = false; btn.textContent = '🏆 Award Points';
+    }
+
+    /* ── ACTIONS ─────────────────────────────────────────── */
+    async function endComp(id) {
+      if (!confirm('End this competition now?')) return;
+      await RonyxLaunchAdmin.endCompetition(id);
+      await loadList();
+      toast('Competition ended.', 'success');
+    }
+
+    async function deleteComp(id) {
+      if (!confirm('Delete this competition permanently?')) return;
+      await RonyxLaunchAdmin.deleteCompetition(id);
+      await loadList();
+      toast('Deleted.', 'success');
+    }
+
+    function toast(msg, type) {
+      /* Use admin-ui toast if available, otherwise fallback */
+      if (window.showToast) { showToast(msg, type); return; }
+      alert(msg);
+    }
+  </script>
+</body>
+</html>

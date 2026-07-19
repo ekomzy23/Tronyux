@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>Pulse — Ronyx</title>
+<link rel="stylesheet" href="/css/base.css">
+<style>
+/* ── Tokens ── */
+:root {
+  --bg:     #06060e;
+  --surf:   #0d0d1a;
+  --surf2:  #111128;
+  --bdr:    rgba(124,109,245,.15);
+  --p:      #7c6df5;
+  --pk:     #ff4d8c;
+  --c:      #00d2ff;
+  --g:      #00f09a;
+  --txt:    #e2e0ff;
+  --mut:    #6868a0;
+  --hdr:    rgba(6,6,14,.96);
+  --tn:     #7c6df5;
+  --tq:     #ff4d8c;
+  --tf:     #00d2ff;
+  --tt:     #00f09a;
+}
+@media (prefers-color-scheme: light) { :root {
+  --bg: #f0effe; --surf: #fff; --surf2: #f4f2ff;
+  --bdr: rgba(124,109,245,.18); --txt: #1a1040; --mut: #8080b0;
+  --hdr: rgba(240,239,254,.97);
+}}
+:root[data-theme="light"] {
+  --bg: #f0effe; --surf: #fff; --surf2: #f4f2ff;
+  --bdr: rgba(124,109,245,.18); --txt: #1a1040; --mut: #8080b0;
+  --hdr: rgba(240,239,254,.97);
+}
+:root[data-theme="dark"] {
+  --bg: #06060e; --surf: #0d0d1a; --surf2: #111128;
+  --bdr: rgba(124,109,245,.15); --txt: #e2e0ff; --mut: #6868a0;
+  --hdr: rgba(6,6,14,.96);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Override base.css shell — feed is a fullscreen column page */
+html { height: 100%; }
+body {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg); color: var(--txt);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Centering wrapper (scroll container) ── */
+.page-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  background: var(--surf);
+  border-left: 1px solid var(--bdr);
+  border-right: 1px solid var(--bdr);
+  position: relative;
+}
+
+/* ── Header ── */
+.p-header {
+  position: sticky; top: 0; z-index: 60;
+  background: var(--hdr); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--bdr);
+}
+.p-header__inner {
+  display: flex; align-items: center; padding: 11px 14px 10px; gap: 10px;
+}
+.p-brand { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; }
+.p-brand__logo {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--p), var(--pk));
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+  box-shadow: 0 0 16px rgba(124,109,245,.45);
+}
+.p-brand__text { min-width: 0; }
+.p-brand__name {
+  font-size: 19px; font-weight: 900; letter-spacing: -.8px;
+  background: linear-gradient(90deg, var(--p), var(--pk));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+.p-brand__live {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--pk); background: rgba(255,77,140,.1);
+  border: 1px solid rgba(255,77,140,.22); border-radius: 20px; padding: 2px 7px;
+}
+.p-brand__live::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--pk); animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+.p-hdr-acts { display: flex; gap: 6px; flex-shrink: 0; }
+.p-icon {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--bdr); background: var(--surf2);
+  color: var(--txt); font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; transition: all .15s; flex-shrink: 0;
+}
+.p-icon:hover { border-color: var(--p); background: rgba(124,109,245,.1); }
+
+/* ── Tabs ── */
+.p-tabs {
+  display: flex; background: var(--hdr); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--bdr);
+  position: sticky; top: 56px; z-index: 50;
+}
+.p-tab {
+  flex: 1; padding: 12px 0; text-align: center;
+  font-size: 13px; font-weight: 800; color: var(--mut); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+  user-select: none;
+}
+.p-tab.active { color: var(--p); border-bottom-color: var(--p); }
+
+/* ── Compose strip ── */
+.compose-strip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid var(--bdr);
+  cursor: pointer; transition: background .12s;
+}
+.compose-strip:hover { background: rgba(124,109,245,.03); }
+.c-av {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--bdr);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; background: var(--surf2);
+}
+.c-fake {
+  flex: 1; background: var(--surf2); border: 1px solid var(--bdr);
+  border-radius: 22px; padding: 9px 14px; font-size: 13px; color: var(--mut);
+  pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.c-post-btn {
+  flex-shrink: 0; padding: 8px 15px; border-radius: 22px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 800;
+  background: linear-gradient(135deg, var(--p), var(--pk));
+  color: #fff; box-shadow: 0 0 12px rgba(124,109,245,.35);
+  white-space: nowrap;
+}
+
+/* ── Hive strip ── */
+.hive-strip {
+  padding: 12px 14px 10px; border-bottom: 1px solid var(--bdr); display: none;
+}
+.hive-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--mut); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.hive-label::after { content: ''; flex: 1; height: 1px; background: var(--bdr); }
+.hive-scroll { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.hive-scroll::-webkit-scrollbar { display: none; }
+.hive-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; text-decoration: none; }
+.hive-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--p), var(--c)); padding: 2px; position: relative;
+}
+.hive-ring::after {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 12px; height: 12px; background: var(--g); border-radius: 50%;
+  border: 2px solid var(--bg); animation: blink 1.8s ease-in-out infinite;
+}
+.hive-icon { width: 100%; height: 100%; border-radius: 50%; background: var(--surf); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.hive-name { font-size: 9px; color: var(--mut); text-align: center; max-width: 54px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Feed ── */
+.feed { padding-bottom: 80px; display: flex; flex-direction: column; gap: 5px; }
+
+/* ── Post card ── */
+.post-card {
+  padding: 14px 14px 12px 17px; border-bottom: 1px solid var(--bdr);
+  position: relative; transition: background .12s;
+}
+.post-card:active { background: rgba(124,109,245,.03); }
+.post-card::before {
+  content: ''; position: absolute; left: 0; top: 14px; bottom: 14px;
+  width: 3px; border-radius: 0 3px 3px 0;
+}
+.post-card[data-type="note"]::before     { background: var(--tn); box-shadow: 0 0 6px var(--tn); }
+.post-card[data-type="question"]::before { background: var(--tq); box-shadow: 0 0 6px var(--tq); }
+.post-card[data-type="formula"]::before  { background: var(--tf); box-shadow: 0 0 6px var(--tf); }
+.post-card[data-type="tip"]::before      { background: var(--tt); box-shadow: 0 0 6px var(--tt); }
+
+.post-top { display: flex; align-items: flex-start; gap: 10px; }
+.post-av {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; cursor: pointer;
+  border: 2px solid transparent; transition: opacity .15s;
+}
+.post-av:hover { opacity: .8; }
+.post-meta { flex: 1; min-width: 0; }
+.post-row1 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.post-handle {
+  font-size: 13px; font-weight: 800; cursor: pointer; max-width: 140px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex-shrink: 0;
+}
+.post-handle:hover { text-decoration: underline; text-underline-offset: 2px; }
+.post-time { font-size: 11px; color: var(--mut); flex-shrink: 0; }
+.type-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 800; padding: 2px 8px;
+  border-radius: 20px; letter-spacing: .3px; flex-shrink: 0; margin-left: auto;
+}
+.type-badge--note     { background: rgba(124,109,245,.13); color: var(--tn); border: 1px solid rgba(124,109,245,.18); }
+.type-badge--question { background: rgba(255,77,140,.1);   color: var(--tq); border: 1px solid rgba(255,77,140,.18); }
+.type-badge--formula  { background: rgba(0,210,255,.09);   color: var(--tf); border: 1px solid rgba(0,210,255,.18); }
+.type-badge--tip      { background: rgba(0,240,154,.09);   color: var(--tt); border: 1px solid rgba(0,240,154,.18); }
+
+.post-subject {
+  display: inline-block; margin-top: 4px;
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  color: var(--p); background: rgba(124,109,245,.08); border: 1px solid rgba(124,109,245,.14);
+}
+.post-body {
+  font-size: 14px; line-height: 1.6; color: var(--txt);
+  margin-top: 10px; white-space: pre-wrap; word-break: break-word;
+}
+.post-actions { display: flex; align-items: center; margin-top: 10px; gap: 2px; }
+.act-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 11px; border-radius: 22px; border: none; cursor: pointer;
+  background: transparent; color: var(--mut); font-size: 12px; font-weight: 700;
+  transition: background .15s, color .15s; user-select: none;
+}
+.act-btn:hover { background: rgba(124,109,245,.09); color: var(--p); }
+.act-btn.liked { color: var(--pk); }
+.act-btn.liked:hover { background: rgba(255,77,140,.09); color: var(--pk); }
+.act-btn__n { font-size: 12px; }
+.act-sep { flex: 1; }
+.share-btn-wa  { color:#25D366!important }
+.share-btn-wa:hover  { background:rgba(37,211,102,.1)!important }
+.share-btn-fb  { color:#1877F2!important }
+.share-btn-fb:hover  { background:rgba(24,119,242,.1)!important }
+.share-btn-tt  { color:#ff004f!important }
+.share-btn-tt:hover  { background:rgba(255,0,79,.1)!important }
+.share-btn-cp:hover  { background:rgba(0,210,255,.1)!important;color:var(--c)!important }
+
+/* ── Spinner / empty ── */
+.nx-spin {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 3px solid rgba(124,109,245,.18); border-top-color: var(--p);
+  animation: spin .7s linear infinite; margin: 60px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.nx-spin-sm {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgba(124,109,245,.18); border-top-color: var(--p);
+  animation: spin .7s linear infinite; margin: 24px auto;
+}
+.nx-empty { text-align: center; padding: 60px 20px; color: var(--mut); font-size: 14px; }
+.nx-empty__icon { font-size: 46px; margin-bottom: 14px; }
+.nx-empty p { max-width: 240px; margin: 0 auto; line-height: 1.55; }
+.nx-empty a {
+  display: inline-block; margin-top: 16px; padding: 10px 22px; border-radius: 22px;
+  background: linear-gradient(135deg, var(--p), var(--pk));
+  color: #fff; font-size: 13px; font-weight: 800; text-decoration: none;
+}
+
+/* ── Sheet overlays ── */
+.overlay-bg {
+  position: fixed; inset: 0; background: rgba(4,4,12,.88); backdrop-filter: blur(14px);
+  z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.overlay-bg.open { opacity: 1; pointer-events: all; }
+.sheet {
+  background: var(--surf); border: 1px solid rgba(124,109,245,.22);
+  border-top-left-radius: 22px; border-top-right-radius: 22px;
+  width: 100%; max-width: 600px; overflow: hidden;
+  transform: translateY(100%); transition: transform .28s cubic-bezier(.16,.88,.2,1);
+  max-height: 90dvh; overflow-y: auto;
+}
+.overlay-bg.open .sheet { transform: translateY(0); }
+.sheet-drag { width: 36px; height: 4px; border-radius: 2px; background: rgba(124,109,245,.28); margin: 11px auto 0; }
+.sheet-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 10px; border-bottom: 1px solid var(--bdr);
+  position: sticky; top: 0; background: var(--surf); z-index: 5;
+}
+.sheet-hdr h3 { font-size: 15px; font-weight: 900; }
+.sheet-x {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--surf2);
+  border: 1px solid var(--bdr); color: var(--mut); cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.sheet-body { padding: 14px 16px; }
+
+/* type pills */
+.type-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+.type-pill {
+  padding: 7px 13px; border-radius: 22px; font-size: 12px; font-weight: 800;
+  border: 1.5px solid var(--bdr); color: var(--mut); cursor: pointer;
+  background: var(--surf2); transition: all .15s; user-select: none;
+}
+.type-pill[data-type="note"].sel     { background: var(--tn); color: #fff; border-color: var(--tn); box-shadow: 0 0 12px rgba(124,109,245,.4); }
+.type-pill[data-type="question"].sel { background: var(--tq); color: #fff; border-color: var(--tq); box-shadow: 0 0 12px rgba(255,77,140,.4); }
+.type-pill[data-type="formula"].sel  { background: var(--tf); color: #06060e; border-color: var(--tf); box-shadow: 0 0 12px rgba(0,210,255,.35); }
+.type-pill[data-type="tip"].sel      { background: var(--tt); color: #06060e; border-color: var(--tt); box-shadow: 0 0 12px rgba(0,240,154,.35); }
+
+.compose-ta {
+  width: 100%; min-height: 100px; resize: vertical;
+  background: var(--surf2); border: 1px solid var(--bdr);
+  border-radius: 12px; padding: 12px 14px; color: var(--txt);
+  font-size: 14px; line-height: 1.58; outline: none; font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+.compose-ta:focus { border-color: var(--p); box-shadow: 0 0 0 3px rgba(124,109,245,.1); }
+.compose-ta::placeholder { color: var(--mut); }
+
+.char-row { display: flex; justify-content: flex-end; margin-top: 5px; }
+.char-count { font-size: 11px; color: var(--mut); }
+
+.compose-subj {
+  width: 100%; background: var(--surf2); border: 1px solid var(--bdr);
+  border-radius: 10px; padding: 9px 13px; color: var(--txt);
+  font-size: 13px; outline: none; font-family: inherit; margin-top: 10px;
+  transition: border-color .15s;
+}
+.compose-subj:focus { border-color: var(--p); }
+.compose-subj::placeholder { color: var(--mut); }
+
+.submit-btn {
+  width: 100%; margin-top: 12px; padding: 14px; border-radius: 12px; border: none;
+  cursor: pointer; font-size: 14px; font-weight: 900;
+  background: linear-gradient(135deg, var(--p), var(--pk)); color: #fff;
+  box-shadow: 0 0 22px rgba(124,109,245,.4);
+  transition: opacity .15s;
+}
+.submit-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Comments sheet */
+.comments-sheet {
+  background: var(--surf); border: 1px solid rgba(124,109,245,.2);
+  border-top-left-radius: 22px; border-top-right-radius: 22px;
+  width: 100%; max-width: 600px; height: 70dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateY(100%); transition: transform .28s cubic-bezier(.16,.88,.2,1);
+}
+.overlay-bg.open .comments-sheet { transform: translateY(0); }
+.cmt-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px 10px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+}
+.cmt-hdr h4 { font-size: 14px; font-weight: 800; }
+.cmt-list { flex: 1; overflow-y: auto; padding: 10px 14px; }
+.cmt-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.cmt-av {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 900;
+}
+.cmt-body { flex: 1; min-width: 0; }
+.cmt-name { font-size: 12px; font-weight: 800; margin-bottom: 2px; }
+.cmt-text { font-size: 13px; color: var(--txt); line-height: 1.45; word-break: break-word; }
+.cmt-time { font-size: 10px; color: var(--mut); margin-top: 2px; }
+.cmt-compose {
+  display: flex; gap: 8px; padding: 10px 14px;
+  border-top: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf);
+}
+.cmt-input {
+  flex: 1; background: var(--surf2); border: 1px solid var(--bdr);
+  border-radius: 22px; padding: 9px 14px; color: var(--txt);
+  font-size: 13px; outline: none; font-family: inherit;
+  transition: border-color .15s;
+}
+.cmt-input:focus { border-color: var(--p); }
+.cmt-input::placeholder { color: var(--mut); }
+.cmt-send {
+  padding: 9px 16px; border-radius: 22px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--p), var(--pk));
+  color: #fff; font-size: 13px; font-weight: 800; flex-shrink: 0;
+}
+</style>
+<script>(function(){ var t=localStorage.getItem('ronyx_theme'); if(t) document.documentElement.setAttribute('data-theme',t); })();</script>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- Header -->
+<header class="p-header">
+  <div class="p-header__inner">
+    <div class="p-brand">
+      <div class="p-brand__logo">⚡</div>
+      <div class="p-brand__text">
+        <div class="p-brand__name">Pulse</div>
+        <div class="p-brand__live">Student Feed</div>
+      </div>
+    </div>
+    <div class="p-hdr-acts">
+      <button class="p-icon" id="themeBtn" onclick="toggleTheme()" title="Theme">🌙</button>
+      <a class="p-icon" href="/pages/student/nexus/rooms.html" title="The Hive">🐝</a>
+      <button class="p-icon" onclick="openProfile()" title="My Profile">👤</button>
+      <button class="p-icon" onclick="history.back()" title="Close" style="font-size:12px;">✕</button>
+    </div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="p-tabs">
+  <div class="p-tab active" id="tab-foryou"    onclick="switchTab('foryou')">⚡ For You</div>
+  <div class="p-tab"        id="tab-following" onclick="switchTab('following')">👥 Following</div>
+</div>
+
+<!-- Compose strip -->
+<div class="compose-strip" onclick="openCompose()">
+  <div class="c-av" id="myAvatar">?</div>
+  <div class="c-fake">Share a note, question, formula, tip…</div>
+  <button class="c-post-btn" onclick="event.stopPropagation();openCompose()">Post</button>
+</div>
+
+<!-- Hive strip -->
+<div class="hive-strip" id="hiveStrip">
+  <div class="hive-label">Live Hives</div>
+  <div class="hive-scroll" id="hiveScroll"></div>
+</div>
+
+<!-- Feed -->
+<div class="feed" id="feedContainer">
+  <div class="nx-spin"></div>
+</div>
+
+</div><!-- /page-wrap -->
+
+<!-- Compose sheet -->
+<div class="overlay-bg" id="composeBg">
+  <div class="sheet">
+    <div class="sheet-drag"></div>
+    <div class="sheet-hdr">
+      <h3>⚡ New Post</h3>
+      <button class="sheet-x" onclick="closeCompose()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="type-row">
+        <div class="type-pill sel" data-type="note"     onclick="selType(this)">📝 Note</div>
+        <div class="type-pill"     data-type="question" onclick="selType(this)">❓ Question</div>
+        <div class="type-pill"     data-type="formula"  onclick="selType(this)">🔢 Formula</div>
+        <div class="type-pill"     data-type="tip"      onclick="selType(this)">💡 Tip</div>
+      </div>
+      <textarea class="compose-ta" id="postContent" maxlength="2000"
+        placeholder="Share a study note…" oninput="updateChar()"></textarea>
+      <div class="char-row">
+        <span class="char-count"><span id="charCount">0</span> / 2000</span>
+      </div>
+      <input class="compose-subj" id="postSubject" placeholder="Subject or topic (optional)" maxlength="100">
+      <!-- Image attachment -->
+      <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="onImgPick(this)">
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+        <button type="button" onclick="document.getElementById('imgInput').click()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:22px;border:1.5px dashed var(--bdr);background:var(--surf2);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Add Image
+        </button>
+        <span style="font-size:11px;color:var(--mut);">Max 2 MB</span>
+        <button type="button" id="imgClearBtn" onclick="clearImg()" style="display:none;font-size:11px;color:var(--pk);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:8px;">✕ Remove</button>
+      </div>
+      <div id="imgPreviewWrap" style="display:none;margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid var(--bdr);max-height:200px;">
+        <img id="imgPreview" style="width:100%;max-height:200px;object-fit:cover;display:block;">
+      </div>
+      <button class="submit-btn" id="postSubmitBtn" onclick="submitPost()">Publish to Pulse →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Comments sheet -->
+<div class="overlay-bg" id="commentsBg">
+  <div class="comments-sheet">
+    <div class="sheet-drag"></div>
+    <div class="cmt-hdr">
+      <h4>💬 Comments</h4>
+      <button class="sheet-x" onclick="closeComments()">✕</button>
+    </div>
+    <div class="cmt-list" id="commentsList">
+      <div class="nx-spin-sm"></div>
+    </div>
+    <div class="cmt-compose">
+      <input class="cmt-input" id="commentInput" placeholder="Write a comment…" maxlength="500"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment();}">
+      <button class="cmt-send" onclick="submitComment()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="/js/config.js?v=mrr39s6t"></script>
+<script src="/js/appwrite.js?v=mrr39s6t"></script>
+<script src="/js/data.js?v=mrr39s6t"></script>
+<script src="/js/nexus-data.js?v=mrr39s6t"></script>
+<script src="/js/social-data.js?v=mrr39s6t"></script>
+<script>
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function timeAgo(iso) {
+  const d = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d/60) + 'm ago';
+  if (d < 86400) return Math.floor(d/3600) + 'h ago';
+  return Math.floor(d/86400) + 'd ago';
+}
+function initials(name) {
+  const parts=(name||'?').split(/[\s\-]/);
+  if(parts.length>=2&&parts[0]&&parts[1]) return (parts[0][0]+parts[1][0]).toUpperCase();
+  return (name||'?').slice(0,2).toUpperCase();
+}
+
+let myId = null, myColor = null, myHandle = null;
+let currentTab = 'foryou', feedDocs = [];
+let activeCommentPostId = null, composeType = 'note';
+let pendingImgFile = null;
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = (root.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('ronyx_theme', next);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+function onImgPick(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    alert('Image must be under 2 MB. Please choose a smaller file.');
+    input.value = '';
+    return;
+  }
+  pendingImgFile = file;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('imgPreview').src = e.target.result;
+    document.getElementById('imgPreviewWrap').style.display = '';
+    document.getElementById('imgClearBtn').style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImg() {
+  pendingImgFile = null;
+  document.getElementById('imgInput').value = '';
+  document.getElementById('imgPreview').src = '';
+  document.getElementById('imgPreviewWrap').style.display = 'none';
+  document.getElementById('imgClearBtn').style.display = 'none';
+}
+
+const TYPE_META = {
+  note:     { icon:'📝', label:'Note',     cls:'note' },
+  question: { icon:'❓', label:'Question', cls:'question' },
+  formula:  { icon:'🔢', label:'Formula',  cls:'formula' },
+  tip:      { icon:'💡', label:'Tip',      cls:'tip' },
+};
+
+async function init() {
+  const me = await SocialData.getMe();
+  if (!me) return;
+  myId = me.$id; myHandle = SocialData.nexusHandle(myId); myColor = SocialData.userColor(myId);
+  const myName = me.name || myHandle;
+  const av = document.getElementById('myAvatar');
+  av.textContent = initials(myName);
+  av.style.background = myColor + '20'; av.style.borderColor = myColor + '40'; av.style.color = myColor;
+  await Promise.all([loadFeed(), loadHiveStrip()]);
+}
+
+async function loadHiveStrip() {
+  try {
+    const rooms = await NexusData.listRooms(0);
+    if (!rooms.length) return;
+    document.getElementById('hiveStrip').style.display = '';
+    document.getElementById('hiveScroll').innerHTML = rooms.slice(0,10).map(r =>
+      `<a class="hive-chip" href="/pages/student/nexus/room.html?id=${r.$id}">
+        <div class="hive-ring"><div class="hive-icon">${r.emoji||'🐝'}</div></div>
+        <div class="hive-name">${esc(r.title)}</div>
+      </a>`).join('');
+  } catch(_){}
+}
+
+async function loadFeed() {
+  const el = document.getElementById('feedContainer');
+  el.innerHTML = '<div class="nx-spin"></div>';
+  try {
+    feedDocs = currentTab === 'foryou'
+      ? await SocialData.listFeed(30)
+      : await SocialData.listFollowingFeed(myId, 30);
+    renderFeed();
+  } catch(e) {
+    el.innerHTML = `<div class="nx-empty"><div class="nx-empty__icon">⚠️</div><p>Could not load feed. Check your connection.</p></div>`;
+  }
+}
+
+function renderFeed() {
+  const el = document.getElementById('feedContainer');
+  if (!feedDocs.length) {
+    const isFollowing = currentTab === 'following';
+    el.innerHTML = `<div class="nx-empty">
+      <div class="nx-empty__icon">${isFollowing?'👥':'⚡'}</div>
+      <p>${isFollowing ? 'Follow classmates to see their posts here.' : 'No posts yet — be the first!'}</p>
+      ${!isFollowing ? `<a href="#" onclick="openCompose();return false;">Post Something →</a>` : ''}
+    </div>`;
+    return;
+  }
+  el.innerHTML = feedDocs.map(renderPost).join('');
+}
+
+function parseContent(raw) {
+  const marker = '__img__:';
+  const idx = (raw || '').indexOf(marker);
+  if (idx === -1) return { text: raw || '', imgUrl: null };
+  const text = raw.slice(0, idx).trim();
+  const imgUrl = raw.slice(idx + marker.length).trim().split('\n')[0];
+  return { text, imgUrl };
+}
+
+function renderPost(p) {
+  const type = p.type || 'note';
+  const meta = TYPE_META[type] || TYPE_META.note;
+  const liked = SocialData.isLiked(p.$id);
+  const isOwn = p.userId === myId;
+  const color = p.userColor || '#7c6df5';
+  const displayName = p.userName || p.userHandle || 'Student';
+  const init  = initials(displayName);
+  const { text, imgUrl } = parseContent(p.content);
+  const pid = p.$id;
+  return `
+  <div class="post-card" id="post-${pid}" data-type="${type}">
+    <div class="post-top">
+      <div class="post-av" style="background:${color}20;border-color:${color}40;color:${color};"
+           onclick="viewProfile('${p.userId}')">${init}</div>
+      <div class="post-meta">
+        <div class="post-row1">
+          <span class="post-handle" style="color:${color};" onclick="viewProfile('${p.userId}')">${esc(displayName)}</span>
+          <span class="post-time">${timeAgo(p.$createdAt)}</span>
+          <span class="type-badge type-badge--${meta.cls}">${meta.icon} ${meta.label}</span>
+        </div>
+        ${p.subject ? `<span class="post-subject"># ${esc(p.subject)}</span>` : ''}
+      </div>
+    </div>
+    ${text ? `<div class="post-body">${esc(text)}</div>` : ''}
+    ${imgUrl ? `<div style="margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid var(--bdr);"><img src="${imgUrl}" style="width:100%;max-height:320px;object-fit:cover;display:block;" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
+    <div class="post-actions">
+      <button class="act-btn ${liked?'liked':''}" onclick="toggleLike('${pid}')">
+        ${liked?'❤️':'🤍'} <span class="act-btn__n" id="likes-${pid}">${p.likes||0}</span>
+      </button>
+      <button class="act-btn" onclick="openComments('${pid}')">
+        💬 <span class="act-btn__n">${p.commentCount||0}</span>
+      </button>
+      <span class="act-sep"></span>
+      <button class="act-btn share-btn-wa" title="Share on WhatsApp" onclick="sharePost('${pid}','whatsapp')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </button>
+      <button class="act-btn share-btn-fb" title="Share on Facebook" onclick="sharePost('${pid}','facebook')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </button>
+      <button class="act-btn share-btn-tt" title="Share on TikTok" onclick="sharePost('${pid}','tiktok')">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.09a8.16 8.16 0 004.77 1.52V7.15a4.85 4.85 0 01-1-.46z"/></svg>
+      </button>
+      <button class="act-btn share-btn-cp" id="cpBtn-${pid}" title="Copy link" onclick="sharePost('${pid}','copy')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      </button>
+      ${isOwn ? `<button class="act-btn" onclick="deletePost('${pid}')" style="color:var(--tq)">🗑️</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.p-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  loadFeed();
+}
+
+async function toggleLike(postId) {
+  const wasLiked = SocialData.isLiked(postId);
+  const countEl  = document.getElementById('likes-' + postId);
+  const btn      = countEl?.closest('.act-btn');
+  try {
+    if (wasLiked) {
+      await SocialData.unlikePost(postId);
+      if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent)-1);
+      if (btn) { btn.classList.remove('liked'); btn.childNodes[0].textContent = '🤍 '; }
+    } else {
+      await SocialData.likePost(postId);
+      if (countEl) countEl.textContent = parseInt(countEl.textContent)+1;
+      if (btn) { btn.classList.add('liked'); btn.childNodes[0].textContent = '❤️ '; }
+    }
+  } catch(_){}
+}
+
+async function openComments(postId) {
+  activeCommentPostId = postId;
+  document.getElementById('commentsBg').classList.add('open');
+  await loadComments();
+}
+function closeComments() {
+  document.getElementById('commentsBg').classList.remove('open');
+  activeCommentPostId = null;
+}
+async function loadComments() {
+  const el = document.getElementById('commentsList');
+  el.innerHTML = '<div class="nx-spin-sm"></div>';
+  try {
+    const comments = await SocialData.listComments(activeCommentPostId);
+    if (!comments.length) {
+      el.innerHTML = `<div style="text-align:center;padding:28px;color:var(--mut);font-size:13px;">No comments yet. Start the conversation!</div>`;
+      return;
+    }
+    el.innerHTML = comments.map(c => {
+      const cmtName = c.userName || c.userHandle || 'Student';
+      return `
+      <div class="cmt-row">
+        <div class="cmt-av" style="background:${c.userColor||'#7c6df5'}20;color:${c.userColor||'#7c6df5'};">${initials(cmtName)}</div>
+        <div class="cmt-body">
+          <div class="cmt-name" style="color:${c.userColor||'#7c6df5'};">${esc(cmtName)}</div>
+          <div class="cmt-text">${esc(c.content)}</div>
+          <div class="cmt-time">${timeAgo(c.$createdAt)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(_) {
+    el.innerHTML = `<div style="text-align:center;padding:28px;color:var(--mut);font-size:13px;">Could not load comments.</div>`;
+  }
+}
+async function submitComment() {
+  const input = document.getElementById('commentInput');
+  const text = input.value.trim();
+  if (!text || !activeCommentPostId) return;
+  input.value = '';
+  try { await SocialData.createComment(activeCommentPostId, text); await loadComments(); } catch(_){}
+}
+
+async function deletePost(postId) {
+  if (!confirm('Delete this post?')) return;
+  try {
+    await SocialData.deletePost(postId);
+    document.getElementById('post-' + postId)?.remove();
+    feedDocs = feedDocs.filter(p => p.$id !== postId);
+  } catch(_){}
+}
+
+function viewProfile(userId) { window.location.href = `/pages/student/nexus/profile.html?id=${userId}`; }
+function openProfile()       { if (myId) viewProfile(myId); }
+
+function sharePost(postId, platform) {
+  const url = window.location.origin + '/pages/student/nexus/feed.html';
+  const post = feedDocs.find(p => p.$id === postId);
+  const snippet = post ? (post.content || '').split('__img__:')[0].trim().slice(0, 120) : '';
+  const shareText = (snippet ? snippet + '\n\n' : '') + 'Check out Ronyx Pulse: ' + url;
+  if (platform === 'whatsapp') {
+    window.open('https://wa.me/?text=' + encodeURIComponent(shareText), '_blank');
+  } else if (platform === 'facebook') {
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank');
+  } else if (platform === 'tiktok') {
+    copyLink(url);
+    alert('Link copied! Open TikTok and paste in bio or DMs.');
+  } else if (platform === 'copy') {
+    copyLink(url);
+    const btn = document.getElementById('cpBtn-' + postId);
+    if (btn) {
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#00f09a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      setTimeout(() => { btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>'; }, 2000);
+    }
+  }
+}
+function copyLink(text) {
+  if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => {}); }
+  else {
+    const el = document.createElement('textarea'); el.value = text;
+    el.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(el);
+    el.select(); document.execCommand('copy'); document.body.removeChild(el);
+  }
+}
+
+function openCompose()  { document.getElementById('composeBg').classList.add('open'); }
+function closeCompose() { document.getElementById('composeBg').classList.remove('open'); }
+
+document.getElementById('composeBg').addEventListener('click',  function(e){ if(e.target===this) closeCompose(); });
+document.getElementById('commentsBg').addEventListener('click', function(e){ if(e.target===this) closeComments(); });
+
+const PLACEHOLDERS = {
+  note:'Share a study note…', question:'Ask a question…',
+  formula:'Write a formula or equation…', tip:'Share a study tip…',
+};
+function selType(el) {
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel'); composeType = el.dataset.type;
+  document.getElementById('postContent').placeholder = PLACEHOLDERS[composeType];
+}
+function updateChar() {
+  document.getElementById('charCount').textContent = document.getElementById('postContent').value.length;
+}
+
+async function submitPost() {
+  const content = document.getElementById('postContent').value.trim();
+  if (!content && !pendingImgFile) { document.getElementById('postContent').focus(); return; }
+  const subject = document.getElementById('postSubject').value.trim();
+  const btn = document.getElementById('postSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Publishing…';
+  try {
+    let finalContent = content;
+    if (pendingImgFile) {
+      btn.textContent = 'Uploading image…';
+      try {
+        const cfg = window.RONYX_CONFIG;
+        const { Client, Storage, ID: SdkID } = window.Appwrite || {};
+        const storClient = new Client().setEndpoint(cfg.ENDPOINT).setProject(cfg.PROJECT_ID);
+        const storage = new Storage(storClient);
+        const uploaded = await storage.createFile(cfg.BUCKETS.uploads, SdkID.unique(), pendingImgFile);
+        const imgUrl = `${cfg.ENDPOINT}/storage/buckets/${cfg.BUCKETS.uploads}/files/${uploaded.$id}/view?project=${cfg.PROJECT_ID}`;
+        finalContent = (finalContent ? finalContent + '\n' : '') + '__img__:' + imgUrl;
+      } catch(_) {
+        /* Image upload failed — still post text-only */
+      }
+    }
+    btn.textContent = 'Publishing…';
+    const post = await SocialData.createPost(finalContent || '(image)', composeType, subject);
+    feedDocs.unshift(post);
+    document.getElementById('postContent').value = '';
+    document.getElementById('postSubject').value = '';
+    document.getElementById('charCount').textContent = '0';
+    clearImg();
+    closeCompose(); renderFeed();
+  } catch(e) { alert('Could not post. Please try again.'); }
+  finally { btn.disabled = false; btn.textContent = 'Publish to Pulse →'; }
+}
+
+(function boot(){
+  const t = localStorage.getItem('ronyx_theme') || 'dark';
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+  const iv = setInterval(function(){
+    if(window.SocialData && window.NexusData && window.account){ clearInterval(iv); init(); }
+  }, 80);
+})();
+</script>
+</body>
+</html>

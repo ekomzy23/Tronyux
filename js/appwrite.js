@@ -57,12 +57,12 @@ function toast(msg, type = 'error', title = '') {
 function appwriteError(err) {
   console.error('[Ronyx]', err); // always log full error to console
   const map = {
-    'user_already_exists':          'An account with this email already exists.',
-    'user_invalid_credentials':     'Wrong email or password.',
+    'user_already_exists':          'An account with this email already exists. Try logging in instead.',
+    'user_invalid_credentials':     'Invalid email or verification code. Please try again.',
     'user_invalid_token':           'The code is invalid or has expired. Request a new one.',
-    'user_not_found':               'No account found with this email.',
+    'user_not_found':               'Invalid email or verification code. Please try again.',
     'user_email_not_whitelisted':   'This email is not allowed to register.',
-    'user_password_mismatch':       'Incorrect password.',
+    'user_password_mismatch':       'Invalid email or verification code. Please try again.',
     'general_rate_limit_exceeded':  'Too many attempts — please wait a moment and try again.',
     'general_argument_invalid':     'Invalid input. Check your details and try again.',
     'network_error':                'Cannot reach the server. Check your internet connection.',
@@ -79,15 +79,18 @@ function setBusy(btnId, busy) {
   btn.textContent = busy ? 'Please wait…' : btn.dataset.label || btn.textContent;
 }
 
-/* ---- SIGN UP ---- */
+/* ---- SIGN UP ----
+   Send OTP only — do NOT create the account yet.
+   The account + profile are created in otp.html after the code is verified.
+   This prevents unverified ghost users appearing in Appwrite Auth or the DB. */
 async function ronyxSignup(name, email, password, department, level) {
   if (!RONYX.CONFIGURED) return goTo('/pages/auth/otp.html');
   setBusy('signupBtn', true);
   try {
-    await window.account.create(Appwrite.ID.unique(), email, password, name);
     const token = await window.account.createEmailToken(Appwrite.ID.unique(), email);
     sessionStorage.setItem('ronyx_email',      email);
     sessionStorage.setItem('ronyx_userId',     token.userId);
+    sessionStorage.setItem('ronyx_password',   password);
     sessionStorage.setItem('ronyx_name',       name);
     sessionStorage.setItem('ronyx_department', department || '');
     sessionStorage.setItem('ronyx_level',      String(level || 1));
@@ -111,7 +114,27 @@ async function ronyxVerifyOtp(code) {
       toast('Session expired. Please sign up again.');
       return goTo('/pages/auth/signup.html');
     }
-    await window.account.createSession(userId, code);
+    const _sess = await window.account.createSession(userId, code);
+    /* Store session secret for cross-origin requests */
+    if (_sess && _sess.secret && window.localStorage) {
+      try {
+        const _ck = 'a_session_' + (RONYX.PROJECT_ID || '').toLowerCase();
+        localStorage.setItem('cookieFallback', JSON.stringify({ [_ck]: _sess.secret }));
+      } catch(e) {}
+    }
+    /* Finalize account */
+    const savedPass = sessionStorage.getItem('ronyx_password');
+    const savedName = sessionStorage.getItem('ronyx_name');
+    if (savedPass) { try { await window.account.updatePassword(savedPass); } catch(e) {} sessionStorage.removeItem('ronyx_password'); }
+    if (savedName) { try { await window.account.updateName(savedName); }    catch(e) {} }
+    /* Create profile document immediately — only verified users reach this point */
+    if (window.RonyxData && window.RonyxData.createStudentProfile) {
+      const savedEmail = sessionStorage.getItem('ronyx_email') || '';
+      const dept  = sessionStorage.getItem('ronyx_department') || '';
+      const level = parseInt(sessionStorage.getItem('ronyx_level') || '1') || 1;
+      await window.RonyxData.createStudentProfile(savedName, savedEmail, dept, level).catch(function(){});
+      ['ronyx_department','ronyx_level','ronyx_name'].forEach(function(k){ try{sessionStorage.removeItem(k);}catch(e){} });
+    }
     goTo('/pages/student/dashboard.html');
   } catch (err) {
     toast(appwriteError(err));
@@ -171,3 +194,22 @@ async function ronyxLogout() {
   }
   goTo('/pages/auth/welcome.html');
 }
+
+/* ---- AUTH GUARD ----
+   Runs automatically on every /pages/student/ URL.
+   If there is no valid Appwrite session the user is sent to login immediately.
+   Unverified/ghost accounts have no session → they are blocked here.
+   Verified users who completed OTP have a session → they pass through.       */
+(async function ronyxAuthGuard() {
+  try {
+    /* Only protect student pages — skip auth, admin, and other paths */
+    if (!window.location.pathname.includes('/pages/student/')) return;
+    if (!RONYX.CONFIGURED || !window.account) return;
+
+    await window.account.get();
+    /* Session is valid — user is authenticated, nothing to do */
+  } catch (_) {
+    /* No session (or session expired) → hard redirect to login */
+    window.location.replace('/pages/auth/login.html');
+  }
+}());

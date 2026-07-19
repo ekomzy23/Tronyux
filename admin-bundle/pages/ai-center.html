@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
@@ -12,162 +12,573 @@
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
   <style>
-    .ai-hero { background:var(--gradient-brand); border-radius:22px; padding:24px 20px; margin-bottom:20px; text-align:center; position:relative; overflow:hidden; }
-    .ai-hero::before { content:'🤖'; position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:80px; opacity:.15; }
-    .ai-hero__title { font-family:var(--font-display); font-size:22px; font-weight:800; color:#fff; margin-bottom:6px; }
-    .ai-hero__sub { font-size:13px; color:rgba(255,255,255,.8); }
-    .tool-btn { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:14px; margin-bottom:10px; cursor:pointer; width:100%; text-align:left; transition:border-color .15s; }
-    .tool-btn:hover { border-color:var(--color-primary-2); }
-    .tool-btn__icon { width:36px; height:36px; border-radius:10px; background:var(--color-primary-soft); display:grid; place-items:center; font-size:18px; flex-shrink:0; }
-    .tool-btn__label { font-size:14px; font-weight:600; color:var(--color-text); }
-    .tool-btn__sub { font-size:12px; color:var(--color-muted); }
-    .ai-console { background:var(--color-surface); border:1px solid var(--color-stroke); border-radius:16px; padding:14px; }
-    .ai-console textarea { width:100%; background:none; border:none; outline:none; color:var(--color-text); font-size:14px; resize:none; }
-    .ai-response { margin-top:12px; background:var(--color-primary-soft); border-radius:12px; padding:12px; font-size:13px; color:var(--color-primary-2); display:none; }
+    .ai-hero {
+      background:var(--gradient-brand); border-radius:20px;
+      padding:20px; margin-bottom:20px; position:relative; overflow:hidden;
+    }
+    .ai-hero::before {
+      content:'✨'; position:absolute; right:12px; top:50%;
+      transform:translateY(-50%); font-size:72px; opacity:.12;
+    }
+    .ai-hero__title { font-size:20px; font-weight:800; color:#fff; margin-bottom:4px; }
+    .ai-hero__sub   { font-size:12px; color:rgba(255,255,255,.8); }
+
+    /* tab strip */
+    .tab-strip { display:flex; gap:0; border-radius:14px; overflow:hidden;
+                 border:1px solid var(--color-stroke); margin-bottom:20px; }
+    .tab-strip button {
+      flex:1; padding:10px 4px; background:var(--color-surface);
+      border:none; color:var(--color-muted); font-size:12px; font-weight:700;
+      cursor:pointer; transition:background .15s,color .15s;
+      border-right:1px solid var(--color-stroke);
+    }
+    .tab-strip button:last-child { border-right:none; }
+    .tab-strip button.active {
+      background:rgba(109,94,252,.18); color:var(--color-primary-2);
+    }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+
+    /* question card */
+    .q-card {
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      border-radius:14px; padding:14px; margin-bottom:10px;
+    }
+    .q-card__num  { font-size:10px; color:var(--color-muted); margin-bottom:6px; font-weight:700; }
+    .q-card__text { font-size:14px; font-weight:600; margin-bottom:8px; line-height:1.45; }
+    .q-card__opt  { font-size:12px; color:var(--color-muted); margin-bottom:3px; }
+    .q-card__opt.correct { color:#34d399; font-weight:700; }
+    .q-card__exp  { font-size:11px; color:var(--color-muted-2); margin-top:8px;
+                    padding-top:8px; border-top:1px solid var(--color-stroke); }
+    .q-card__check { float:right; margin-top:-2px; }
+
+    /* spinning loader */
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loader { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3);
+              border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; vertical-align:middle; margin-right:6px; }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="appbar">
-      <a href="more.html" class="iconbtn">←</a>
+      <a href="more.html" class="iconbtn">&larr;</a>
       <span class="appbar__title">AI Center</span>
     </div>
 
     <div class="app__body">
 
       <div class="ai-hero">
-        <div class="ai-hero__title">AI Center</div>
-        <div class="ai-hero__sub">Powered by AI &middot; Smart tools for educators</div>
+        <div class="ai-hero__title">AI Assistant</div>
+        <div class="ai-hero__sub">Generate questions, summaries &amp; content with Claude AI</div>
       </div>
 
-      <!-- Generate Questions -->
-      <div class="card mb-4">
-        <div class="section-hd" style="margin-bottom:14px;"><h3>Generate Questions</h3></div>
-        <div class="field mb-2">
-          <label class="field__label">Topic</label>
-          <input class="input" id="genTopic" placeholder="e.g. Calculus, Photosynthesis, World War II">
-        </div>
-        <div class="field mb-2">
-          <label class="field__label">Question Type</label>
-          <select class="input" id="genType">
-            <option value="mcq">Multiple Choice (MCQ)</option>
-            <option value="theory">Theory</option>
-            <option value="true_false">True / False</option>
-            <option value="fill">Fill in the Blank</option>
-          </select>
-        </div>
-        <div class="field mb-2">
-          <label class="field__label">Difficulty</label>
-          <select class="input" id="genDiff">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <div class="field mb-4">
-          <label class="field__label">Number of Questions</label>
-          <input class="input" id="genCount" type="number" min="1" max="20" value="5">
-        </div>
-        <button class="btn btn--primary" style="width:100%;" id="generateBtn" onclick="generateQuestions()">Generate with AI</button>
-        <div id="genOutput" style="display:none;" class="mt-4"></div>
+      <!-- Tab strip -->
+      <div class="tab-strip">
+        <button class="active" onclick="switchTab('questions')">&#9998; Questions</button>
+        <button onclick="switchTab('books')">&#128218; Books</button>
+        <button onclick="switchTab('console')">&#128172; Console</button>
       </div>
 
-      <!-- Question Tools -->
-      <div class="card mb-4">
-        <div class="section-hd" style="margin-bottom:14px;"><h3>Question Tools</h3></div>
-        <button class="tool-btn" onclick="aiTool('Detect Duplicates')">
-          <div class="tool-btn__icon">🔍</div>
-          <div><div class="tool-btn__label">Detect Duplicates</div><div class="tool-btn__sub">Find similar questions in bank</div></div>
-        </button>
-        <button class="tool-btn" onclick="aiTool('Difficulty Analysis')">
-          <div class="tool-btn__icon">📊</div>
-          <div><div class="tool-btn__label">Difficulty Analysis</div><div class="tool-btn__sub">Analyse question difficulty distribution</div></div>
-        </button>
-        <button class="tool-btn" onclick="aiTool('Improve Question')">
-          <div class="tool-btn__icon">✨</div>
-          <div><div class="tool-btn__label">Improve Question</div><div class="tool-btn__sub">Rephrase for clarity and accuracy</div></div>
-        </button>
-      </div>
-
-      <!-- Study Content -->
-      <div class="card mb-4">
-        <div class="section-hd" style="margin-bottom:14px;"><h3>Study Content</h3></div>
-        <button class="tool-btn" onclick="aiTool('Generate Summary')">
-          <div class="tool-btn__icon">📝</div>
-          <div><div class="tool-btn__label">Generate Summary</div><div class="tool-btn__sub">Auto-summarise course material</div></div>
-        </button>
-        <button class="tool-btn" onclick="aiTool('Create Flashcards')">
-          <div class="tool-btn__icon">🃏</div>
-          <div><div class="tool-btn__label">Create Flashcards</div><div class="tool-btn__sub">Turn notes into revision cards</div></div>
-        </button>
-      </div>
-
-      <!-- AI Console -->
-      <div class="card mb-4">
-        <div class="section-hd" style="margin-bottom:12px;"><h3>AI Console</h3></div>
-        <div class="ai-console">
-          <textarea id="promptInput" rows="3" placeholder="Ask AI anything&hellip; e.g. 'Suggest 3 hard questions on thermodynamics'"></textarea>
+      <!-- ── TAB: Questions ── -->
+      <div class="tab-pane active" id="tab-questions">
+        <div class="card mb-3">
+          <div class="field mb-2">
+            <label class="field__label">Topic *</label>
+            <input class="input" id="qTopic" placeholder="e.g. Organic Chemistry, Photosynthesis, Macroeconomics">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field">
+              <label class="field__label">Type</label>
+              <select class="input" id="qType">
+                <option value="mixed">Mixed (MCQ + Theory)</option>
+                <option value="mcq">Multiple Choice</option>
+                <option value="theory">Theory / Essay</option>
+                <option value="truefalse">True / False</option>
+                <option value="fill">Fill in Blank</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">Difficulty</label>
+              <select class="input" id="qDiff">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div class="field">
+              <label class="field__label">Year Level</label>
+              <select class="input" id="qLevel">
+                <option value="1">Year 1</option>
+                <option value="2">Year 2</option>
+                <option value="3">Year 3</option>
+                <option value="4">Year 4</option>
+                <option value="5">Year 5</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">How many?</label>
+              <input class="input" id="qCount" type="number" min="1" max="20" value="5">
+            </div>
+          </div>
+          <!-- PDF upload option -->
+          <div style="margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="flex:1;height:1px;background:var(--color-stroke);"></div>
+              <span style="font-size:10px;color:var(--color-muted);font-weight:700;white-space:nowrap;">OR FROM A PDF</span>
+              <div style="flex:1;height:1px;background:var(--color-stroke);"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed var(--color-stroke);border-radius:12px;cursor:pointer;touch-action:manipulation;" onclick="document.getElementById('qPdfInput').click()">
+              <span style="font-size:24px;">&#128196;</span>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;" id="qPdfLabel">Upload source PDF (optional)</div>
+                <div style="font-size:11px;color:var(--color-muted);">AI reads actual PDF content &middot; Max 3 MB</div>
+              </div>
+              <input type="file" id="qPdfInput" accept=".pdf" style="display:none;" onchange="onQPdfSelect(this)">
+              <span id="qPdfClear" style="display:none;font-size:18px;color:var(--color-muted);padding:4px;" onclick="clearQPdf(event)">&#10005;</span>
+            </label>
+          </div>
+          <button class="btn btn--primary" style="width:100%;" id="genQBtn" onclick="generateQuestions()">
+            &#10024; Generate Questions
+          </button>
         </div>
-        <button class="btn btn--primary mt-2" style="width:100%;" onclick="sendPrompt()">Send to AI</button>
-        <div class="ai-response" id="aiResponse">💡 AI features are coming soon. This console will connect to an AI model to generate content, analyse data, and assist with marking.</div>
+
+        <!-- Results -->
+        <div id="qResults" style="display:none;">
+          <div class="between mb-3">
+            <span class="text-tiny" id="qResultCount" style="font-weight:700;"></span>
+            <button class="btn btn--sm" onclick="selectAllQs()">Select all</button>
+          </div>
+          <div id="qCards"></div>
+          <div class="card mt-3" id="qSaveBar" style="display:none;">
+            <div class="field mb-3">
+              <label class="field__label">Add to exam</label>
+              <select class="input" id="qExamPicker"></select>
+            </div>
+            <button class="btn btn--primary" style="width:100%;" id="qSaveBtn" onclick="saveSelectedQs()">
+              &#128229; Add Selected to Exam
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Books ── -->
+      <div class="tab-pane" id="tab-books">
+        <div class="card mb-3">
+          <div class="field mb-2">
+            <label class="field__label">Book / Course Title *</label>
+            <input class="input" id="bTitle" placeholder="e.g. Principles of Biochemistry">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field">
+              <label class="field__label">Author</label>
+              <input class="input" id="bAuthor" placeholder="Stryer, Lehninger…">
+            </div>
+            <div class="field">
+              <label class="field__label">Course Code</label>
+              <input class="input" id="bCode" placeholder="BCH301">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div class="field">
+              <label class="field__label">Faculty</label>
+              <input class="input" id="bFaculty" placeholder="Faculty of Science">
+            </div>
+            <div class="field">
+              <label class="field__label">Department</label>
+              <input class="input" id="bDept" placeholder="Biochemistry">
+            </div>
+          </div>
+          <!-- PDF upload option -->
+          <div style="margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <div style="flex:1;height:1px;background:var(--color-stroke);"></div>
+              <span style="font-size:10px;color:var(--color-muted);font-weight:700;white-space:nowrap;">HAVE A PDF? LET AI READ IT</span>
+              <div style="flex:1;height:1px;background:var(--color-stroke);"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed var(--color-stroke);border-radius:12px;cursor:pointer;touch-action:manipulation;" onclick="document.getElementById('bPdfInput').click()">
+              <span style="font-size:24px;">&#128196;</span>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;" id="bPdfLabel">Upload PDF to extract real summary</div>
+                <div style="font-size:11px;color:var(--color-muted);">AI reads the actual content &middot; Max 3 MB</div>
+              </div>
+              <input type="file" id="bPdfInput" accept=".pdf" style="display:none;" onchange="onBPdfSelect(this)">
+              <span id="bPdfClear" style="display:none;font-size:18px;color:var(--color-muted);padding:4px;" onclick="clearBPdf(event)">&#10005;</span>
+            </label>
+          </div>
+          <button class="btn btn--primary" style="width:100%;margin-bottom:8px;" id="genSumBtn" onclick="generateSummary()">
+            &#10024; Generate Summary &amp; Takeaways
+          </button>
+        </div>
+
+        <!-- Preview -->
+        <div id="bPreview" style="display:none;">
+          <div class="between mb-2">
+            <span class="text-tiny" style="font-weight:700;">GENERATED SUMMARY</span>
+            <button class="btn btn--sm" onclick="editSummary()">Edit</button>
+          </div>
+          <div class="card mb-3" style="max-height:280px;overflow-y:auto;">
+            <div id="bSummaryPreview" style="font-size:13px;line-height:1.65;color:var(--color-text);white-space:pre-wrap;"></div>
+          </div>
+          <div class="field mb-3">
+            <label class="field__label">Key Takeaways (generated)</label>
+            <textarea class="input" id="bTakeaways" rows="5" placeholder="Takeaways will appear here…"></textarea>
+          </div>
+          <button class="btn btn--primary" style="width:100%;" id="bSaveBtn" onclick="saveBook()">
+            &#128218; Save to Student Library
+          </button>
+        </div>
+      </div>
+
+      <!-- ── TAB: Console ── -->
+      <div class="tab-pane" id="tab-console">
+        <div class="card mb-3">
+          <div class="field mb-3">
+            <label class="field__label">Ask AI anything about education</label>
+            <textarea class="input" id="consoleMsg" rows="4"
+              placeholder="e.g. Suggest a study plan for BCH301&#10;Give me 3 discussion questions on the citric acid cycle&#10;Explain osmosis in simple terms for year 1 students"></textarea>
+          </div>
+          <button class="btn btn--primary" style="width:100%;" id="consoleBtn" onclick="sendConsole()">
+            &#9654; Ask AI
+          </button>
+        </div>
+        <div id="consoleOutput" style="display:none;" class="card">
+          <div style="font-size:11px;color:var(--color-muted);margin-bottom:8px;font-weight:700;">AI RESPONSE</div>
+          <div id="consoleText" style="font-size:13px;line-height:1.7;color:var(--color-text);white-space:pre-wrap;"></div>
+        </div>
       </div>
 
     </div>
     <nav class="tabbar" data-nav-admin="more"></nav>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqypss88"></script>
-  <script src="../js/config.js?v=mqypss88"></script>
-  <script src="../js/appwrite.js?v=mqypss88"></script>
-  <script src="../js/admin-data.js?v=mqypss88"></script>
-  <script src="../js/theme.js?v=mqypss88"></script>
-  <script src="../js/ui.js?v=mqypss88"></script>
+  <script src="../js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="../js/config.js?v=mrr39s6t"></script>
+  <script src="../js/appwrite.js?v=mrr39s6t"></script>
+  <script src="../js/admin-data.js?v=mrr39s6t"></script>
+  <script src="../js/theme.js?v=mrr39s6t"></script>
+  <script src="../js/ui.js?v=mrr39s6t"></script>
   <script>
     requireAdmin();
 
-    function aiTool(name) {
-      toast(name + ' &mdash; AI features coming soon');
+    /* ── Tab switching ── */
+    function switchTab(id) {
+      document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.remove('active'); });
+      document.querySelectorAll('.tab-strip button').forEach(function(b){ b.classList.remove('active'); });
+      document.getElementById('tab-' + id).classList.add('active');
+      event.currentTarget.classList.add('active');
     }
+
+    /* ── Core AI call ── */
+    async function callAI(type, payload) {
+      var sessionKey = getAdminSessionKey();
+      if (!sessionKey) throw new Error('Session expired — log out and back in first.');
+      var resp = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Session': sessionKey },
+        body: JSON.stringify({ type: type, payload: payload })
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'AI request failed');
+      return data.result;
+    }
+
+    function setLoading(btn, loading, label) {
+      btn.disabled = loading;
+      btn.innerHTML = loading
+        ? '<span class="loader"></span>Generating…'
+        : label;
+    }
+
+    /* ── PDF helpers ── */
+    var _qPdfBase64 = null;
+    var _bPdfBase64 = null;
+    var MAX_PDF = 3 * 1024 * 1024;
+
+    function readPdf(file) {
+      return new Promise(function(resolve, reject) {
+        var r = new FileReader();
+        r.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+
+    function onQPdfSelect(input) {
+      var file = input.files[0];
+      if (!file) return;
+      if (file.size > MAX_PDF) { toast('PDF too large — max 3 MB.', 'error'); input.value = ''; return; }
+      readPdf(file).then(function(b64) {
+        _qPdfBase64 = b64;
+        document.getElementById('qPdfLabel').textContent = '✓ ' + file.name;
+        document.getElementById('qPdfClear').style.display = 'inline';
+      }).catch(function(){ toast('Could not read file.', 'error'); });
+    }
+
+    function clearQPdf(e) {
+      e.preventDefault(); e.stopPropagation();
+      _qPdfBase64 = null;
+      document.getElementById('qPdfInput').value = '';
+      document.getElementById('qPdfLabel').textContent = 'Upload source PDF (optional)';
+      document.getElementById('qPdfClear').style.display = 'none';
+    }
+
+    function onBPdfSelect(input) {
+      var file = input.files[0];
+      if (!file) return;
+      if (file.size > MAX_PDF) { toast('PDF too large — max 3 MB.', 'error'); input.value = ''; return; }
+      readPdf(file).then(function(b64) {
+        _bPdfBase64 = b64;
+        document.getElementById('bPdfLabel').textContent = '✓ ' + file.name;
+        document.getElementById('bPdfClear').style.display = 'inline';
+      }).catch(function(){ toast('Could not read file.', 'error'); });
+    }
+
+    function clearBPdf(e) {
+      e.preventDefault(); e.stopPropagation();
+      _bPdfBase64 = null;
+      document.getElementById('bPdfInput').value = '';
+      document.getElementById('bPdfLabel').textContent = 'Upload PDF to extract real summary';
+      document.getElementById('bPdfClear').style.display = 'none';
+    }
+
+    /* ── QUESTIONS ── */
+    var _generatedQs = [];
 
     async function generateQuestions() {
-      const topic = document.getElementById('genTopic').value.trim();
-      if (!topic) { toast('Please enter a topic first'); return; }
-      const btn = document.getElementById('generateBtn');
-      btn.textContent = 'Generating&hellip;';
-      btn.disabled = true;
-      await new Promise(r => setTimeout(r, 1500));
-      const type = document.getElementById('genType').value;
-      const diff = document.getElementById('genDiff').value;
-      const count = parseInt(document.getElementById('genCount').value) || 5;
-      const output = document.getElementById('genOutput');
-      output.style.display = 'block';
-      output.innerHTML = `<div class="note" style="margin-bottom:0;">
-        <h4>Preview &mdash; ${count} ${type.toUpperCase()} questions on "${topic}" (${diff})</h4>
-        <p style="font-size:13px;color:var(--color-muted);margin-top:8px;">AI integration coming soon. Questions will be generated and auto-added to the question bank.</p>
-        <div style="margin-top:12px;background:var(--color-surface-2);border-radius:10px;padding:12px;font-size:13px;color:var(--color-text);line-height:1.8;">
-          1. What is the primary concept behind ${topic}?<br>
-          2. Explain how ${topic} relates to real-world applications.<br>
-          3. Which of the following best describes ${topic}?<br>
-          ${count > 3 ? '4. Compare and contrast two aspects of ' + topic + '.<br>' : ''}
-          ${count > 4 ? '5. Give an example that demonstrates ' + topic + '.' : ''}
-        </div>
-      </div>`;
-      btn.textContent = 'Generate with AI';
-      btn.disabled = false;
-      toast('Preview generated (AI coming soon)');
+      var topic = document.getElementById('qTopic').value.trim();
+      if (!topic && !_qPdfBase64) { toast('Enter a topic or upload a PDF.', 'info'); return; }
+      var btn = document.getElementById('genQBtn');
+      setLoading(btn, true, '&#10024; Generate Questions');
+      document.getElementById('qResults').style.display = 'none';
+      try {
+        var qtype = document.getElementById('qType').value;
+        var diff  = document.getElementById('qDiff').value;
+        var total = parseInt(document.getElementById('qCount').value) || 5;
+        var level = document.getElementById('qLevel').value;
+        var raw, jsonStr;
+
+        if (qtype === 'mixed') {
+          /* Split count: more MCQ, fewer theory */
+          var mcqCount    = Math.ceil(total * 0.6);
+          var theoryCount = Math.max(1, total - mcqCount);
+          var results;
+          if (_qPdfBase64) {
+            results = await Promise.all([
+              callAI('pdf_questions', { pdfBase64: _qPdfBase64, qtype: 'mcq',    difficulty: diff, count: mcqCount }),
+              callAI('pdf_questions', { pdfBase64: _qPdfBase64, qtype: 'theory', difficulty: diff, count: theoryCount }),
+            ]);
+          } else {
+            results = await Promise.all([
+              callAI('exam_questions', { topic, subject: topic, level, qtype: 'mcq',    difficulty: diff, count: mcqCount }),
+              callAI('exam_questions', { topic, subject: topic, level, qtype: 'theory', difficulty: diff, count: theoryCount }),
+            ]);
+          }
+          var mcqs    = JSON.parse(results[0].replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim());
+          var theory  = JSON.parse(results[1].replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim());
+          _generatedQs = mcqs.concat(theory);
+          renderQCards();
+          await loadExamPicker();
+          document.getElementById('qResults').style.display = 'block';
+          toast(_generatedQs.length + ' questions generated (' + mcqs.length + ' MCQ + ' + theory.length + ' Theory)!', 'success');
+          setLoading(btn, false, '&#10024; Generate Questions');
+          return;
+        }
+
+        if (_qPdfBase64) {
+          raw = await callAI('pdf_questions', { pdfBase64: _qPdfBase64, qtype, difficulty: diff, count: total });
+        } else {
+          raw = await callAI('exam_questions', { topic, subject: topic, level, qtype, difficulty: diff, count: total });
+        }
+
+        jsonStr = raw.replace(/```json\n?/gi,'').replace(/```\n?/gi,'').trim();
+        _generatedQs = JSON.parse(jsonStr);
+        if (!Array.isArray(_generatedQs) || !_generatedQs.length) throw new Error('No questions returned');
+        renderQCards();
+        await loadExamPicker();
+        document.getElementById('qResults').style.display = 'block';
+        toast(_generatedQs.length + ' questions generated!', 'success');
+      } catch(e) {
+        toast('Error: ' + e.message, 'error');
+      }
+      setLoading(btn, false, '&#10024; Generate Questions');
     }
 
-    function sendPrompt() {
-      const prompt = document.getElementById('promptInput').value.trim();
-      if (!prompt) { toast('Please enter a prompt'); return; }
-      const resp = document.getElementById('aiResponse');
-      resp.style.display = 'block';
-      resp.textContent = '💡 AI features coming soon. This console will connect to an AI model to generate content, analyse data, and assist with marking.';
-      toast('AI Console coming soon');
+    function renderQCards() {
+      var el = document.getElementById('qCards');
+      document.getElementById('qResultCount').textContent = _generatedQs.length + ' question' + (_generatedQs.length !== 1 ? 's' : '') + ' generated';
+      el.innerHTML = _generatedQs.map(function(q, i) {
+        var opts = Array.isArray(q.options) ? q.options : [];
+        var optsHtml = opts.map(function(o) {
+          var correct = (o === q.correctAnswer) || (q.correctAnswer && q.correctAnswer.startsWith && q.correctAnswer.startsWith(o));
+          return '<div class="q-card__opt' + (correct ? ' correct' : '') + '">' +
+            (correct ? '&#10003; ' : '&#9675; ') + esc(o) + '</div>';
+        }).join('');
+        return '<div class="q-card">' +
+          '<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">' +
+            '<input type="checkbox" class="q-check" data-idx="' + i + '" checked style="margin-top:3px;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div class="q-card__num">Q' + (i+1) + ' &middot; ' + esc(q.difficulty || 'medium') + '</div>' +
+              '<div class="q-card__text">' + esc(q.text) + '</div>' +
+              optsHtml +
+              (q.explanation ? '<div class="q-card__exp">&#128161; ' + esc(q.explanation) + '</div>' : '') +
+            '</div>' +
+          '</label>' +
+        '</div>';
+      }).join('');
+      document.getElementById('qSaveBar').style.display = 'block';
+      document.querySelectorAll('.q-check').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var anyChecked = !!document.querySelector('.q-check:checked');
+          document.getElementById('qSaveBar').style.display = anyChecked ? 'block' : 'none';
+        });
+      });
+    }
+
+    function selectAllQs() {
+      document.querySelectorAll('.q-check').forEach(function(cb){ cb.checked = true; });
+      document.getElementById('qSaveBar').style.display = 'block';
+    }
+
+    async function loadExamPicker() {
+      var sel = document.getElementById('qExamPicker');
+      sel.innerHTML = '<option value="">— loading exams —</option>';
+      try {
+        var exams = await RonyxAdmin.listExams();
+        sel.innerHTML = exams.length
+          ? exams.map(function(e){ return '<option value="' + e.$id + '">' + esc(e.title) + '</option>'; }).join('')
+          : '<option value="">No exams yet — create one first</option>';
+      } catch(e) { sel.innerHTML = '<option value="">Could not load exams</option>'; }
+    }
+
+    async function saveSelectedQs() {
+      var examId = document.getElementById('qExamPicker').value;
+      if (!examId) { toast('Choose an exam first.', 'info'); return; }
+      var checked = Array.from(document.querySelectorAll('.q-check:checked')).map(function(cb){
+        return _generatedQs[parseInt(cb.dataset.idx)];
+      }).filter(Boolean);
+      if (!checked.length) { toast('Select at least one question.', 'info'); return; }
+
+      var btn = document.getElementById('qSaveBtn');
+      setLoading(btn, true, '&#128229; Add Selected to Exam');
+      try {
+        var items = checked.map(function(q) {
+          return {
+            examId:        examId,
+            type:          q.type || document.getElementById('qType').value || 'mcq',
+            text:          q.text,
+            options:       JSON.stringify(Array.isArray(q.options) ? q.options : []),
+            correctAnswer: q.correctAnswer || '',
+            explanation:   q.explanation  || '',
+            difficulty:    q.difficulty   || document.getElementById('qDiff').value || 'medium',
+            marks:         q.type === 'theory' ? 10 : 1,
+            status:        'published',
+          };
+        });
+        await RonyxAdmin.bulkCreateQuestions(items);
+        toast(checked.length + ' question(s) added to exam!', 'success');
+        document.getElementById('qResults').style.display = 'none';
+        _generatedQs = [];
+      } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+      setLoading(btn, false, '&#128229; Add Selected to Exam');
+    }
+
+    /* ── BOOKS ── */
+    var _genSummary = '';
+
+    async function generateSummary() {
+      var title = document.getElementById('bTitle').value.trim();
+      if (!title && !_bPdfBase64) { toast('Enter a title or upload a PDF.', 'info'); return; }
+      var btn = document.getElementById('genSumBtn');
+      setLoading(btn, true, '&#10024; Generate Summary &amp; Takeaways');
+      document.getElementById('bPreview').style.display = 'none';
+      try {
+        var summary, takeawaysRaw;
+        if (_bPdfBase64) {
+          /* Read actual PDF content */
+          summary = await callAI('pdf_summary', { pdfBase64: _bPdfBase64 });
+          takeawaysRaw = await callAI('book_takeaways', { title: title || 'this document', summary: summary.slice(0, 1200) });
+        } else {
+          var payload = {
+            title:      title,
+            author:     document.getElementById('bAuthor').value.trim(),
+            courseCode: document.getElementById('bCode').value.trim(),
+            faculty:    document.getElementById('bFaculty').value.trim(),
+            department: document.getElementById('bDept').value.trim(),
+          };
+          var results = await Promise.all([
+            callAI('book_summary', payload),
+            callAI('book_takeaways', { title: title, summary: '' })
+          ]);
+          summary = results[0]; takeawaysRaw = results[1];
+        }
+        _genSummary = summary;
+        document.getElementById('bSummaryPreview').textContent = summary;
+        document.getElementById('bTakeaways').value = takeawaysRaw.trim();
+        document.getElementById('bPreview').style.display = 'block';
+        toast('Summary generated!', 'success');
+      } catch(e) { toast('Error: ' + e.message, 'error'); }
+      setLoading(btn, false, '&#10024; Generate Summary &amp; Takeaways');
+    }
+
+    function editSummary() {
+      var text = document.getElementById('bSummaryPreview').textContent;
+      document.getElementById('bSummaryPreview').innerHTML =
+        '<textarea class="input" id="bSummaryEdit" rows="12" style="width:100%;margin-top:4px;">' +
+        esc(text) + '</textarea>';
+    }
+
+    async function saveBook() {
+      var title = document.getElementById('bTitle').value.trim();
+      if (!title) { toast('Title is required.', 'info'); return; }
+      var btn = document.getElementById('bSaveBtn');
+      setLoading(btn, true, '&#128218; Save to Student Library');
+      try {
+        var editEl = document.getElementById('bSummaryEdit');
+        var summary = editEl ? editEl.value : _genSummary;
+        var takesRaw = document.getElementById('bTakeaways').value;
+        var takes = takesRaw.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+        await RonyxAdmin.createBook({
+          title:       title,
+          author:      document.getElementById('bAuthor').value.trim() || '',
+          cover:       '&#128218;',
+          faculty:     document.getElementById('bFaculty').value.trim() || '',
+          department:  document.getElementById('bDept').value.trim() || '',
+          courseCode:  document.getElementById('bCode').value.trim() || '',
+          subject:     '',
+          category:    'summaries',
+          readMinutes: Math.round((summary.split(' ').length || 500) / 200) || 5,
+          summary:     summary,
+          takeaways:   JSON.stringify(takes),
+        });
+        toast('Book saved to student library!', 'success');
+        document.getElementById('bPreview').style.display = 'none';
+        ['bTitle','bAuthor','bCode','bFaculty','bDept'].forEach(function(id){
+          document.getElementById(id).value = '';
+        });
+        _genSummary = '';
+      } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+      setLoading(btn, false, '&#128218; Save to Student Library');
+    }
+
+    /* ── CONSOLE ── */
+    async function sendConsole() {
+      var msg = document.getElementById('consoleMsg').value.trim();
+      if (!msg) { toast('Enter a message first.', 'info'); return; }
+      var btn = document.getElementById('consoleBtn');
+      setLoading(btn, true, '&#9654; Ask AI');
+      try {
+        var reply = await callAI('free_prompt', { message: msg });
+        document.getElementById('consoleText').textContent = reply;
+        document.getElementById('consoleOutput').style.display = 'block';
+      } catch(e) { toast('Error: ' + e.message, 'error'); }
+      setLoading(btn, false, '&#9654; Ask AI');
+    }
+
+    function esc(s) {
+      return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
   </script>
 </body>
 </html>
-
-
-

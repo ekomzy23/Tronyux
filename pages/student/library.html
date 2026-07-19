@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <style>
-    @keyframes fadeIn  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-    .anim-in      { animation: fadeIn .22s ease both; }
+    /* ── animation ── */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .anim-in { animation:fadeUp .22s ease both; }
 
     /* ── search ── */
     .search-wrap { position:relative; margin-bottom:16px; }
@@ -26,23 +27,221 @@
     /* ── section label ── */
     .sec-lbl {
       font-size:10px; font-weight:800; text-transform:uppercase;
-      letter-spacing:.08em; color:var(--color-muted-2);
-      margin:22px 0 10px; display:flex; align-items:center; gap:8px;
+      letter-spacing:.09em; color:var(--color-muted-2);
+      margin:24px 0 12px; display:flex; align-items:center; gap:10px;
     }
     .sec-lbl::after { content:''; flex:1; height:1px; background:var(--color-stroke); }
 
-    /* ── faculty grid ── */
-    .fac-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:4px; }
-    .fac-card {
-      background:var(--color-surface); border:1px solid var(--color-stroke);
-      border-radius:16px; padding:20px 14px; cursor:pointer; text-align:center;
-      transition:background .15s, transform .12s;
-      -webkit-tap-highlight-color:transparent;
+    /* ── category chips ── */
+    .cat-chips-row {
+      display:flex; gap:7px; overflow-x:auto; padding-bottom:16px;
+      scrollbar-width:none; -webkit-overflow-scrolling:touch;
     }
-    .fac-card:active { background:rgba(109,94,252,.08); transform:scale(.97); }
-    .fac-icon  { font-size:34px; margin-bottom:10px; line-height:1; }
-    .fac-name  { font-size:13px; font-weight:700; color:var(--color-text); margin-bottom:5px; line-height:1.3; }
-    .fac-meta  { font-size:11px; color:var(--color-muted); }
+    .cat-chips-row::-webkit-scrollbar { display:none; }
+    .cat-chip {
+      flex-shrink:0; display:flex; align-items:center; gap:5px;
+      padding:7px 13px; border-radius:20px; cursor:pointer;
+      border:1.5px solid var(--color-stroke); background:var(--color-surface);
+      font-size:12px; font-weight:700; color:var(--color-muted);
+      white-space:nowrap; -webkit-tap-highlight-color:transparent;
+      transition:background .14s, border-color .14s, color .14s;
+    }
+    .cat-chip:active { opacity:.75; }
+    .cat-chip.active { background:var(--color-primary-2); border-color:transparent; color:#fff; }
+
+    /* ── greeting ── */
+    .lib-greeting { padding:2px 0 18px; }
+    .lib-greeting__time { font-size:12px; color:var(--color-muted); font-weight:500; }
+    .lib-greeting__name {
+      font-size:22px; font-weight:800; color:var(--color-text);
+      margin-top:4px; letter-spacing:-.03em;
+      font-family:'Sora',sans-serif;
+    }
+
+    /* ── stats strip ── */
+    .lib-stats {
+      display:flex; gap:0; margin-bottom:22px;
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      border-radius:18px; overflow:hidden;
+    }
+    .lib-stat {
+      flex:1; padding:13px 6px; text-align:center;
+      border-right:1px solid var(--color-stroke);
+    }
+    .lib-stat:last-child { border-right:none; }
+    .lib-stat__val { font-size:21px; font-weight:800; color:var(--color-text); line-height:1; font-family:'Sora',sans-serif; }
+    .lib-stat__lbl { font-size:10px; font-weight:700; color:var(--color-muted); margin-top:4px; text-transform:uppercase; letter-spacing:.05em; }
+
+    /* ══════════════════════════════════════════════
+       SHELF — horizontal scroll of portrait cards
+    ══════════════════════════════════════════════ */
+    .shelf { margin-bottom:26px; }
+    .shelf-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .shelf-hd__title { font-size:14px; font-weight:800; color:var(--color-text); font-family:'Sora',sans-serif; }
+    .shelf-hd__all {
+      font-size:11px; font-weight:700; color:var(--color-primary-2); cursor:pointer;
+      -webkit-tap-highlight-color:transparent; white-space:nowrap;
+    }
+    .shelf-scroll {
+      display:flex; gap:10px; overflow-x:auto; padding-bottom:4px;
+      scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    }
+    .shelf-scroll::-webkit-scrollbar { display:none; }
+
+    /* ── portrait shelf card (sc2) ── */
+    .sc2 {
+      flex-shrink:0; width:118px; display:block; text-decoration:none;
+      border-radius:14px; overflow:hidden;
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      transition:transform .1s; -webkit-tap-highlight-color:transparent;
+    }
+    .sc2:active { transform:scale(.96); }
+    .sc2__cover {
+      width:100%; aspect-ratio:3/4; position:relative;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .sc2__init {
+      font-size:40px; font-weight:900; color:rgba(255,255,255,.22);
+      line-height:1; pointer-events:none; font-family:'Sora',sans-serif;
+      user-select:none;
+    }
+    .sc2__badge {
+      position:absolute; bottom:7px; right:7px;
+      font-size:9px; font-weight:800; color:#fff; letter-spacing:.04em;
+      background:rgba(0,0,0,.42); border-radius:6px; padding:2px 6px;
+      backdrop-filter:blur(6px);
+    }
+    .sc2__pct {
+      position:absolute; bottom:7px; left:7px;
+      font-size:9px; font-weight:800; color:rgba(255,255,255,.85);
+      background:rgba(0,0,0,.42); border-radius:6px; padding:2px 6px;
+      backdrop-filter:blur(6px);
+    }
+    .sc2__foot { padding:8px 10px 11px; }
+    .sc2__course {
+      font-size:10px; font-weight:800; color:var(--color-primary-2);
+      letter-spacing:.04em; margin-bottom:3px; text-transform:uppercase;
+    }
+    .sc2__title {
+      font-size:11px; font-weight:700; color:var(--color-text); line-height:1.35;
+      display:-webkit-box; -webkit-line-clamp:2;
+      -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .sc2__prog { height:2px; border-radius:2px; background:var(--color-stroke); overflow:hidden; margin-top:6px; }
+    .sc2__prog__fill { height:100%; border-radius:2px; background:var(--color-primary-2); }
+
+    /* ══════════════════════════════════════════════
+       BOOK COVER GRID — 2-column portrait grid
+    ══════════════════════════════════════════════ */
+    .bk-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px; }
+
+    .bk-card {
+      display:block; text-decoration:none;
+      border-radius:16px; overflow:hidden;
+      background:var(--color-surface); border:1px solid var(--color-stroke);
+      transition:transform .12s; -webkit-tap-highlight-color:transparent;
+    }
+    .bk-card:active { transform:scale(.97); }
+    .bk-card__cover {
+      width:100%; aspect-ratio:2/3; position:relative;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .bk-card__init {
+      font-size:48px; font-weight:900; color:rgba(255,255,255,.2);
+      line-height:1; pointer-events:none; font-family:'Sora',sans-serif; user-select:none;
+    }
+    .bk-card__type {
+      position:absolute; top:9px; left:9px;
+      font-size:9px; font-weight:800; letter-spacing:.05em;
+      background:rgba(0,0,0,.45); color:#fff; border-radius:7px;
+      padding:3px 7px; backdrop-filter:blur(6px); text-transform:uppercase;
+    }
+    .bk-card__fav {
+      position:absolute; top:9px; right:9px;
+      font-size:15px; line-height:1;
+      background:rgba(0,0,0,.35); border-radius:50%;
+      width:24px; height:24px; display:flex; align-items:center; justify-content:center;
+      backdrop-filter:blur(4px);
+    }
+    .bk-card__body { padding:10px 11px 13px; }
+    .bk-card__course {
+      font-size:10px; font-weight:800; color:var(--color-primary-2);
+      letter-spacing:.05em; margin-bottom:4px; text-transform:uppercase;
+    }
+    .bk-card__title {
+      font-size:12px; font-weight:700; color:var(--color-text);
+      line-height:1.38; display:-webkit-box; -webkit-line-clamp:2;
+      -webkit-box-orient:vertical; overflow:hidden; margin-bottom:4px;
+      font-family:'Sora',sans-serif;
+    }
+    .bk-card__author {
+      font-size:10px; color:var(--color-muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:7px;
+    }
+    .bk-card__prog { height:3px; border-radius:2px; background:var(--color-stroke); overflow:hidden; }
+    .bk-card__prog__fill { height:100%; border-radius:2px; background:var(--color-primary-2); }
+
+    /* ══════════════════════════════════════════════
+       FACULTY BANNERS
+    ══════════════════════════════════════════════ */
+    .fac-banner {
+      border-radius:20px; padding:20px 20px;
+      margin-bottom:10px; cursor:pointer;
+      position:relative; overflow:hidden;
+      -webkit-tap-highlight-color:transparent;
+      transition:transform .12s; display:block; text-decoration:none;
+    }
+    .fac-banner:active { transform:scale(.985); }
+    /* decorative circle */
+    .fac-banner::before {
+      content:''; position:absolute;
+      width:120px; height:120px; border-radius:50%;
+      background:rgba(255,255,255,.06);
+      top:-30px; right:-20px;
+      pointer-events:none;
+    }
+    .fac-banner::after {
+      content:''; position:absolute;
+      width:70px; height:70px; border-radius:50%;
+      background:rgba(255,255,255,.04);
+      bottom:-10px; right:50px;
+      pointer-events:none;
+    }
+    .fac-banner__top { display:flex; align-items:flex-start; gap:14px; }
+    .fac-banner__icon { font-size:32px; line-height:1; flex-shrink:0; }
+    .fac-banner__info { flex:1; min-width:0; }
+    .fac-banner__name { font-size:15px; font-weight:800; color:#fff; margin-bottom:3px; font-family:'Sora',sans-serif; line-height:1.25; }
+    .fac-banner__meta { font-size:12px; color:rgba(255,255,255,.65); }
+    .fac-banner__arr { color:rgba(255,255,255,.45); font-size:22px; flex-shrink:0; margin-top:3px; }
+    .fac-banner__depts {
+      margin-top:12px; display:flex; flex-wrap:wrap; gap:6px;
+    }
+    .fac-banner__dept-chip {
+      font-size:10px; font-weight:700; letter-spacing:.04em;
+      background:rgba(0,0,0,.25); color:rgba(255,255,255,.8);
+      border-radius:20px; padding:3px 10px;
+      backdrop-filter:blur(4px);
+    }
+
+    /* ── dept row ── */
+    .dept-row {
+      display:flex; align-items:center; gap:13px;
+      padding:15px 16px; background:var(--color-surface);
+      border:1px solid var(--color-stroke); border-radius:15px;
+      margin-bottom:8px; cursor:pointer;
+      transition:background .15s; -webkit-tap-highlight-color:transparent;
+      position:relative; overflow:hidden;
+    }
+    .dept-row::before {
+      content:''; position:absolute; left:0; top:0; bottom:0;
+      width:4px; border-radius:4px 0 0 4px;
+    }
+    .dept-row:active { background:rgba(109,94,252,.07); }
+    .dept-row__icon  { font-size:26px; flex-shrink:0; }
+    .dept-row__body  { flex:1; min-width:0; }
+    .dept-row__name  { font-size:14px; font-weight:700; color:var(--color-text); font-family:'Sora',sans-serif; }
+    .dept-row__count { font-size:12px; color:var(--color-muted); margin-top:2px; }
+    .dept-row__arr   { color:var(--color-muted); font-size:20px; }
 
     /* ── breadcrumb ── */
     .breadcrumb {
@@ -53,20 +252,29 @@
     .breadcrumb-sep { opacity:.4; }
     .breadcrumb-cur { color:var(--color-text); font-weight:700; }
 
-    /* ── dept row ── */
-    .dept-row {
-      display:flex; align-items:center; gap:12px;
-      padding:14px 16px; background:var(--color-surface);
+    /* ── search results list card ── */
+    .lib-row {
+      display:flex; align-items:center; gap:13px;
+      padding:13px 14px; background:var(--color-surface);
       border:1px solid var(--color-stroke); border-radius:14px;
-      margin-bottom:8px; cursor:pointer;
-      transition:background .15s; -webkit-tap-highlight-color:transparent;
+      margin-bottom:8px; text-decoration:none; cursor:pointer;
+      transition:background .14s; -webkit-tap-highlight-color:transparent;
     }
-    .dept-row:active { background:rgba(109,94,252,.08); }
-    .dept-row__icon  { font-size:24px; flex-shrink:0; }
-    .dept-row__body  { flex:1; min-width:0; }
-    .dept-row__name  { font-size:14px; font-weight:700; color:var(--color-text); }
-    .dept-row__count { font-size:12px; color:var(--color-muted); }
-    .dept-row__arr   { color:var(--color-muted); font-size:18px; }
+    .lib-row:active { background:rgba(109,94,252,.07); }
+    .lib-row__cover {
+      width:44px; height:58px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; font-weight:900; color:rgba(255,255,255,.35);
+      font-family:'Sora',sans-serif;
+    }
+    .lib-row__body { flex:1; min-width:0; }
+    .lib-row__title { font-size:13px; font-weight:700; color:var(--color-text); line-height:1.35; margin-bottom:3px; font-family:'Sora',sans-serif; }
+    .lib-row__meta  { font-size:11px; color:var(--color-muted); }
+    .lib-row__badge { flex-shrink:0; }
+
+    /* progress bar on list row */
+    .book-prog { height:2px; border-radius:1px; background:var(--color-stroke); margin-top:6px; overflow:hidden; }
+    .book-prog__fill { height:100%; border-radius:1px; background:var(--color-primary-2); }
   </style>
 </head>
 <body>
@@ -77,31 +285,35 @@
     </div>
 
     <div class="app__body">
-
-      <!-- Search bar (always visible) -->
+      <!-- Search bar -->
       <div class="search-wrap">
-        <input class="input" id="search" placeholder="&#128269; Search faculty, dept, course, title&#8230;"
+        <input class="input" id="search" placeholder="&#128269; Search books, courses, authors&#8230;"
                oninput="onSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
         <button class="search-clear" id="searchClear" onclick="clearSearch()">&#10005;</button>
+      </div>
+
+      <!-- Category filter chips (home view) -->
+      <div id="catBar" style="display:none;">
+        <div class="cat-chips-row" id="catChips"></div>
       </div>
 
       <!-- Breadcrumb (dept / books view) -->
       <div id="breadcrumbBar" style="display:none;" class="breadcrumb"></div>
 
-      <!-- Main content: faculty grid | dept list | book list | search results -->
+      <!-- Main content -->
       <div id="mainContent"></div>
-
     </div>
 
     <nav class="tabbar" data-nav="library"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/data.js?v=mqypss88"></script>
-  <script src="/js/ui.js?v=mqypss88"></script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
+  <script src="/js/ui.js?v=mrr39s6t"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
+  <script src="/js/student-ai-chat.js?v=mrr39s6t"></script>
   <script>
   'use strict';
 
@@ -109,13 +321,63 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* ============================================================
-     LIBRARY STATE MACHINE
-     view: 'faculty' | 'dept' | 'books' | 'search'
-  ============================================================ */
-  var allBooks = [];
-  var groups   = {};   /* { facultyName: { deptName: [book, ...] } } */
-  var state    = { view:'faculty', faculty:'', dept:'' };
+  /* ── Reading progress + favourites ── */
+  var RLIB = {
+    get: function(id) {
+      try { return JSON.parse(localStorage.getItem('ronyx_read_'+id)||'null'); } catch(e) { return null; }
+    },
+    all: function() {
+      var out = {};
+      try {
+        for (var i=0;i<localStorage.length;i++) {
+          var k=localStorage.key(i);
+          if (k&&k.startsWith('ronyx_read_')) out[k.slice(11)]=JSON.parse(localStorage.getItem(k)||'null');
+        }
+      } catch(e) {}
+      return out;
+    },
+    getFavs: function() { try { return JSON.parse(localStorage.getItem('ronyx_favs')||'[]'); } catch(e) { return []; } },
+    isFav:   function(id) { return RLIB.getFavs().indexOf(id)>=0; }
+  };
+
+  function greeting() {
+    var h=new Date().getHours();
+    return h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  }
+
+  /* ── Faculty → gradient colors ── */
+  var FAC_GRADS = {
+    science:  ['#063326','#0d9488'],
+    engin:    ['#0c1e45','#2563eb'],
+    law:      ['#450a0a','#b91c1c'],
+    med:      ['#0a2333','#0284c7'],
+    bus:      ['#3d1e00','#d97706'],
+    art:      ['#2d0f5c','#7c3aed'],
+    edu:      ['#3d1500','#ea580c'],
+    agri:     ['#0d3318','#16a34a'],
+    soc:      ['#3d0f28','#db2777'],
+    default:  ['#1a1f4a','#6d5efc'],
+  };
+
+  function facColor(name) {
+    var n=(name||'').toLowerCase();
+    if(n.includes('science')||n.includes('nat'))            return FAC_GRADS.science;
+    if(n.includes('engin')||n.includes('tech')||n.includes('compu')||n.includes('software')) return FAC_GRADS.engin;
+    if(n.includes('law')||n.includes('legal'))              return FAC_GRADS.law;
+    if(n.includes('med')||n.includes('health')||n.includes('pharm')||n.includes('nurs')) return FAC_GRADS.med;
+    if(n.includes('bus')||n.includes('econ')||n.includes('comm')||n.includes('account')||n.includes('finance')) return FAC_GRADS.bus;
+    if(n.includes('art')||n.includes('human')||n.includes('music')) return FAC_GRADS.art;
+    if(n.includes('edu')||n.includes('teach'))              return FAC_GRADS.edu;
+    if(n.includes('agri')||n.includes('farm'))              return FAC_GRADS.agri;
+    if(n.includes('soc')||n.includes('psych')||n.includes('politic')) return FAC_GRADS.soc;
+    return FAC_GRADS.default;
+  }
+
+  function bookGradient(b) {
+    /* Book gets color from faculty → department → default */
+    var col = facColor(b.faculty || b.department || b.subject || '');
+    return 'linear-gradient(150deg,' + col[0] + ',' + col[1] + ')';
+  }
 
   var FAC_ICONS = {
     science:'&#128300;', engin:'&#9881;', art:'&#127917;',
@@ -125,15 +387,15 @@
   };
   function facIcon(name) {
     var n=(name||'').toLowerCase();
-    if(n.includes('science'))                     return FAC_ICONS.science;
-    if(n.includes('engin')||n.includes('tech'))   return FAC_ICONS.tech;
-    if(n.includes('art')||n.includes('human'))    return FAC_ICONS.art;
-    if(n.includes('law')||n.includes('legal'))    return FAC_ICONS.law;
+    if(n.includes('science'))                              return FAC_ICONS.science;
+    if(n.includes('engin')||n.includes('tech')||n.includes('compu')) return FAC_ICONS.tech;
+    if(n.includes('art')||n.includes('human')||n.includes('music')) return FAC_ICONS.art;
+    if(n.includes('law')||n.includes('legal'))             return FAC_ICONS.law;
     if(n.includes('med')||n.includes('health')||n.includes('pharm')) return FAC_ICONS.med;
     if(n.includes('bus')||n.includes('econ')||n.includes('comm'))    return FAC_ICONS.bus;
-    if(n.includes('edu')||n.includes('teach'))    return FAC_ICONS.edu;
-    if(n.includes('agri')||n.includes('farm'))    return FAC_ICONS.agri;
-    if(n.includes('soc')||n.includes('psych'))    return FAC_ICONS.soc;
+    if(n.includes('edu')||n.includes('teach'))             return FAC_ICONS.edu;
+    if(n.includes('agri')||n.includes('farm'))             return FAC_ICONS.agri;
+    if(n.includes('soc')||n.includes('psych'))             return FAC_ICONS.soc;
     return FAC_ICONS.other;
   }
 
@@ -165,70 +427,349 @@
     return g;
   }
 
-  /* ── Book card — shows PDF badge when admin attached a file ── */
-  function bookCard(b) {
+  /* ════════════════════════════════════════════
+     CARD BUILDERS
+  ════════════════════════════════════════════ */
+
+  /* Portrait shelf card — horizontal scroll */
+  function shelfCard(b, pct) {
+    var grad = bookGradient(b);
+    var init = (b.title||'?')[0].toUpperCase();
+    var typeBadge = b.fileId ? 'PDF' : 'Note';
+    var pctBadge  = pct > 0 ? '<div class="sc2__pct">'+pct+'%</div>' : '';
+    var progHtml  = pct > 0
+      ? '<div class="sc2__prog"><div class="sc2__prog__fill" style="width:'+pct+'%"></div></div>'
+      : '';
+    return '<a href="/pages/student/book.html?id='+b.$id+'" class="sc2 anim-in">'+
+      '<div class="sc2__cover" style="background:'+grad+';">'+
+        '<div class="sc2__init">'+init+'</div>'+
+        '<div class="sc2__badge">'+typeBadge+'</div>'+
+        pctBadge+
+      '</div>'+
+      '<div class="sc2__foot">'+
+        (b.courseCode ? '<div class="sc2__course">'+esc(b.courseCode)+'</div>' : '')+
+        '<div class="sc2__title">'+esc(b.title)+'</div>'+
+        progHtml+
+      '</div>'+
+    '</a>';
+  }
+
+  /* Portrait book cover card — 2-column grid */
+  function bookCoverCard(b) {
+    var grad = bookGradient(b);
+    var init = (b.title||'?')[0].toUpperCase();
+    var prog = RLIB.get(b.$id);
+    var pct  = prog ? prog.percent : 0;
+    var typeBadge = b.fileId
+      ? '<div class="bk-card__type">PDF</div>'
+      : '<div class="bk-card__type">Note</div>';
+    var favBadge = RLIB.isFav(b.$id)
+      ? '<div class="bk-card__fav">&#10084;</div>'
+      : '';
+    var progHtml = pct > 0
+      ? '<div class="bk-card__prog"><div class="bk-card__prog__fill" style="width:'+pct+'%"></div></div>'
+      : '';
+    return '<a href="/pages/student/book.html?id='+b.$id+'" class="bk-card anim-in">'+
+      '<div class="bk-card__cover" style="background:'+grad+';">'+
+        '<div class="bk-card__init">'+init+'</div>'+
+        typeBadge+
+        favBadge+
+      '</div>'+
+      '<div class="bk-card__body">'+
+        (b.courseCode ? '<div class="bk-card__course">'+esc(b.courseCode)+'</div>' : '')+
+        '<div class="bk-card__title">'+esc(b.title)+'</div>'+
+        '<div class="bk-card__author">'+esc(b.author||b.department||'')+'</div>'+
+        progHtml+
+      '</div>'+
+    '</a>';
+  }
+
+  /* Storage file shelf card */
+  function _sFileUrl(f) {
+    var ext = (f.name.split('.').pop()||'pdf').toLowerCase();
+    return '/pages/student/book.html?fileId='+encodeURIComponent(f.$id)+'&type='+ext+'&title='+encodeURIComponent(f.name.replace(/\.[^.]+$/,''));
+  }
+  function _sFileSize(bytes) {
+    if (!bytes) return '';
+    return bytes > 1048576 ? (bytes/1048576).toFixed(1)+' MB' : (bytes/1024).toFixed(0)+' KB';
+  }
+  function storageFileCard(f) {
+    var ext  = (f.name.split('.').pop()||'pdf').toLowerCase();
+    var grad = ext === 'pdf' ? 'linear-gradient(150deg,#063326,#0d9488)'
+             : ext === 'doc' || ext === 'docx' ? 'linear-gradient(150deg,#0c1e45,#2563eb)'
+             : 'linear-gradient(150deg,#2d0f5c,#7c3aed)';
+    var ttl  = f.name.replace(/\.[^.]+$/,'');
+    var init = (ttl||'?')[0].toUpperCase();
+    return '<a href="'+_sFileUrl(f)+'" class="sc2 anim-in">'+
+      '<div class="sc2__cover" style="background:'+grad+';">'+
+        '<div class="sc2__init">'+init+'</div>'+
+        '<div class="sc2__badge">'+ext.toUpperCase()+'</div>'+
+      '</div>'+
+      '<div class="sc2__foot">'+
+        '<div class="sc2__title">'+esc(ttl)+'</div>'+
+        '<div style="font-size:10px;color:var(--color-muted);margin-top:3px;">'+_sFileSize(f.sizeOriginal)+'</div>'+
+      '</div>'+
+    '</a>';
+  }
+  function storageListRow(f) {
+    var ext  = (f.name.split('.').pop()||'pdf').toLowerCase();
+    var grad = ext === 'pdf' ? 'linear-gradient(150deg,#063326,#0d9488)' : 'linear-gradient(150deg,#0c1e45,#2563eb)';
+    var ttl  = f.name.replace(/\.[^.]+$/,'');
+    var init = (ttl||'?')[0].toUpperCase();
+    return '<a href="'+_sFileUrl(f)+'" class="lib-row anim-in">'+
+      '<div class="lib-row__cover" style="background:'+grad+';">'+init+'</div>'+
+      '<div class="lib-row__body">'+
+        '<div class="lib-row__title">'+esc(ttl)+'</div>'+
+        '<div class="lib-row__meta">'+ext.toUpperCase()+' &middot; '+_sFileSize(f.sizeOriginal)+'</div>'+
+      '</div>'+
+      '<span class="badge">'+ext.toUpperCase()+'</span>'+
+    '</a>';
+  }
+
+  /* Horizontal list card (search results / full list) */
+  function bookListRow(b) {
+    var grad = bookGradient(b);
+    var init = (b.title||'?')[0].toUpperCase();
     var courseTag = b.courseCode
       ? '<span class="badge" style="background:rgba(245,158,11,.15);color:#F59E0B;border-color:rgba(245,158,11,.3);">'+esc(b.courseCode)+'</span>'
       : '';
     var fileBadge = b.fileId
-      ? '<span class="badge" style="background:rgba(16,185,129,.15);color:#10B981;border-color:rgba(16,185,129,.3);">&#128196; PDF</span>'
-      : '<span class="badge badge--violet">Summary</span>';
-    return '<a href="/pages/student/book.html?id='+b.$id+'" class="row-card anim-in" style="text-decoration:none;">'+
-      '<div class="row-card__icon" style="font-size:22px;">'+(b.cover||'&#128218;')+'</div>'+
-      '<div class="row-card__meta">'+
-        '<h4>'+esc(b.title)+'</h4>'+
-        '<p>'+esc(b.author||'Unknown')+' &middot; '+(b.readMinutes||10)+' min</p>'+
-        (courseTag?'<div style="margin-top:4px;">'+courseTag+'</div>':'')+
+      ? '<span class="badge" style="background:rgba(16,185,129,.15);color:#10B981;border-color:rgba(16,185,129,.3);">PDF</span>'
+      : '<span class="badge badge--violet">Note</span>';
+    var prog = RLIB.get(b.$id);
+    var pct  = prog ? prog.percent : 0;
+    var progHtml = pct > 0
+      ? '<div class="book-prog"><div class="book-prog__fill" style="width:'+pct+'%"></div></div>'
+      : '';
+    return '<a href="/pages/student/book.html?id='+b.$id+'" class="lib-row anim-in">'+
+      '<div class="lib-row__cover" style="background:'+grad+';">'+init+'</div>'+
+      '<div class="lib-row__body">'+
+        '<div class="lib-row__title">'+esc(b.title)+'</div>'+
+        '<div class="lib-row__meta">'+esc(b.author||'Unknown')+
+          (b.courseCode ? ' &middot; '+esc(b.courseCode) : '')+
+        '</div>'+
+        progHtml+
       '</div>'+
       fileBadge+
     '</a>';
   }
 
-  function setMain(html)       { document.getElementById('mainContent').innerHTML = html||''; }
-  function setBreadcrumb(html) {
-    var el = document.getElementById('breadcrumbBar');
-    if (html) { el.innerHTML=html; el.style.display='flex'; }
-    else      { el.style.display='none'; }
+  /* Keep old bookCard alias for compatibility */
+  function bookCard(b) { return bookListRow(b); }
+
+  /* ════════════════════════════════════════════
+     STATE MACHINE
+  ════════════════════════════════════════════ */
+  var allBooks     = [];
+  var storageFiles = [];
+  var groups       = {};
+  var state        = { view:'faculty', faculty:'', dept:'', category:'all' };
+  var activeCategory = 'all';
+
+  var CAT_DEFS = [
+    { id:'all',       label:'All',         icon:'&#128218;' },
+    { id:'books',     label:'PDFs',        icon:'&#128214;' },
+    { id:'summaries', label:'Summaries',   icon:'&#128203;' },
+    { id:'notes',     label:'Notes',       icon:'&#128221;' },
+    { id:'past',      label:"Past Q's",    icon:'&#10067;'  },
+    { id:'favs',      label:'Saved',       icon:'&#10084;'  },
+    { id:'files',     label:'Files',       icon:'&#128193;' },
+  ];
+
+  function matchCat(b, catId) {
+    if (catId === 'all') return true;
+    if (catId === 'favs')    return RLIB.isFav(b.$id);
+    if (catId === 'files')   return false;
+    if (b.category && b.category !== 'other') return b.category === catId;
+    var sub   = (b.subject||'').toLowerCase();
+    var title = (b.title||'').toLowerCase();
+    if (catId === 'books')     return !!b.fileId;
+    if (catId === 'summaries') return !b.fileId && !!(b.summary||'').trim();
+    if (catId === 'notes')     return sub.includes('note')||sub.includes('lecture')||title.includes('lecture')||title.includes('note');
+    if (catId === 'past')      return sub.includes('past')||sub.includes('question')||title.includes('past')||title.includes('question');
+    return false;
   }
-  function setBackTo(href, fn) {
-    var btn = document.getElementById('libBack');
-    if (fn) {
-      btn.href='#'; btn.onclick=function(e){ e.preventDefault(); fn(); };
+
+  function buildCatChips() {
+    var counts = {};
+    CAT_DEFS.forEach(function(c) {
+      if (c.id === 'files') counts[c.id] = storageFiles.length;
+      else if (c.id === 'favs') counts[c.id] = RLIB.getFavs().length;
+      else counts[c.id] = allBooks.filter(function(b){ return matchCat(b, c.id); }).length;
+    });
+    var html = CAT_DEFS
+      .filter(function(c){ return c.id === 'all' || counts[c.id] > 0; })
+      .map(function(c) {
+        var isActive = activeCategory === c.id;
+        var cnt = (c.id !== 'all' && counts[c.id]) ? '<span style="opacity:.6;font-size:10px;margin-left:2px;">' + counts[c.id] + '</span>' : '';
+        return '<div class="cat-chip'+(isActive?' active':'')+'" onclick="selectCategory(\''+c.id+'\')">' +
+          c.icon + ' ' + c.label + cnt + '</div>';
+      }).join('');
+    document.getElementById('catChips').innerHTML = html;
+    document.getElementById('catBar').style.display = 'block';
+  }
+
+  function selectCategory(catId) {
+    activeCategory = catId;
+    buildCatChips();
+    if (catId === 'all') {
+      renderHome();
+    } else if (catId === 'favs') {
+      var favIds = RLIB.getFavs();
+      _fullGridView('&#10084; Saved', allBooks.filter(function(b){ return favIds.indexOf(b.$id)>=0; }));
+    } else if (catId === 'files') {
+      viewAllFiles();
     } else {
-      btn.href=href; btn.onclick=null;
+      renderCategory(catId);
     }
   }
 
-  /* ── Views ── */
-  function renderFaculties() {
+  function renderCategory(catId) {
+    var def = CAT_DEFS.find(function(c){ return c.id===catId; }) || { label:catId, icon:'&#128218;' };
+    setBreadcrumb('');
+    setBackTo(null, function(){ renderHome(); });
+    document.getElementById('libTitle').textContent = def.label;
+    state = { view:'faculty', faculty:'', dept:'', category:catId };
+    var hits = allBooks.filter(function(b){ return matchCat(b, catId); });
+    if (!hits.length) {
+      setMain('<div class="empty"><div class="empty__icon">'+def.icon+'</div><p>No '+esc(def.label)+' found yet.</p></div>');
+      return;
+    }
+    setMain('<div class="sec-lbl">'+def.icon+' '+esc(def.label)+' &mdash; '+hits.length+' item'+(hits.length!==1?'s':'')+'</div><div class="bk-grid">'+hits.map(bookCoverCard).join('')+'</div>');
+  }
+
+  /* ── Shelf row builder ── */
+  function _shelf(title, books, progressMap, viewAllCall) {
+    if (!books.length) return '';
+    var moreHtml = viewAllCall
+      ? '<span class="shelf-hd__all" onclick="'+viewAllCall+'">See all &rsaquo;</span>'
+      : '';
+    return '<div class="shelf">'+
+      '<div class="shelf-hd"><div class="shelf-hd__title">'+title+'</div>'+moreHtml+'</div>'+
+      '<div class="shelf-scroll">'+
+        books.slice(0,12).map(function(b){
+          return shelfCard(b, (progressMap[b.$id]||{}).percent||0);
+        }).join('')+
+      '</div>'+
+    '</div>';
+  }
+
+  function _shelfFiles(title, files, viewAllCall) {
+    if (!files.length) return '';
+    var moreHtml = viewAllCall
+      ? '<span class="shelf-hd__all" onclick="'+viewAllCall+'">See all &rsaquo;</span>'
+      : '';
+    return '<div class="shelf">'+
+      '<div class="shelf-hd"><div class="shelf-hd__title">'+title+'</div>'+moreHtml+'</div>'+
+      '<div class="shelf-scroll">'+files.slice(0,12).map(storageFileCard).join('')+'</div>'+
+    '</div>';
+  }
+
+  /* ── HOME VIEW ── */
+  function renderHome() {
+    activeCategory = 'all';
     setBreadcrumb('');
     setBackTo('/pages/student/dashboard.html', null);
-    document.getElementById('libTitle').textContent='Library';
+    document.getElementById('libTitle').textContent = 'Library';
+    document.getElementById('catBar').style.display = 'none';
 
-    var facNames = Object.keys(groups).sort();
-    if (!facNames.length) {
-      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>No books in the library yet.</p></div>');
+    var allProgress = RLIB.all();
+    var favIds      = RLIB.getFavs();
+    var totalRead   = Object.keys(allProgress).filter(function(id){ var p=allProgress[id]; return p&&p.percent>=100; }).length;
+    var totalPdf    = allBooks.filter(function(b){ return !!b.fileId; }).length;
+    var firstName   = window._studentName ? window._studentName.split(' ')[0] : '';
+    var allFavBooks = allBooks.filter(function(b){ return favIds.indexOf(b.$id)>=0; });
+
+    var html = '';
+    html += '<div class="lib-greeting">'+
+      '<div class="lib-greeting__time">'+greeting()+(firstName?', '+esc(firstName):'')+'</div>'+
+      '<div class="lib-greeting__name">Your School Library</div>'+
+    '</div>';
+
+    if (allBooks.length || storageFiles.length) {
+      var total = allBooks.length + storageFiles.length;
+      html += '<div class="lib-stats">'+
+        '<div class="lib-stat"><div class="lib-stat__val">'+total+'</div><div class="lib-stat__lbl">Resources</div></div>'+
+        '<div class="lib-stat"><div class="lib-stat__val">'+totalPdf+'</div><div class="lib-stat__lbl">PDFs</div></div>'+
+        '<div class="lib-stat"><div class="lib-stat__val">'+totalRead+'</div><div class="lib-stat__lbl">Completed</div></div>'+
+        '<div class="lib-stat"><div class="lib-stat__val">'+allFavBooks.length+'</div><div class="lib-stat__lbl">Saved</div></div>'+
+      '</div>';
+    }
+
+    if (!allBooks.length && !storageFiles.length) {
+      setMain(html+'<div class="empty"><div class="empty__icon">&#128218;</div><p>The library is empty — ask your admin to add books.</p></div>');
       return;
     }
 
-    var cards = facNames.map(function(f) {
-      var depts  = Object.keys(groups[f]);
-      var total  = depts.reduce(function(s,d){ return s+groups[f][d].length; },0);
-      return '<div class="fac-card anim-in" onclick="goFaculty(\''+escAttr(f)+'\')">'+
-        '<div class="fac-icon">'+facIcon(f)+'</div>'+
-        '<div class="fac-name">'+esc(f)+'</div>'+
-        '<div class="fac-meta">'+depts.length+' dept'+(depts.length!==1?'s':'')+' &middot; '+total+' book'+(total!==1?'s':'')+'</div>'+
-      '</div>';
-    }).join('');
-    setMain('<div class="sec-lbl">Browse by Faculty</div><div class="fac-grid">'+cards+'</div>');
+    /* 1. Continue Reading */
+    var allContinue = allBooks
+      .filter(function(b){ var p=allProgress[b.$id]; return p&&p.percent>0&&p.percent<100; })
+      .sort(function(a,b){ return ((allProgress[b.$id]||{}).lastRead||0)-((allProgress[a.$id]||{}).lastRead||0); });
+    html += _shelf('&#128214; Continue Reading', allContinue, allProgress, allContinue.length>12?'viewAllContinue()':null);
+
+    /* 2. Saved */
+    html += _shelf('&#10084;&#65039; Saved Books', allFavBooks, allProgress, allFavBooks.length>12?'viewAllFavourites()':null);
+
+    /* 3. Category shelves */
+    var CAT_SHELVES = [
+      { id:'books',     label:'PDF Books',     icon:'&#128196;' },
+      { id:'notes',     label:'Lecture Notes', icon:'&#128221;' },
+      { id:'past',      label:'Past Questions',icon:'&#10067;'  },
+      { id:'summaries', label:'Summaries',     icon:'&#128203;' },
+    ];
+    CAT_SHELVES.forEach(function(c) {
+      var books = allBooks.filter(function(b){ return matchCat(b, c.id); });
+      if (!books.length) return;
+      html += _shelf(c.icon+' '+c.label, books, allProgress, books.length>12?'renderCategory(\''+c.id+'\')':null);
+    });
+
+    /* 4. Faculty banners */
+    var facNames = Object.keys(groups).sort();
+    if (facNames.length) {
+      html += '<div class="sec-lbl">&#127979; Browse by Faculty</div>';
+      facNames.forEach(function(f) {
+        var deptList = Object.keys(groups[f]||{}).sort();
+        var bookCount = deptList.reduce(function(sum, d){ return sum + (groups[f][d]||[]).length; }, 0);
+        var col = facColor(f);
+        var deptChips = deptList.slice(0,4).map(function(d){
+          return '<span class="fac-banner__dept-chip">'+esc(d)+'</span>';
+        }).join('');
+        if (deptList.length > 4) deptChips += '<span class="fac-banner__dept-chip">+' + (deptList.length - 4) + ' more</span>';
+        html += '<div class="fac-banner anim-in" onclick="goFaculty(\''+escAttr(f)+'\')" '+
+          'style="background:linear-gradient(135deg,'+col[0]+','+col[1]+');">'+
+          '<div class="fac-banner__top">'+
+            '<div class="fac-banner__icon">'+facIcon(f)+'</div>'+
+            '<div class="fac-banner__info">'+
+              '<div class="fac-banner__name">'+esc(f)+'</div>'+
+              '<div class="fac-banner__meta">'+bookCount+' book'+(bookCount!==1?'s':'')+' &middot; '+deptList.length+' dept'+(deptList.length!==1?'s':'')+'</div>'+
+            '</div>'+
+            '<div class="fac-banner__arr">&#8250;</div>'+
+          '</div>'+
+          (deptChips ? '<div class="fac-banner__depts">'+deptChips+'</div>' : '')+
+        '</div>';
+      });
+    }
+
+    /* 5. New additions */
+    var allRecent = allBooks.slice().sort(function(a,b){ return new Date(b.$createdAt)-new Date(a.$createdAt); });
+    html += _shelf('&#10024; New in Library', allRecent.slice(0,20), allProgress, allRecent.length>12?'viewAllNew()':null);
+
+    /* 6. Uploaded files */
+    html += _shelfFiles('&#128206; Uploaded Files', storageFiles, storageFiles.length>12?'viewAllFiles()':null);
+
+    setMain(html);
   }
 
+  /* Keep renderFaculties as alias */
+  function renderFaculties() { renderHome(); }
+
+  /* ── DEPT VIEW ── */
   function renderDepts(faculty) {
-    setBackTo(null, function(){ state={view:'faculty',faculty:'',dept:''}; renderFaculties(); });
+    document.getElementById('catBar').style.display='none';
+    setBackTo(null, function(){ state={view:'faculty',faculty:'',dept:''}; renderHome(); });
     document.getElementById('libTitle').textContent='';
     setBreadcrumb(
-      '<span onclick="state={view:\'faculty\',faculty:\'\',dept:\'\'};renderFaculties();" '+
-        'style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span onclick="renderHome();" style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
       '<span class="breadcrumb-sep">&#8250;</span>'+
       '<span class="breadcrumb-cur">'+esc(faculty)+'</span>'
     );
@@ -239,9 +780,18 @@
       return;
     }
 
-    var rows = deptNames.map(function(d) {
+    var col = facColor(faculty);
+    var html = '<div style="border-radius:18px;background:linear-gradient(135deg,'+col[0]+','+col[1]+');padding:16px 18px;margin-bottom:18px;">'+
+      '<div style="font-size:28px;margin-bottom:6px;">'+facIcon(faculty)+'</div>'+
+      '<div style="font-size:16px;font-weight:800;color:#fff;font-family:Sora,sans-serif;">'+esc(faculty)+'</div>'+
+      '<div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:2px;">'+deptNames.length+' Departments</div>'+
+    '</div>';
+
+    html += deptNames.map(function(d) {
       var count = (groups[faculty][d]||[]).length;
-      return '<div class="dept-row anim-in" onclick="goDept(\''+escAttr(d)+'\')">'+
+      var dcol = col[1];
+      return '<div class="dept-row anim-in" onclick="goDept(\''+escAttr(d)+'\')" style="padding-left:20px;">'+
+        '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+dcol+';border-radius:4px 0 0 4px;"></div>'+
         '<div class="dept-row__icon">'+deptIcon(d)+'</div>'+
         '<div class="dept-row__body">'+
           '<div class="dept-row__name">'+esc(d)+'</div>'+
@@ -250,21 +800,21 @@
         '<div class="dept-row__arr">&#8250;</div>'+
       '</div>';
     }).join('');
-    setMain(rows);
+    setMain(html);
   }
 
+  /* ── BOOKS VIEW — 2-column cover grid ── */
   function renderBooks(faculty, dept) {
+    document.getElementById('catBar').style.display='none';
     setBackTo(null, function(){
       state={view:'dept',faculty:faculty,dept:''};
       renderDepts(faculty);
     });
     document.getElementById('libTitle').textContent='';
     setBreadcrumb(
-      '<span onclick="state={view:\'faculty\',faculty:\'\',dept:\'\'};renderFaculties();" '+
-        'style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span onclick="renderHome();" style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
       '<span class="breadcrumb-sep">&#8250;</span>'+
-      '<span onclick="state={view:\'dept\',faculty:\''+escAttr(faculty)+'\',dept:\'\'};renderDepts(\''+escAttr(faculty)+'\');" '+
-        'style="cursor:pointer;color:var(--color-primary-2);">'+esc(faculty)+'</span>'+
+      '<span onclick="goDeptFromBooks();" style="cursor:pointer;color:var(--color-primary-2);">'+esc(faculty)+'</span>'+
       '<span class="breadcrumb-sep">&#8250;</span>'+
       '<span class="breadcrumb-cur">'+esc(dept)+'</span>'
     );
@@ -274,7 +824,86 @@
       setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>No books in this department yet.</p></div>');
       return;
     }
+    setMain('<div class="sec-lbl">'+esc(dept)+' &mdash; '+books.length+' book'+(books.length!==1?'s':'')+'</div>'+
+      '<div class="bk-grid">'+books.map(bookCoverCard).join('')+'</div>');
+  }
+
+  function goDeptFromBooks() {
+    var f = state.faculty;
+    state={view:'dept',faculty:f,dept:''};
+    renderDepts(f);
+  }
+
+  /* ── Full grid view ── */
+  function _fullGridView(title, books) {
+    document.getElementById('catBar').style.display='none';
+    setBackTo(null, function(){ renderHome(); });
+    document.getElementById('libTitle').textContent = title.replace(/&#\d+;/g,'').trim();
+    setBreadcrumb(
+      '<span onclick="renderHome();" style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span class="breadcrumb-sep">&#8250;</span>'+
+      '<span class="breadcrumb-cur">'+esc(title.replace(/&#\d+;/g,'').trim())+'</span>'
+    );
+    if (!books.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>Nothing here yet.</p></div>');
+      return;
+    }
+    setMain('<div class="bk-grid">'+books.map(bookCoverCard).join('')+'</div>');
+  }
+
+  function _fullListView(title, books) {
+    document.getElementById('catBar').style.display='none';
+    setBackTo(null, function(){ renderHome(); });
+    document.getElementById('libTitle').textContent = title;
+    setBreadcrumb(
+      '<span onclick="renderHome();" style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span class="breadcrumb-sep">&#8250;</span>'+
+      '<span class="breadcrumb-cur">'+esc(title)+'</span>'
+    );
+    if (!books.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>Nothing here yet.</p></div>');
+      return;
+    }
     setMain(books.map(bookCard).join(''));
+  }
+
+  function viewAllFiles() {
+    document.getElementById('catBar').style.display='none';
+    setBackTo(null, function(){ renderHome(); });
+    document.getElementById('libTitle').textContent='Files';
+    setBreadcrumb(
+      '<span onclick="renderHome();" style="cursor:pointer;color:var(--color-primary-2);">Library</span>'+
+      '<span class="breadcrumb-sep">&#8250;</span>'+
+      '<span class="breadcrumb-cur">Files</span>'
+    );
+    if (!storageFiles.length) {
+      setMain('<div class="empty"><div class="empty__icon">&#128196;</div><p>No files uploaded yet.</p></div>');
+      return;
+    }
+    setMain('<div class="sec-lbl">All Files ('+storageFiles.length+')</div>'+storageFiles.map(storageListRow).join(''));
+  }
+
+  function viewAllDeptBooks(dept) {
+    var books = allBooks.filter(function(b){ return (b.department||'General').trim() === dept; });
+    _fullGridView(dept, books);
+  }
+
+  function viewAllContinue() {
+    var prog = RLIB.all();
+    var books = allBooks
+      .filter(function(b){ var p=prog[b.$id]; return p&&p.percent>0&&p.percent<100; })
+      .sort(function(a,b){ return ((prog[b.$id]||{}).lastRead||0)-((prog[a.$id]||{}).lastRead||0); });
+    _fullGridView('Continue Reading', books);
+  }
+
+  function viewAllFavourites() {
+    var favIds = RLIB.getFavs();
+    _fullGridView('Saved Books', allBooks.filter(function(b){ return favIds.indexOf(b.$id)>=0; }));
+  }
+
+  function viewAllNew() {
+    var books = allBooks.slice().sort(function(a,b){ return new Date(b.$createdAt)-new Date(a.$createdAt); });
+    _fullGridView('New in Library', books);
   }
 
   /* ── Search ── */
@@ -292,12 +921,13 @@
   }
 
   function restoreView() {
-    if (state.view==='faculty')     renderFaculties();
+    if (state.view==='faculty')     renderHome();
     else if (state.view==='dept')   renderDepts(state.faculty);
     else if (state.view==='books')  renderBooks(state.faculty, state.dept);
   }
 
   function renderSearch(q) {
+    document.getElementById('catBar').style.display='none';
     setBreadcrumb('');
     setBackTo(null, function(){ document.getElementById('search').value=''; clearSearch(); });
     document.getElementById('libTitle').textContent='Search';
@@ -307,31 +937,37 @@
       return [(b.title||''),(b.author||''),(b.faculty||''),(b.department||''),(b.courseCode||''),(b.subject||'')]
         .join(' ').toLowerCase().includes(ql);
     });
+    var fileHits = storageFiles.filter(function(f){ return f.name.toLowerCase().includes(ql); });
 
-    if (!hits.length) {
+    if (!hits.length && !fileHits.length) {
       setMain('<div class="empty"><div class="empty__icon">&#128270;</div><p>No results for &ldquo;'+esc(q)+'&rdquo;</p></div>');
       return;
     }
 
-    var html = '<div class="sec-lbl">Results ('+hits.length+')</div>';
-    html += hits.map(function(b) {
-      var meta = [b.faculty,b.department,b.courseCode].filter(Boolean).join(' · ');
-      var fileBadge = b.fileId
-        ? '<span class="badge" style="background:rgba(16,185,129,.15);color:#10B981;border-color:rgba(16,185,129,.3);">&#128196; PDF</span>'
-        : '<span class="badge badge--violet">Summary</span>';
-      return '<a href="/pages/student/book.html?id='+b.$id+'" class="row-card anim-in" style="text-decoration:none;">'+
-        '<div class="row-card__icon" style="font-size:22px;">'+(b.cover||'&#128218;')+'</div>'+
-        '<div class="row-card__meta">'+
-          '<h4>'+esc(b.title)+'</h4>'+
-          '<p>'+(meta?esc(meta):esc(b.author||'Unknown'))+'</p>'+
-        '</div>'+
-        fileBadge+
-      '</a>';
-    }).join('');
+    var html = '';
+    if (hits.length) {
+      html += '<div class="sec-lbl">Books ('+hits.length+')</div>';
+      html += hits.map(bookListRow).join('');
+    }
+    if (fileHits.length) {
+      html += '<div class="sec-lbl">Files ('+fileHits.length+')</div>';
+      html += fileHits.map(storageListRow).join('');
+    }
     setMain(html);
   }
 
-  /* ── Navigation helpers ── */
+  /* ── Helpers ── */
+  function setMain(html)       { document.getElementById('mainContent').innerHTML = html||''; }
+  function setBreadcrumb(html) {
+    var el = document.getElementById('breadcrumbBar');
+    if (html) { el.innerHTML=html; el.style.display='flex'; }
+    else      { el.style.display='none'; }
+  }
+  function setBackTo(href, fn) {
+    var btn = document.getElementById('libBack');
+    if (fn) { btn.href='#'; btn.onclick=function(e){ e.preventDefault(); fn(); }; }
+    else    { btn.href=href||'/pages/student/dashboard.html'; btn.onclick=null; }
+  }
   function escAttr(s) {
     return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   }
@@ -350,10 +986,20 @@
       setMain('<div class="empty"><div class="empty__icon">&#128218;</div><p>Connect Appwrite to browse the library.</p></div>');
       return;
     }
-
-    allBooks = await RonyxData.listAllBooks().catch(function(){ return []; });
-    groups   = buildGroups(allBooks);
-    renderFaculties();
+    if (window.account) {
+      window.account.get().then(function(u){ if(u&&u.name) window._studentName=u.name; }).catch(function(){});
+    }
+    var results = await Promise.allSettled([
+      RonyxData.listAllBooks(),
+      RonyxData.listStorageFiles()
+    ]);
+    allBooks = (results[0].status==='fulfilled' ? results[0].value : []) || [];
+    var rawFiles = (results[1].status==='fulfilled' ? results[1].value : []) || [];
+    var bookFileIds = {};
+    allBooks.forEach(function(b){ if (b.fileId) bookFileIds[b.fileId] = true; });
+    storageFiles = rawFiles.filter(function(f){ return !bookFileIds[f.$id]; });
+    groups = buildGroups(allBooks);
+    renderHome();
   })();
   </script>
 </body>

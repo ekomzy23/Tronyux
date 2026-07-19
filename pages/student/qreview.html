@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Question Review — Runyx</title>
+  <title>Question Review — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -81,10 +81,10 @@
       </div>
     </div>
 
-    <nav class="tabbar" data-nav="results"></nav>
+    <nav class="tabbar" data-nav="exams"></nav>
   </div>
 
-  <script src="/js/ui.js?v=mqypss88"></script>
+  <script src="/js/ui.js?v=mrr39s6t"></script>
   <script>
   (function () {
     var body = document.getElementById('qrBody');
@@ -172,36 +172,33 @@
         html +=   '</div>';
         html += '</div>';
 
-        /* Answer pills */
+        /* Answer section */
         if (isObj) {
           if (tried) {
-            /* What they chose */
-            var choseLabel = (q.type === 'truefalse')
-              ? q.chosen
-              : optLabel(q.options, q.chosen);
+            var choseLabel = (q.type === 'truefalse') ? q.chosen : optLabel(q.options, q.chosen);
             html += '<div class="qr-pill ' + (q.isCorrect ? 'qr-pill--chose-ok' : 'qr-pill--chose') + '">';
-            html += (q.isCorrect ? '&#10003; ' : '&#10005; ') + 'You chose: ' + esc(choseLabel) + '</div><br>';
+            html += (q.isCorrect ? '&#10003; Your answer: ' : '&#10005; Your answer: ') + esc(choseLabel) + '</div><br>';
           } else {
             html += '<div class="qr-pill qr-pill--skip">&#9898; Not attempted</div><br>';
           }
 
-          /* Correct answer (always show for objective) */
+          /* Always show correct answer when the student got it wrong or skipped */
           if (q.answer && !q.isCorrect) {
-            var corrLabel = (q.type === 'truefalse')
-              ? q.answer
-              : optLabel(q.options, q.answer);
-            html += '<div class="qr-pill qr-pill--correct">&#10003; Correct: ' + esc(corrLabel) + '</div><br>';
+            var corrLabel = (q.type === 'truefalse') ? q.answer : optLabel(q.options, q.answer);
+            html += '<div class="qr-pill qr-pill--correct">&#10003; Correct answer: ' + esc(corrLabel) + '</div>';
+          }
+
+          /* Explanation — shown when wrong or skipped so students can learn */
+          if (q.explain && !q.isCorrect) {
+            html += '<div class="qr-explain"><b>Why:</b> ' + esc(q.explain) + '</div>';
           }
         } else {
-          /* Subjective question */
-          html += '<div class="subj-note">Subjective question — not auto-graded';
-          if (tried) html += '<br>Your answer: ' + esc(q.chosen.slice(0, 200)) + (q.chosen.length > 200 ? '…' : '');
+          html += '<div class="subj-note">Subjective — not auto-graded';
+          if (tried) html += '<br><b>Your answer:</b> ' + esc(q.chosen.slice(0, 300)) + (q.chosen.length > 300 ? '&hellip;' : '');
           html += '</div>';
-        }
-
-        /* Explanation */
-        if (q.explain) {
-          html += '<div class="qr-explain"><b>Explanation:</b> ' + esc(q.explain) + '</div>';
+          if (q.explain) {
+            html += '<div class="qr-explain"><b>Model answer / notes:</b> ' + esc(q.explain) + '</div>';
+          }
         }
 
         html += '</div>';
@@ -222,6 +219,6 @@
     });
   })();
   </script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
 </body>
 </html>

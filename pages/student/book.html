@@ -12,14 +12,16 @@
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
   <style>
-    /* â”€â”€ Reader â”€â”€ */
-    .reader-hero { text-align:center; padding:22px 0 16px; border-bottom:1px solid var(--color-stroke); margin-bottom:18px; }
-    .reader-emoji { font-size:56px; line-height:1; }
-    .reader-title { font-size:20px; font-weight:800; margin:10px 0 4px; letter-spacing:-.02em; }
-    .reader-author { font-size:13px; color:var(--color-muted); margin-bottom:10px; }
-    .reader-badges { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+    /* ── Full-screen reader — stretch to fill the device screen ── */
+    .tabbar { display: none !important; }
+    .tts-bar { bottom: env(safe-area-inset-bottom, 0px) !important; }
+    .app { max-height: none !important; border-radius: 0 !important; border: none !important; }
+    @media (min-width: 480px) {
+      .app { height: 100dvh !important; height: 100vh !important; }
+    }
 
-    .reader-body { font-size:15px; line-height:1.9; }
+    /* ── Reader body ── */
+    .reader-body { font-size: 15px; line-height: 1.9; }
     .reader-body h2 { font-size:18px; font-weight:800; margin:28px 0 10px; color:var(--color-primary-2); }
     .reader-body h3 { font-size:15px; font-weight:700; margin:20px 0 8px; }
     .reader-body p  { margin-bottom:14px; color:var(--color-muted); }
@@ -29,8 +31,41 @@
     .reader-body hr { border:none; border-top:1px solid var(--color-stroke); margin:24px 0; }
     .reader-body blockquote { border-left:3px solid var(--color-primary-2); padding-left:14px;
       color:var(--color-muted-2); font-style:italic; margin:14px 0; }
-    .tts-sent { display:inline; border-radius:3px; }
-    .tts-sent.active { background:rgba(109,94,252,.3); color:#fff !important; padding:0 2px; border-radius:4px; }
+
+    /* ── TTS sentences: tap-to-seek affordance ── */
+    .tts-sent { display: inline; border-radius: 3px; line-height: 1.9; }
+    .tts-sent.active { background: rgba(109,94,252,.3); color: #fff !important; padding: 0 2px; border-radius: 4px; }
+    .tts-tap-active .tts-sent { cursor: pointer; border-radius: 3px; transition: background .1s; }
+    .tts-tap-active .tts-sent:not([data-hl]):hover  { background: rgba(109,94,252,.1); }
+    .tts-tap-active .tts-sent:not([data-hl]):active { background: rgba(109,94,252,.22); }
+    .tts-tap-active .tts-sent[data-hl]:hover  { opacity: .82; }
+    .tts-tap-active .tts-sent[data-hl]:active { opacity: .7; }
+
+    /* ── Highlight colors ── */
+    .tts-sent[data-hl=”y”] { background: rgba(251,191,36,.38); border-radius: 3px; }
+    .tts-sent[data-hl=”g”] { background: rgba(52,211,153,.34);  border-radius: 3px; }
+    .tts-sent[data-hl=”p”] { background: rgba(244,63,94,.24);   border-radius: 3px; }
+    .tts-sent[data-hl=”b”] { background: rgba(59,130,246,.28);  border-radius: 3px; }
+
+    /* ── Reading toolbar ── */
+    .reader-tools {
+      display: flex; align-items: center; gap: 6px; overflow-x: auto;
+      padding: 6px 0 8px; margin-bottom: 12px; border-bottom: 1px solid var(--color-stroke);
+      scrollbar-width: none;
+    }
+    .reader-tools::-webkit-scrollbar { display: none; }
+    .rt-btn {
+      flex-shrink: 0; padding: 5px 11px; border-radius: 18px; font-size: 12px; font-weight: 700;
+      cursor: pointer; border: 1.5px solid var(--color-stroke); background: var(--color-surface);
+      color: var(--color-muted); white-space: nowrap; touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent; line-height: 1.4;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .rt-btn:active { opacity: .7; }
+    .rt-btn.rt-on { background: rgba(109,94,252,.18); border-color: rgba(109,94,252,.5); color: var(--color-primary-2); }
+    .rt-divider { width: 1px; height: 20px; background: var(--color-stroke); flex-shrink: 0; margin: 0 2px; }
+    .rt-zoom-lbl { min-width: 44px; text-align: center; cursor: pointer; font-variant-numeric: tabular-nums; }
+    #ttsBody { transition: zoom 0.05s; }
 
     .takeaway-list { margin-bottom:24px; }
     .takeaway-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
@@ -48,6 +83,22 @@
     .file-viewer iframe { width:100%; height:70vh; border:none; background:#fff; display:block; }
     .file-viewer-label { padding:10px 14px; font-size:11px; font-weight:700; text-transform:uppercase;
       letter-spacing:.06em; color:var(--color-muted-2); border-bottom:1px solid var(--color-stroke); }
+
+    /* DOCX document body — white pages inside the dark app shell */
+    .doc-body { background:#fff; color:#111; padding:32px 36px; border-radius:12px;
+      font-family:Georgia,'Times New Roman',serif; font-size:12pt; line-height:1.6; }
+    .doc-body p  { margin:0 0 10px; }
+    .doc-body h1 { font-size:20pt; font-weight:700; margin:20px 0 10px; }
+    .doc-body h2 { font-size:15pt; font-weight:700; margin:16px 0 8px; }
+    .doc-body h3 { font-size:12pt; font-weight:700; margin:12px 0 6px; }
+    .doc-body ul,
+    .doc-body ol { padding-left:24px; margin:0 0 10px; }
+    .doc-body li { margin-bottom:4px; }
+    .doc-body table { border-collapse:collapse; width:100%; margin:10px 0; }
+    .doc-body td,
+    .doc-body th  { border:1px solid #ccc; padding:5px 10px; }
+    .doc-body strong { font-weight:700; }
+    .doc-body em { font-style:italic; }
 
     /* â”€â”€ TOP progress bar (sticky â€” always visible) â”€â”€ */
     #topProc {
@@ -67,14 +118,13 @@
     .tp-track { height:4px; border-radius:2px; background:var(--color-stroke); overflow:hidden; }
     .tp-fill  { height:100%; width:0%; border-radius:2px; background:var(--color-primary-2); transition:width .35s ease; }
 
-    /* â”€â”€ TTS bar â”€â”€ */
+    /* â”€â”€ TTS bar — always visible on this page â”€â”€ */
     .tts-bar {
       position:fixed; bottom:calc(56px + env(safe-area-inset-bottom,0px));
       left:0; right:0; z-index:500;
       background:var(--color-bg); border-top:1px solid var(--color-stroke);
-      padding:8px 14px; display:none;
+      padding:8px 14px; display:block;
     }
-    .tts-bar.on { display:block; }
     .tts-row { display:flex; align-items:center; gap:8px; }
     .tts-playbtn { width:44px;height:44px;border-radius:50%;flex-shrink:0;background:var(--color-primary-2);color:#fff;font-size:18px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-family:monospace; }
     .tts-iconbtn { width:38px;height:38px;border-radius:50%;flex-shrink:0;background:rgba(109,94,252,.14);color:var(--color-primary-2);font-size:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;font-weight:700; }
@@ -107,6 +157,7 @@
     <div class="appbar">
       <a href="/pages/student/library.html" class="iconbtn">&larr;</a>
       <span class="appbar__title" id="appbarTitle">Reading</span>
+      <button class="iconbtn" id="favBtn" style="display:none;font-size:18px;color:var(--color-muted);" onclick="toggleFav()" title="Add to favourites">&#9825;</button>
     </div>
 
     <div class="app__body" id="content" style="padding-bottom:80px;">
@@ -128,15 +179,15 @@
       </div>
     </div>
 
-    <nav class="tabbar" data-nav="library"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/data.js?v=mqypss88"></script>
-  <script src="/js/ui.js?v=mqypss88"></script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
+  <script src="/js/ui.js?v=mrr39s6t"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
+  <script src="/js/student-ai-chat.js?v=mrr39s6t"></script>
   <script>
   /* ============================================================
      HELPERS
@@ -167,6 +218,75 @@
   }
 
   /* ============================================================
+     READING PROGRESS + FAVOURITES
+  ============================================================ */
+  var RLIB = {
+    get: function(id) {
+      try { return JSON.parse(localStorage.getItem('ronyx_read_'+id)||'null'); } catch(e) { return null; }
+    },
+    set: function(id, data) {
+      try { localStorage.setItem('ronyx_read_'+id, JSON.stringify(data)); } catch(e) {}
+    },
+    getFavs: function() { try { return JSON.parse(localStorage.getItem('ronyx_favs')||'[]'); } catch(e) { return []; } },
+    isFav:   function(id) { return RLIB.getFavs().indexOf(id)>=0; },
+    toggleFav: function(id) {
+      var favs=RLIB.getFavs(), idx=favs.indexOf(id);
+      if(idx>=0) favs.splice(idx,1); else favs.push(id);
+      try { localStorage.setItem('ronyx_favs',JSON.stringify(favs)); } catch(e) {}
+      return favs.indexOf(id)>=0;
+    }
+  };
+
+  var _currentBookId = null;
+
+  function initFavBtn(id) {
+    _currentBookId = id;
+    var btn = document.getElementById('favBtn');
+    if (!btn) return;
+    btn.style.display = '';
+    var fav = RLIB.isFav(id);
+    btn.innerHTML = fav ? '&#10084;' : '&#9825;';
+    btn.style.color = fav ? '#EF4444' : '';
+  }
+
+  function toggleFav() {
+    if (!_currentBookId) return;
+    var isFav = RLIB.toggleFav(_currentBookId);
+    var btn = document.getElementById('favBtn');
+    if (btn) { btn.innerHTML = isFav?'&#10084;':'&#9825;'; btn.style.color = isFav?'#EF4444':''; }
+  }
+
+  /* Save progress on scroll (text / summary books) */
+  function trackScrollProgress(id, meta) {
+    var el = document.querySelector('.app__body') || document.getElementById('content');
+    if (!el) return;
+    var _save = function() {
+      var total = el.scrollHeight - el.clientHeight;
+      if (total <= 0) return;
+      var pct = Math.min(100, Math.max(1, Math.round((el.scrollTop/total)*100)));
+      RLIB.set(id, Object.assign({}, meta, { percent: pct, lastRead: Date.now() }));
+    };
+    el.addEventListener('scroll', _save, { passive: true });
+  }
+
+  /* Save progress per PDF page via IntersectionObserver */
+  function trackPdfProgress(id, title, cover, pagesEl) {
+    var canvases = pagesEl.querySelectorAll('canvas');
+    var total    = canvases.length;
+    if (!total) return;
+    var obs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var idx = Array.prototype.indexOf.call(canvases, entry.target);
+        if (idx < 0) return;
+        var pct = Math.min(100, Math.round(((idx+1)/total)*100));
+        RLIB.set(id, { percent: pct, page: idx+1, totalPages: total, lastRead: Date.now(), title: title, cover: cover, type: 'pdf' });
+      });
+    }, { threshold: 0.4 });
+    Array.prototype.forEach.call(canvases, function(c){ obs.observe(c); });
+  }
+
+  /* ============================================================
      TTS ENGINE  v2
   ============================================================ */
   var TTS=(function(){
@@ -176,6 +296,40 @@
     var SPEEDS=[0.75,1,1.25,1.5,2],spIdx=1;
     var VPREFS=['auto','female','male'],VICONS={auto:'&#9834;',female:'&#9792;',male:'&#9794;'},VTITLES={auto:'Voice: Auto',female:'Voice: Female',male:'Voice: Male'},vpIdx=0;
     var chunks=[],cur=0,playing=false,gen=0,lastEnd=0,dog=null;
+    var _title='',_keepCtx=null,_keepSrc=null;
+    /* Silent 1-second audio buffer keeps the audio session alive when the
+       page is backgrounded or the screen locks, so speechSynthesis continues. */
+    function _startBgAudio(){
+      if(_keepSrc)return;
+      try{
+        _keepCtx=_keepCtx||new(window.AudioContext||window.webkitAudioContext)();
+        if(_keepCtx.state==='suspended')_keepCtx.resume();
+        var buf=_keepCtx.createBuffer(1,_keepCtx.sampleRate,_keepCtx.sampleRate);
+        _keepSrc=_keepCtx.createBufferSource();
+        _keepSrc.buffer=buf;_keepSrc.loop=true;
+        _keepSrc.connect(_keepCtx.destination);
+        _keepSrc.start(0);
+      }catch(e){}
+    }
+    function _stopBgAudio(){if(_keepSrc){try{_keepSrc.stop();}catch(e){}_keepSrc=null;}}
+    function _setMedia(s){
+      if(!('mediaSession' in navigator))return;
+      if(s==='play'){
+        navigator.mediaSession.metadata=new MediaMetadata({
+          title:_title||'Ronyx',artist:'Listening Mode',
+          artwork:[{src:'/assets/icon-192.png',sizes:'192x192',type:'image/png'}]
+        });
+        navigator.mediaSession.setActionHandler('play',function(){if(!playing){playing=true;var g=++gen;setBtn('&#9646;&#9646;');_startBgAudio();startDog();speakAt(cur,g);}});
+        navigator.mediaSession.setActionHandler('pause',function(){if(playing){playing=false;gen++;stopDog();_stopBgAudio();synth.cancel();setBtn('&#9654;');setInfo('Paused');}});
+        navigator.mediaSession.setActionHandler('stop',function(){playing=false;gen++;stopDog();_stopBgAudio();synth.cancel();cur=0;clearHl();setFill(0);setBtn('&#9654;');setInfo('Tap ▶ to listen aloud');navigator.mediaSession.playbackState='none';});
+        navigator.mediaSession.setActionHandler('nexttrack',function(){if(cur<chunks.length-1){cur++;if(playing){var g=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===g){startDog();speakAt(cur,g);}},80);}}});
+        navigator.mediaSession.setActionHandler('previoustrack',function(){if(cur>0){cur--;if(playing){var g=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===g){startDog();speakAt(cur,g);}},80);}}});
+        navigator.mediaSession.playbackState='playing';
+      }else{
+        navigator.mediaSession.playbackState='none';
+        ['play','pause','stop','nexttrack','previoustrack'].forEach(function(a){try{navigator.mediaSession.setActionHandler(a,null);}catch(e){}});
+      }
+    }
     function setInfo(t){var e=document.getElementById('ttsInfo');if(e)e.textContent=t;}
     function setFill(p){var e=document.getElementById('ttsFill');if(e)e.style.width=Math.max(0,Math.min(100,p))+'%';}
     function setBtn(h){var e=document.getElementById('ttsPlay');if(e)e.innerHTML=h;}
@@ -186,43 +340,291 @@
     function pickVoice(){var vs=synth.getVoices();var pref=VPREFS[vpIdx];var en=vs.filter(function(v){return /en/i.test(v.lang);});if(!en.length)en=vs;if(pref==='female')return en.find(function(v){return FEMALE_RE.test(v.name);})||en[0]||null;if(pref==='male')return en.find(function(v){return MALE_RE.test(v.name);})||en[0]||null;return en.find(function(v){return /en[-_]?(US|GB)/i.test(v.lang)&&!v.localService;})||en[0]||null;}
     function setVoiceBtn(){var e=document.getElementById('ttsVoice');if(e){e.innerHTML=VICONS[VPREFS[vpIdx]];e.title=VTITLES[VPREFS[vpIdx]];}}
     function speakAt(i,myGen){if(myGen!==gen||!playing)return;if(i>=chunks.length){finish();return;}cur=i;highlight(i);lastEnd=Date.now();var u=new SpeechSynthesisUtterance(chunks[i].text);u.rate=SPEEDS[spIdx];u.pitch=1.0;var v=pickVoice();if(v)u.voice=v;u.onend=function(){lastEnd=Date.now();speakAt(i+1,myGen);};u.onerror=function(e){if(e.error==='interrupted'||e.error==='canceled')return;setTimeout(function(){if(myGen===gen&&playing)speakAt(i,myGen);},300);};synth.speak(u);}
-    function finish(){playing=false;stopDog();clearHl();setFill(100);setBtn('&#9654;');setInfo('Finished â€” tap to replay');cur=0;}
+    function finish(){playing=false;stopDog();_stopBgAudio();_setMedia('stop');clearHl();setFill(100);setBtn('&#9654;');setInfo('Finished — tap to replay');cur=0;}
     function startDog(){stopDog();lastEnd=Date.now();dog=setInterval(function(){if(!playing){stopDog();return;}if(Date.now()-lastEnd>12000&&!synth.speaking){var myGen=++gen;synth.cancel();setTimeout(function(){if(playing&&gen===myGen)speakAt(cur,myGen);},150);lastEnd=Date.now();}},4000);}
     function stopDog(){clearInterval(dog);dog=null;}
-    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&playing){var myGen=++gen;synth.cancel();setTimeout(function(){if(playing&&gen===myGen)speakAt(cur,myGen);},200);}});
-    function ttsClean(t){return t.replace(/\u2192/g,' to ').replace(/\u2190/g,' from ').replace(/\u2191/g,' up ').replace(/\u2193/g,' down ').replace(/\u21D2/g,' implies ').replace(/\u21D4/g,' if and only if ').replace(/\u2248/g,' approximately ').replace(/\u2260/g,' not equal to ').replace(/\u2264/g,' less than or equal to ').replace(/\u2265/g,' greater than or equal to ').replace(/\u00D7/g,' times ').replace(/\u00F7/g,' divided by ').replace(/\u00B0/g,' degrees ').replace(/\u00B2/g,' squared ').replace(/\u00B3/g,' cubed ').replace(/\u221A/g,' root of ').replace(/\u221E/g,' infinity ').replace(/\u2234/g,' therefore ').replace(/\u2235/g,' because ').replace(/\u03C0/g,' pi ').replace(/\u2211/g,' sum ').replace(/\u222B/g,' integral ').replace(/\u03B1/g,' alpha ').replace(/\u03B2/g,' beta ').replace(/\u03B3/g,' gamma ').replace(/\u03B4/g,' delta ').replace(/\u03B8/g,' theta ').replace(/\u03BB/g,' lambda ').replace(/\u03BC/g,' mu ').replace(/\u03C3/g,' sigma ').replace(/\s+/g,' ').trim();}
+    document.addEventListener('visibilitychange',function(){
+      if(document.visibilityState==='hidden'&&playing){_startBgAudio();}
+      if(document.visibilityState==='visible'&&playing){var myGen=++gen;synth.cancel();setTimeout(function(){if(playing&&gen===myGen)speakAt(cur,myGen);},200);}
+    });
+    /* \u2500\u2500 LaTeX expression \u2192 spoken English \u2500\u2500 */
+    function latexToSpeech(expr){
+      expr=String(expr).trim();
+      /* Recursive \frac{num}{den} \u2192 "num over den" */
+      var prev,safety=0;
+      do{prev=expr;expr=expr.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g,function(_,n,d){return latexToSpeech(n)+' over '+latexToSpeech(d);});}while(expr!==prev&&++safety<20);
+      /* Roots */
+      expr=expr.replace(/\\sqrt\[([^\]]+)\]\{([^{}]*)\}/g,function(_,n,a){return latexToSpeech(n)+'th root of '+latexToSpeech(a);});
+      expr=expr.replace(/\\sqrt\{([^{}]*)\}/g,function(_,a){return 'square root of '+latexToSpeech(a);});
+      expr=expr.replace(/\\sqrt\s+([a-zA-Z0-9])/g,'square root of $1');
+      /* Exponents */
+      expr=expr.replace(/([a-zA-Z0-9])\^\{2\}/g,'$1 squared').replace(/([a-zA-Z0-9])\^\{3\}/g,'$1 cubed').replace(/([a-zA-Z0-9])\^\{([^}]+)\}/g,'$1 to the power of $2');
+      expr=expr.replace(/([a-zA-Z0-9])\^2/g,'$1 squared').replace(/([a-zA-Z0-9])\^3/g,'$1 cubed').replace(/([a-zA-Z0-9])\^([0-9n])/g,'$1 to the power of $2');
+      /* Subscripts */
+      expr=expr.replace(/([a-zA-Z])\{([^}]+)\}/g,'$1 sub $2').replace(/([a-zA-Z])_([a-zA-Z0-9])/g,'$1 sub $2');
+      /* Limits with bounds */
+      expr=expr.replace(/\\sum_\{([^}]*)\}\^\{([^}]*)\}/g,'the sum from $1 to $2 of');
+      expr=expr.replace(/\\int_\{([^}]*)\}\^\{([^}]*)\}/g,'the integral from $1 to $2 of');
+      expr=expr.replace(/\\prod_\{([^}]*)\}\^\{([^}]*)\}/g,'the product from $1 to $2 of');
+      expr=expr.replace(/\\lim_\{([^}]*)\}\s*\\to/g,'the limit as $1 approaches');
+      expr=expr.replace(/\\lim_\{([^}]*)\}/g,'the limit as $1 of');
+      /* Named commands */
+      var map={'\\\\pi':'pi','\\\\theta':'theta','\\\\alpha':'alpha','\\\\beta':'beta','\\\\gamma':'gamma','\\\\delta':'delta','\\\\epsilon':'epsilon','\\\\varepsilon':'epsilon','\\\\zeta':'zeta','\\\\eta':'eta','\\\\iota':'iota','\\\\kappa':'kappa','\\\\lambda':'lambda','\\\\mu':'mu','\\\\nu':'nu','\\\\xi':'xi','\\\\rho':'rho','\\\\sigma':'sigma','\\\\tau':'tau','\\\\upsilon':'upsilon','\\\\phi':'phi','\\\\varphi':'phi','\\\\chi':'chi','\\\\psi':'psi','\\\\omega':'omega','\\\\Gamma':'capital Gamma','\\\\Delta':'capital Delta','\\\\Theta':'capital Theta','\\\\Lambda':'capital Lambda','\\\\Pi':'pi','\\\\Sigma':'capital Sigma','\\\\Phi':'capital Phi','\\\\Psi':'capital Psi','\\\\Omega':'capital Omega','\\\\infty':'infinity','\\\\pm':'plus or minus','\\\\mp':'minus or plus','\\\\times':'times','\\\\div':'divided by','\\\\cdot':'times','\\\\ast':'times','\\\\leq':'less than or equal to','\\\\le':'less than or equal to','\\\\geq':'greater than or equal to','\\\\ge':'greater than or equal to','\\\\neq':'not equal to','\\\\ne':'not equal to','\\\\approx':'approximately','\\\\sim':'similar to','\\\\equiv':'equivalent to','\\\\propto':'proportional to','\\\\rightarrow':'to','\\\\to':'to','\\\\leftarrow':'from','\\\\Rightarrow':'implies','\\\\Leftarrow':'implied by','\\\\Leftrightarrow':'if and only if','\\\\leftrightarrow':'if and only if','\\\\therefore':'therefore','\\\\because':'because','\\\\exists':'there exists','\\\\nexists':'there does not exist','\\\\forall':'for all','\\\\in':'in','\\\\notin':'not in','\\\\subset':'subset of','\\\\subseteq':'subset of or equal to','\\\\cup':'union','\\\\cap':'intersection','\\\\emptyset':'empty set','\\\\varnothing':'empty set','\\\\partial':'the partial derivative of','\\\\nabla':'del','\\\\log':'log','\\\\ln':'natural log','\\\\exp':'exponential','\\\\sin':'sine','\\\\cos':'cosine','\\\\tan':'tangent','\\\\cot':'cotangent','\\\\sec':'secant','\\\\csc':'cosecant','\\\\arcsin':'arcsine','\\\\arccos':'arccosine','\\\\arctan':'arctangent','\\\\sinh':'hyperbolic sine','\\\\cosh':'hyperbolic cosine','\\\\tanh':'hyperbolic tangent','\\\\max':'maximum','\\\\min':'minimum','\\\\gcd':'greatest common divisor','\\\\lcm':'lowest common multiple','\\\\det':'determinant','\\\\dim':'dimension','\\\\ker':'kernel','\\\\sum':'sum of','\\\\prod':'product of','\\\\int':'integral','\\\\oint':'contour integral','\\\\iint':'double integral','\\\\iiint':'triple integral','\\\\cdots':'and so on','\\\\ldots':'and so on','\\\\vdots':'','\\\\left':'','\\\\right':'','\\\\langle':'','\\\\rangle':'','\\\\|':'','\\\\,':' ','\\\\;':' ','\\\\:':' ','\\\\ ':' ','\\\\!':'','\\\\quad':' ','\\\\qquad':' '};
+      Object.keys(map).forEach(function(k){expr=expr.replace(new RegExp(k,'g'),' '+map[k]+' ');});
+      expr=expr.replace(/\\text\{([^}]*)\}/g,'$1');
+      expr=expr.replace(/\\[a-zA-Z]+/g,' ');
+      expr=expr.replace(/[{}]/g,' ').replace(/[\^_&|]/g,' ');
+      expr=expr.replace(/\+/g,' plus ').replace(/-/g,' minus ').replace(/=/g,' equals ');
+      expr=expr.replace(/</g,' less than ').replace(/>/g,' greater than ');
+      expr=expr.replace(/\*/g,' times ');
+      expr=expr.replace(/[$\\]/g,' ');
+      return expr.replace(/\s+/g,' ').trim();
+    }
+    function ttsClean(t){
+      /* Strip HTML tags that appear when pasting from websites/Word */
+      t=t.replace(/<[a-zA-Z\/][^>]*>/g,' ');
+      /* Strip decorative symbols that sound terrible when spoken */
+      t=t.replace(/[✓✗✘☑☐►▶•◦◆★☆]/g,'');
+      /* LaTeX math blocks */
+      t=t.replace(/\$\$([^$]+)\$\$/g,function(_,m){return '. '+latexToSpeech(m)+'. ';});
+      t=t.replace(/\$([^$\n]{1,300})\$/g,function(_,m){return ' '+latexToSpeech(m)+' ';});
+      /* Plain-text math notation */
+      t=t.replace(/([a-zA-Z0-9]+)\^2\b/g,'$1 squared').replace(/([a-zA-Z0-9]+)\^3\b/g,'$1 cubed');
+      t=t.replace(/([a-zA-Z0-9]+)\^\{?([0-9]+)\}?/g,'$1 to the power of $2');
+      t=t.replace(/([a-zA-Z0-9]+)\^n\b/g,'$1 to the power n');
+      t=t.replace(/\b1\/2\b/g,'one half').replace(/\b1\/3\b/g,'one third').replace(/\b1\/4\b/g,'one quarter').replace(/\b3\/4\b/g,'three quarters').replace(/\b2\/3\b/g,'two thirds');
+      /* Unicode math symbols */
+      return t.replace(/\u2192/g,' to ').replace(/\u2190/g,' from ').replace(/\u2191/g,' up ').replace(/\u2193/g,' down ').replace(/\u21D2/g,' implies ').replace(/\u21D4/g,' if and only if ').replace(/\u2248/g,' approximately ').replace(/\u2260/g,' not equal to ').replace(/\u2264/g,' less than or equal to ').replace(/\u2265/g,' greater than or equal to ').replace(/\u00D7/g,' times ').replace(/\u00F7/g,' divided by ').replace(/\u00B0/g,' degrees ').replace(/\u00B2/g,' squared ').replace(/\u00B3/g,' cubed ').replace(/\u221A/g,' root of ').replace(/\u221E/g,' infinity ').replace(/\u2234/g,' therefore ').replace(/\u2235/g,' because ').replace(/\u03C0/g,' pi ').replace(/\u2211/g,' sum ').replace(/\u222B/g,' integral ').replace(/\u03B1/g,' alpha ').replace(/\u03B2/g,' beta ').replace(/\u03B3/g,' gamma ').replace(/\u03B4/g,' delta ').replace(/\u03B8/g,' theta ').replace(/\u03BB/g,' lambda ').replace(/\u03BC/g,' mu ').replace(/\u03C3/g,' sigma ').replace(/\s+/g,' ').trim();
+    }
     function splitText(text){var MARK='\uE001';var result=[];var t=text.replace(/\s+/g,' ').trim();t.replace(/([.!?]+)\s+/g,'$1'+MARK).split(MARK).forEach(function(s){s=s.trim();if(!s)return;if(s.length<=180){result.push(s);return;}s.split(/,\s+/).forEach(function(part){part=part.trim();if(!part)return;if(part.length<=180){result.push(part);return;}var words=part.split(' '),buf='';words.forEach(function(w){if(buf.length+w.length+1>180&&buf){result.push(buf);buf=w;}else buf+=(buf?' ':'')+w;});if(buf)result.push(buf);});});return result.length?result:[t];}
-    function buildChunks(bodyEl){var built=[],idx=0;bodyEl.querySelectorAll('p,li,h2,h3,blockquote').forEach(function(el){var text=ttsClean(el.textContent.trim());if(!text)return;var sid='_ts'+(idx++);el.innerHTML='<span class="tts-sent" id="'+sid+'">'+el.innerHTML+'</span>';var span=document.getElementById(sid);splitText(text).forEach(function(s){built.push({text:s,span:span});});});chunks=built;}
+    function buildChunks(bodyEl){
+      var built=[],idx=0,firstOf={};
+      /* Primary: standard prose elements + takeaway items */
+      bodyEl.querySelectorAll('p,li,h2,h3,blockquote,.takeaway-item').forEach(function(el){
+        var text=ttsClean(el.textContent.trim());
+        if(!text)return;
+        var sid='_ts'+(idx++);
+        el.innerHTML='<span class="tts-sent" id="'+sid+'">'+el.innerHTML+'</span>';
+        var span=document.getElementById(sid)||el;
+        firstOf[sid]=built.length;
+        span.addEventListener('click',function(){TTS.seekTo(firstOf[sid]);});
+        splitText(text).forEach(function(s){built.push({text:s,span:span});});
+      });
+      /* Fallback: if the content has no standard elements (unusual formatting,
+         single-block text, etc.) — read raw text content directly            */
+      if(!built.length){
+        var raw=ttsClean((bodyEl.innerText||bodyEl.textContent||'').trim());
+        if(raw){
+          bodyEl.innerHTML='<span class="tts-sent" id="_ts0">'+bodyEl.innerHTML+'</span>';
+          var span=document.getElementById('_ts0')||bodyEl;
+          splitText(raw).forEach(function(s){built.push({text:s,span:span});});
+        }
+      }
+      chunks=built;
+    }
     return{
-      init:function(bodyEl){
-        /* Reset any in-progress playback before loading new content */
-        if(playing){playing=false;gen++;stopDog();synth.cancel();}
+      init:function(bodyEl,title){
+        if(playing){playing=false;gen++;stopDog();_stopBgAudio();_setMedia('stop');synth.cancel();}
+        if(title)_title=title;
         cur=0;chunks=[];clearHl();setFill(0);setBtn('&#9654;');
-        var go=function(){
-          buildChunks(bodyEl);
-          if(chunks.length){
-            document.getElementById('ttsBar').classList.add('on');
-            setVoiceBtn();
-            setInfo('Tap &#9654; to listen — '+chunks.length+' segment'+(chunks.length!==1?'s':''));
-          }
-        };
-        if(synth.getVoices().length>0)go();
-        else{synth.addEventListener('voiceschanged',go,{once:true});setTimeout(function(){if(!chunks.length)go();},1500);}
+        try{buildChunks(bodyEl);}catch(e){chunks=[];}
+        if(chunks.length){bodyEl.classList.add('tts-tap-active');}
+        setInfo('Tap ▶ to listen');
+        setVoiceBtn();
       },
-      toggle:function(){if(!chunks.length)return;if(playing){playing=false;gen++;stopDog();synth.cancel();setBtn('&#9654;');setInfo('Paused at '+(cur+1)+'/'+chunks.length+' â€” tap to continue');}else{playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');startDog();speakAt(cur,myGen);}},
-      stop:function(){playing=false;gen++;stopDog();synth.cancel();cur=0;clearHl();setFill(0);setBtn('&#9654;');setInfo('Tap play to listen aloud');},
-      restart:function(){playing=false;gen++;stopDog();synth.cancel();cur=0;playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');startDog();setTimeout(function(){speakAt(0,myGen);},100);},
+      toggle:function(){
+        if(!chunks.length){
+          /* Grab text from wherever it lives on the page */
+          var containers=['ttsBody','content'];
+          for(var i=0;i<containers.length;i++){
+            var el=document.getElementById(containers[i]);
+            if(el&&(el.innerText||el.textContent||'').trim()){
+              try{buildChunks(el);}catch(e){chunks=[];}
+              if(!chunks.length){
+                var raw=ttsClean((el.innerText||el.textContent||'').trim());
+                splitText(raw).forEach(function(s){chunks.push({text:s,span:el});});
+              }
+              if(chunks.length){el.classList.add('tts-tap-active');cur=0;setVoiceBtn();}
+              break;
+            }
+          }
+          if(!chunks.length){setInfo('No text to read yet');return;}
+        }
+        if(playing){playing=false;gen++;stopDog();_stopBgAudio();synth.cancel();setBtn('&#9654;');setInfo('Paused — tap ▶ to continue');if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';}
+        else{playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');_startBgAudio();_setMedia('play');startDog();speakAt(cur,myGen);}
+      },
+      stop:function(){playing=false;gen++;stopDog();_stopBgAudio();_setMedia('stop');synth.cancel();cur=0;clearHl();setFill(0);setBtn('&#9654;');setInfo('Tap play to listen aloud');},
+      restart:function(){playing=false;gen++;stopDog();synth.cancel();cur=0;playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');_startBgAudio();_setMedia('play');startDog();setTimeout(function(){speakAt(0,myGen);},100);},
       cycleSpeed:function(){spIdx=(spIdx+1)%SPEEDS.length;var e=document.getElementById('ttsSpd');if(e)e.textContent=SPEEDS[spIdx]+'x';if(playing){var myGen=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===myGen){startDog();speakAt(cur,myGen);}},100);}},
-      cycleVoice:function(){vpIdx=(vpIdx+1)%VPREFS.length;setVoiceBtn();if(playing){var myGen=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===myGen){startDog();speakAt(cur,myGen);}},100);}}
+      cycleVoice:function(){vpIdx=(vpIdx+1)%VPREFS.length;setVoiceBtn();if(playing){var myGen=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===myGen){startDog();speakAt(cur,myGen);}},100);}},
+      seekTo:function(i){if(!chunks.length)return;cur=Math.max(0,Math.min(i,chunks.length-1));if(playing){var myGen=++gen;stopDog();synth.cancel();setTimeout(function(){if(playing&&gen===myGen){startDog();speakAt(cur,myGen);}},80);}else{playing=true;var myGen=++gen;setBtn('&#9646;&#9646;');_startBgAudio();_setMedia('play');startDog();speakAt(cur,myGen);}}
     };
   })();
 
+  function activateTtsBar(){} /* no-op — TTS.init owns the bar now */
+
+  /* ── Reader tools: highlights · zoom · pinch-to-zoom ─────────── */
+  var _hlMode   = null;
+  var _hlStore  = {};
+  var _hlBookId = null;
+  var _zoom     = 1.0;   /* visual zoom level applied to #ttsBody */
+
+  function initHighlights(bookId) {
+    _hlBookId = bookId;
+    try { _hlStore = JSON.parse(localStorage.getItem('ronyx_hl_' + bookId) || '{}'); }
+    catch(e) { _hlStore = {}; }
+  }
+
+  function _saveHlStore() {
+    try { localStorage.setItem('ronyx_hl_' + _hlBookId, JSON.stringify(_hlStore)); }
+    catch(e) {}
+  }
+
+  function applyHighlights() {
+    document.querySelectorAll('.tts-sent').forEach(function(span) {
+      var key = (span.textContent || '').trim().slice(0, 50);
+      var col = _hlStore[key];
+      if (col) span.setAttribute('data-hl', col);
+      else     span.removeAttribute('data-hl');
+    });
+  }
+
+  function setHlMode(color) {
+    _hlMode = (_hlMode === color) ? null : color;
+    renderReaderTools();
+  }
+
+  function clearHighlights() {
+    _hlStore = {};
+    _saveHlStore();
+    document.querySelectorAll('[data-hl]').forEach(function(el) { el.removeAttribute('data-hl'); });
+  }
+
+  function setContentZoom(z) {
+    _zoom = Math.max(0.5, Math.min(3.5, z));
+    var ttsBody = document.getElementById('ttsBody');
+    if (ttsBody) ttsBody.style.zoom = _zoom;
+    /* allow horizontal scroll when zoomed in */
+    var content = document.getElementById('content');
+    if (content) content.style.overflowX = _zoom > 1.02 ? 'auto' : '';
+    /* update label */
+    var lbl = document.getElementById('rtZoomLbl');
+    if (lbl) lbl.textContent = Math.round(_zoom * 100) + '%';
+  }
+
+  function changeZoom(delta) {
+    setContentZoom(Math.round((_zoom + delta) * 10) / 10);
+  }
+
+  function renderReaderTools() {
+    var el = document.getElementById('readerTools');
+    if (!el) return;
+    if (_hlMode) {
+      var cols = [
+        { id:'y', label:'Yellow', bg:'rgba(251,191,36,.35)', bc:'rgba(251,191,36,.7)', tc:'#92400e' },
+        { id:'g', label:'Green',  bg:'rgba(52,211,153,.32)', bc:'rgba(52,211,153,.7)', tc:'#065f46' },
+        { id:'p', label:'Pink',   bg:'rgba(244,63,94,.22)',  bc:'rgba(244,63,94,.7)',  tc:'#9f1239' },
+        { id:'b', label:'Blue',   bg:'rgba(59,130,246,.25)', bc:'rgba(59,130,246,.7)', tc:'#1e3a8a' },
+      ];
+      el.innerHTML =
+        '<span style=”font-size:11px;color:var(--color-muted);flex-shrink:0;padding:4px 2px;”>Color:</span>' +
+        cols.map(function(c) {
+          var on = _hlMode === c.id;
+          return '<button class=”rt-btn'+(on?' rt-on':'')+'” '+
+            'style=”background:'+c.bg+';border-color:'+c.bc+';color:'+c.tc+';” '+
+            'onclick=”setHlMode(\''+c.id+'\')” title=”'+c.label+'”>'+c.label+'</button>';
+        }).join('') +
+        '<button class=”rt-btn” style=”background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.3);color:#f43f5e;” '+
+          'onclick=”clearHighlights()” title=”Remove all highlights”>&#10006; Clear</button>' +
+        '<button class=”rt-btn rt-on” onclick=”setHlMode(null)” title=”Exit highlight mode”>&#10003; Done</button>';
+    } else {
+      el.innerHTML =
+        '<button class=”rt-btn” onclick=”setHlMode(\'y\')” title=”Highlight text”>&#9997; Highlight</button>'+
+        '<div class=”rt-divider”></div>'+
+        '<button class=”rt-btn” onclick=”changeZoom(-0.1)” title=”Zoom out” style=”padding:5px 10px;font-size:16px;font-weight:900;”>&#8722;</button>'+
+        '<span id=”rtZoomLbl” class=”rt-btn rt-zoom-lbl” onclick=”setContentZoom(1)” title=”Reset zoom”>100%</span>'+
+        '<button class=”rt-btn” onclick=”changeZoom(0.1)”  title=”Zoom in”  style=”padding:5px 10px;font-size:16px;font-weight:900;”>&#43;</button>'+
+        '<div class=”rt-divider”></div>'+
+        '<button class=”rt-btn” onclick=”document.getElementById(\'content\').scrollTop=0” title=”Back to top”>&#8679; Top</button>';
+    }
+  }
+
+  function setupTextPinchZoom() {
+    var container = document.getElementById('content');
+    if (!container) return;
+    var startDist = 0, startZoom = 1.0;
+
+    container.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 2) {
+        startDist = Math.hypot(
+          e.touches[1].clientX - e.touches[0].clientX,
+          e.touches[1].clientY - e.touches[0].clientY
+        );
+        startZoom = _zoom;
+      }
+    }, { passive: true });
+
+    container.addEventListener('touchmove', function(e) {
+      if (e.touches.length !== 2 || !startDist) return;
+      e.preventDefault();
+      var dist = Math.hypot(
+        e.touches[1].clientX - e.touches[0].clientX,
+        e.touches[1].clientY - e.touches[0].clientY
+      );
+      setContentZoom(startZoom * dist / startDist);
+    }, { passive: false });
+
+    container.addEventListener('touchend', function(e) {
+      if (e.touches.length < 2) startDist = 0;
+    }, { passive: true });
+
+    /* Double-tap: reset to 100% if zoomed, else zoom to 150% */
+    var _lastTap = 0;
+    container.addEventListener('touchend', function(e) {
+      if (e.changedTouches.length !== 1 || e.touches.length > 0) return;
+      var now = Date.now();
+      if (now - _lastTap < 280) {
+        setContentZoom(Math.abs(_zoom - 1.0) > 0.08 ? 1.0 : 1.5);
+        e.preventDefault();
+      }
+      _lastTap = now;
+    }, { passive: false });
+  }
+
+  /* Capture-phase: intercept .tts-sent clicks when highlight mode is on */
+  document.addEventListener('click', function(e) {
+    if (!_hlMode) return;
+    var sent = e.target.closest ? e.target.closest('.tts-sent') : null;
+    if (!sent) return;
+    e.stopPropagation();
+    var key = (sent.textContent || '').trim().slice(0, 50);
+    var cur = sent.getAttribute('data-hl');
+    if (cur === _hlMode) {
+      sent.removeAttribute('data-hl');
+      delete _hlStore[key];
+    } else {
+      sent.setAttribute('data-hl', _hlMode);
+      _hlStore[key] = _hlMode;
+    }
+    _saveHlStore();
+  }, true);
+
   /* ============================================================
-     ADMIN BOOK MODE â€” showBook(b)
+     ADMIN BOOK MODE — showBook(b)
   ============================================================ */
   async function showBook(b){
-    document.getElementById('appbarTitle').textContent=b.title||'Reading';
+    activateTtsBar('Preparing audio…');
+    document.getElementById('appbarTitle').textContent=(b.cover||'\u{1F4D8}')+' '+(b.title||'Reading');
     document.title=(b.title||'Summary')+' — Ronyx';
+
+    /* Mark as opened / preserve existing progress */
+    var existing = RLIB.get(b.$id);
+    RLIB.set(b.$id, Object.assign({}, existing||{}, {
+      lastRead: Date.now(), title: b.title||'', cover: b.cover||'&#128218;',
+      author: b.author||'Unknown', type: 'text',
+      percent: existing ? existing.percent : 1
+    }));
+    initFavBtn(b.$id);
     var takeaways=[];try{takeaways=JSON.parse(b.takeaways||'[]');}catch(e){}
     var contentHtml=renderContent(b.summary||'');
 
@@ -236,16 +638,22 @@
         handleImage(b.title||'Document', b.fileId, ext);
       } else if (mime === 'text/plain' || mime === 'text/markdown') {
         handleText(b.title||'Document', b.fileId);
+      } else if (isDocMime(mime)) {
+        handleDocx(b.title||'Document', b.fileId);
       } else {
         handlePdf(b.title||'Document', b.fileId);
       }
       return;
     }
 
-    var tkHtml=takeaways.length?'<div class=”section-hd”>Key Takeaways</div><div class=”takeaway-list”>'+takeaways.map(function(t){return '<div class=”takeaway-item”><span class=”takeaway-check”>&#10003;</span><span>'+esc(t)+'</span></div>';}).join('')+'</div>':'';
+    var tkHtml=takeaways.length?
+      '<div class=”section-hd”>Key Takeaways</div>'+
+      '<div class=”takeaway-list”>'+
+        takeaways.map(function(t){return '<div class=”takeaway-item”><span class=”takeaway-check”>&#10003;</span><span>'+esc(t)+'</span></div>';}).join('')+
+      '</div>':'';
 
-    /* Book has a summary; show the reader. If there is also a PDF, offer a
-       button so the student can switch to the full document + TTS view.    */
+    /* Book has a summary; show the reader. If there is also a file, offer a
+       button so the student can switch to the full document view.           */
     var fileHtml = '';
     if (b.fileId) {
       var safeTitle = JSON.stringify(b.title||'');
@@ -253,33 +661,49 @@
       fileHtml =
         '<div class=”section-hd”>Full Document</div>'+
         '<div style=”padding:4px 0 24px;”>'+
-          '<button class=”btn btn--primary” style=”width:100%;padding:16px;” '+
+          '<button class=”btn btn--ghost” style=”width:100%;padding:14px;” '+
             'onclick=”openBookPdf('+safeTitle+','+safeId+')”>'+
-            '&#128196;&nbsp; Open Full PDF &mdash; with Text-to-Speech'+
+            '&#128196;&nbsp; Open full document'+
           '</button>'+
-          '<p style=”font-size:11px;color:var(--color-muted);margin-top:8px;text-align:center;”>'+
-            'Opens the document reader with OCR &amp; TTS support'+
-          '</p>'+
         '</div>';
     }
 
+    /* Listen button — always visible so user can find it immediately */
+    var listenBtn = '<button id=”listenBtn” onclick=”TTS.toggle()” '+
+      'style=”display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;'+
+      'padding:4px 11px;border-radius:20px;background:rgba(109,94,252,.14);'+
+      'color:var(--color-primary-2);border:1px solid rgba(109,94,252,.3);'+
+      'cursor:pointer;margin-left:auto;-webkit-tap-highlight-color:transparent;”>'+
+      '&#128266;&nbsp;Listen</button>';
+
     document.getElementById('content').innerHTML=
-      '<div class=”reader-hero”>'+
-        '<div class=”reader-emoji”>'+esc(b.cover||'\u{1F4D8}')+'</div>'+
-        '<div class=”reader-title”>'+esc(b.title||'')+'</div>'+
-        '<div class=”reader-author”>'+esc(b.author||'Unknown')+'</div>'+
-        '<div class=”reader-badges”>'+
-          (b.faculty?'<span class=”badge”>'+esc(b.faculty)+'</span>':'')+
-          (b.department?'<span class=”badge”>'+esc(b.department)+'</span>':'')+
-          (b.courseCode?'<span class=”badge” style=”background:rgba(245,158,11,.15);color:#F59E0B;”>'+esc(b.courseCode)+'</span>':'')+
-          (b.subject?'<span class=”badge badge--violet”>'+esc(b.subject)+'</span>':'')+
-          '<span class=”badge badge--green”>'+(b.readMinutes||10)+' min</span>'+
-          (b.pages?'<span class=”badge”>'+b.pages+' pages</span>':'')+
-        '</div>'+
+      '<div id=”readerTools” class=”reader-tools”></div>'+
+      /* Summary + takeaways share one #ttsBody so TTS reads everything */
+      '<div class=”section-hd” style=”display:flex;align-items:center;”>Summary'+listenBtn+'</div>'+
+      '<div id=”ttsBody”>'+
+        '<div class=”reader-body”>'+contentHtml+'</div>'+
+        tkHtml+
       '</div>'+
-      '<div class=”section-hd”>Summary</div><div class=”reader-body” id=”ttsBody”>'+contentHtml+'</div>'+
-      tkHtml+fileHtml;
-    if('speechSynthesis' in window){var el=document.getElementById('ttsBody');if(el)TTS.init(el);}
+      fileHtml;
+    if('speechSynthesis' in window){
+      var el=document.getElementById('ttsBody');
+      if(el){
+        TTS.init(el,b.title||'');
+        var infoEl=document.getElementById('ttsInfo');
+        if(infoEl) infoEl.textContent='Tap ▶ or touch text to seek';
+      }
+    }
+    initHighlights(b.$id);
+    applyHighlights();
+    _zoom = 1.0; /* reset zoom for each new book */
+    setupTextPinchZoom();
+    renderReaderTools();
+    /* Expose book context to the AI chat widget */
+    if(window.rnxAI) rnxAI.setBook(b.title||'', b.summary||'');
+    else window.RONYX_BOOK={title:b.title||'',summary:b.summary||''};
+
+    /* Track scroll progress for text/summary view */
+    trackScrollProgress(b.$id, { title:b.title||'', cover:b.cover||'&#128218;', author:b.author||'Unknown', type:'text' });
   }
 
   function openBookPdf(title, fileId) {
@@ -322,11 +746,8 @@
 
   /* â”€â”€ Hero HTML â”€â”€ */
   function heroHtml(title, emoji, meta) {
-    return '<div class="reader-hero">'+
-      '<div class="reader-emoji">'+emoji+'</div>'+
-      '<div class="reader-title">'+esc(title)+'</div>'+
-      '<div class="reader-author">'+esc(meta)+' &middot; My Upload</div>'+
-    '</div>';
+    /* Title is already shown in the appbar — no separate hero needed */
+    return '';
   }
 
   /* â”€â”€ Hidden TTS element (off-screen, DOM-accessible for TTS engine) â”€â”€ */
@@ -334,41 +755,77 @@
     return '<div id="ttsBody" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true"></div>';
   }
 
-  /* ── JWT cache (createJWT is called at most once per 14 min) ── */
-  var _jwt = null, _jwtExp = 0;
-  async function getJwt() {
-    if (_jwt && Date.now() < _jwtExp) return _jwt;
-    if (!window.account) return null;
-    try {
-      var r = await window.account.createJWT();
-      _jwt    = r.jwt;
-      _jwtExp = Date.now() + 14 * 60 * 1000;
-      return _jwt;
-    } catch(e) { return null; }
+  /* ── MIME type helpers ── */
+  function isDocMime(mime) {
+    /* Word documents that mammoth.js can render */
+    return /wordprocessingml|msword|vnd\.ms-word|opendocument\.text/.test(mime || '');
   }
 
-  /* ── Fetch file blob from Appwrite ──
-     Tries JWT header first (works even when 3rd-party cookies are blocked),
-     then falls back to session cookie.                                      */
-  async function fetchBlob(fileId) {
+  /* ── Fetch any file from Appwrite storage (authenticated) ──
+     Returns { buf: ArrayBuffer, blob: Blob, mimeType: string }.
+     Throws clear errors on auth failures and HTTP errors.      */
+  async function fetchFile(fileId) {
     var url = String(RonyxData.fileViewUrl(fileId));
+    var pid = (window.RONYX_CONFIG || {}).PROJECT_ID || '';
 
-    /* Attempt 1: JWT header — bypasses 3rd-party cookie restrictions */
-    var jwt = await getJwt();
-    if (jwt) {
-      var r1 = await fetch(url, {
-        headers: {
-          'X-Appwrite-Project': window.RONYX_CONFIG.PROJECT_ID,
-          'X-Appwrite-JWT':     jwt,
+    /* Auth path 1: Appwrite SDK stores session in localStorage['cookieFallback']
+       when SameSite cookie restrictions block cross-origin cookies.           */
+    var cookieFallback = '';
+    try { cookieFallback = localStorage.getItem('cookieFallback') || ''; } catch(e) {}
+
+    /* Auth path 2: read session cookie directly so we can send it as a header */
+    if (!cookieFallback) {
+      try {
+        var sessionKey = 'a_session_' + pid;
+        var found = document.cookie.split(';').filter(function(c){
+          return c.trim().indexOf(sessionKey) === 0;
+        });
+        if (found.length) {
+          var kv = {};
+          found.forEach(function(c){
+            var parts = c.trim().split('=');
+            kv[parts[0]] = parts.slice(1).join('=');
+          });
+          cookieFallback = JSON.stringify(kv);
         }
-      });
-      if (r1.ok) return r1.blob();
+      } catch(e) {}
     }
 
-    /* Attempt 2: session cookie (desktop browsers / same-site contexts) */
-    var r2 = await fetch(url, { credentials: 'include' });
-    if (!r2.ok) throw new Error('HTTP ' + r2.status + ' — file could not be loaded. Make sure you are logged in.');
-    return r2.blob();
+    var hdrs = { 'X-Appwrite-Project': pid };
+    if (cookieFallback) hdrs['X-Fallback-Cookies'] = cookieFallback;
+
+    var r = await fetch(url, { credentials: 'include', headers: hdrs });
+
+    if (!r.ok) {
+      throw new Error('Could not load file (HTTP ' + r.status + '). Check your connection and login.');
+    }
+
+    var buf   = await r.arrayBuffer();
+    var bytes = new Uint8Array(buf);
+    var ct    = r.headers.get('content-type') || '';
+    var head4 = bytes.length >= 4 ? String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]) : '';
+
+    /* Catch HTML/JSON error pages regardless of status code */
+    if (ct.includes('text/html') || head4 === '<!DO' || head4 === '<htm') {
+      throw new Error('Authentication failed — session may have expired. Please log out and log back in.');
+    }
+    if (ct.includes('application/json') && head4.charAt(0) === '{') {
+      var errText = new TextDecoder().decode(bytes.slice(0, 300));
+      try { var j = JSON.parse(errText); throw new Error(j.message || 'Access denied'); }
+      catch(je) { if (je.message && je.message !== 'Access denied') throw je; }
+      throw new Error('Access denied — the file could not be retrieved.');
+    }
+
+    /* Detect MIME from magic bytes when server returns generic octet-stream */
+    var detectedMime = ct.split(';')[0].trim() || 'application/octet-stream';
+    if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
+      detectedMime = 'application/pdf'; /* %PDF */
+    } else if (bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04) {
+      /* PK header — ZIP-based format (docx, xlsx, pptx, odt…) — keep server MIME */
+      if (detectedMime === 'application/octet-stream') detectedMime = ct || detectedMime;
+    }
+
+    return { buf: buf, blob: new Blob([buf], { type: detectedMime }), mimeType: detectedMime };
   }
 
   /* â”€â”€ Lazy-load a script (deduplicated by data-rsrc attr) â”€â”€ */
@@ -383,17 +840,20 @@
   }
 
   /* â”€â”€ Feed cleaned text to TTS via hidden body element â”€â”€ */
-  function initTtsFromText(text) {
+  function initTtsFromText(text, title) {
     var el = document.getElementById('ttsBody');
     if (!el) return;
-    if (!text || !text.trim()) {
+    /* Strip any HTML tags that OCR or extraction might include */
+    text = (text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!text) {
       el.innerHTML = '<p>No readable text was found in this document.</p>';
     } else {
-      /* Split into paragraphs, create a <p> for each */
-      var paras = text.trim().split(/\n{2,}/).filter(function(p){ return p.trim(); });
+      /* Split into paragraphs (double newline) or sentences if no double newlines */
+      var paras = text.split(/\n{2,}/).filter(function(p){ return p.trim(); });
+      if (paras.length === 1) paras = text.split(/\n/).filter(function(p){ return p.trim(); });
       el.innerHTML = paras.map(function(p){ return '<p>'+esc(p.trim())+'</p>'; }).join('');
     }
-    if ('speechSynthesis' in window) TTS.init(el);
+    if ('speechSynthesis' in window) TTS.init(el, title||'');
   }
 
   /* â”€â”€ PDF zoom â”€â”€ */
@@ -447,121 +907,169 @@
     });
   }
 
-  /* â”€â”€ PDF handler â”€â”€ */
+  /* ── PDF handler — shows the file as-is using the native browser viewer ── */
   async function handlePdf(title, fileId) {
-    /* Build page layout: sticky progress bar first, then content below */
     document.getElementById('content').innerHTML =
       procHtml() +
-      heroHtml(title, '&#128196;', 'PDF') +
-      '<div class="pdf-viewer">'+
-        '<div class="pdf-hd">'+
-          '<div class="pdf-hd-left">&#128196; <span id="pdfPageInfo"></span></div>'+
-          '<div class="pdf-hd-right">'+
-            '<button class="z-btn" onclick="changeZoom(-1)" title="Zoom out">&#8722;</button>'+
-            '<span id="zoomLbl">100%</span>'+
-            '<button class="z-btn" onclick="changeZoom(1)"  title="Zoom in">&#43;</button>'+
-          '</div>'+
-        '</div>'+
-        '<div class="pdf-scroll" id="pdfScroll">'+
-          '<div class="pdf-pages" id="pdfPages"></div>'+
-        '</div>'+
-      '</div>'+
-      ttsBodyHtml();
-
-    showProc('Fetching documentâ€¦', 5);
+      '<div id=”pdfWrap” style=”border-radius:14px;overflow:hidden;border:1px solid var(--color-stroke);background:var(--color-surface);”></div>';
+    showProc('Loading PDF…', 15);
 
     try {
-      /* Fetch PDF blob â€” uses auth cookie, avoids CORS redirect issues */
-      var blob    = await fetchBlob(fileId);
-      var blobUrl = URL.createObjectURL(blob);
+      var _file = await fetchFile(fileId);
+      if (isDocMime(_file.mimeType)) { await handleDocx(title, fileId, _file.buf); return; }
+      if (_file.mimeType !== 'application/pdf') {
+        throw new Error('Expected a PDF but received ' + _file.mimeType + '.');
+      }
+      var blobUrl = URL.createObjectURL(_file.blob);
+      hideProc();
 
-      showProc('Loading PDF engineâ€¦', 12);
-      await loadScript('/js/pdfviewer.js?v=mqypss88');
-
-      var pagesEl = document.getElementById('pdfPages');
-      var result  = await window.RonyxPDF.render(blobUrl, pagesEl, function(p) {
-        showProc(p.label, p.pct);
-        var pi = document.getElementById('pdfPageInfo');
-        if (pi) pi.textContent = p.label;
-      });
-      URL.revokeObjectURL(blobUrl);
-
-      /* Setup zoom and pinch gestures */
-      setupPinchZoom(pagesEl);
-
-      var pi = document.getElementById('pdfPageInfo');
-      if (pi) pi.textContent = result.pages + ' page' + (result.pages !== 1 ? 's' : '');
-
-      /* Determine if we need OCR: < 40 chars/page = scanned document */
-      var avgChars = result.pages > 0 ? result.text.length / result.pages : 0;
-
-      if (avgChars < 40 && result.canvases.length) {
-        /* Scanned PDF â€” load OCR engine, which also restores stored rotation on cached visits */
-        showProc('Scanned PDF â€” running OCRâ€¦', 0, '#F59E0B');
-        await loadScript('/js/ocrengine.js?v=mqypss88');
-        var ocrKey  = 'ronyx_ocr_' + fileId;
-        var ocrText = await window.RonyxOCR.processCanvases(result.canvases, ocrKey, function(p) {
-          showProc(p.label, p.pct, '#F59E0B');
-        });
-        hideProc();
-        initTtsFromText(ocrText);
-      } else {
-        /* Text PDF: use extracted text directly */
-        hideProc();
-        initTtsFromText(result.text);
+      /* Embed the PDF directly — the browser's built-in PDF viewer handles it.
+         Works on desktop and Android Chrome. iOS Safari shows a download prompt;
+         the “Open in new tab” link below covers that case.                      */
+      var wrap = document.getElementById('pdfWrap');
+      if (wrap) {
+        wrap.innerHTML =
+          '<embed src=”' + blobUrl + '” type=”application/pdf” ' +
+          'style=”width:100%;height:82vh;display:block;” />' +
+          '<div style=”padding:10px 14px;border-top:1px solid var(--color-stroke);text-align:center;”>' +
+            '<a href=”' + blobUrl + '” target=”_blank” rel=”noopener” ' +
+               'style=”font-size:12px;color:var(--color-muted);”>&#8599; Open in new tab</a>' +
+          '</div>';
       }
 
+      /* No text to extract — hide TTS bar and remove its padding */
+      var bar = document.getElementById('ttsBar');
+      if (bar) bar.style.display = 'none';
+      var cEl = document.getElementById('content');
+      if (cEl) cEl.style.paddingBottom = '12px';
+
+      /* Progress tracking */
+      var _trackId = bookId || fileId;
+      if (_trackId) {
+        var ex = RLIB.get(_trackId);
+        RLIB.set(_trackId, {
+          title: title, cover: '&#128196;', type: 'pdf',
+          lastRead: Date.now(), percent: ex ? ex.percent : 1
+        });
+        if (!_currentBookId) initFavBtn(_trackId);
+      }
     } catch (err) {
       hideProc();
-      /* Graceful fallback: open externally */
-      var fallbackUrl = String(RonyxData.fileViewUrl(fileId));
+      var extUrl = String(RonyxData.fileViewUrl(fileId));
       document.getElementById('content').innerHTML +=
-        '<div style="margin-top:12px;">'+
-          '<p style="color:var(--color-danger);font-size:13px;margin-bottom:12px;">&#9888; Could not load in-app viewer: '+esc(err.message)+'</p>'+
-          '<a href="'+fallbackUrl+'" target="_blank" rel="noopener" class="btn btn--ghost" style="display:block;text-align:center;">Open PDF externally</a>'+
+        '<div style=”margin-top:12px;”>' +
+          '<p style=”color:var(--color-danger);font-size:13px;margin-bottom:12px;”>' +
+            '&#9888; ' + esc(err.message) + '</p>' +
+          '<a href=”' + extUrl + '” target=”_blank” rel=”noopener” ' +
+             'class=”btn btn--ghost” style=”display:block;text-align:center;”>' +
+            'Open PDF externally</a>' +
         '</div>';
     }
   }
 
-  /* â”€â”€ Image handler (OCR) â”€â”€ */
+  /* ── Image handler (OCR) ── */
   async function handleImage(title, fileId, ext) {
-    var imgUrl = String(RonyxData.fileViewUrl(fileId));
+    activateTtsBar('Preparing audio…');
+    /* Show placeholder — do NOT put the Appwrite URL in <img src> because browsers
+       strip credentials on cross-origin image requests, causing a 401 in the console. */
     document.getElementById('content').innerHTML =
       procHtml() +
       heroHtml(title, '&#128247;', ext.toUpperCase()) +
-      '<div class="img-viewer"><img src="'+imgUrl+'" alt="'+esc(title)+'" onerror="this.style.display=\'none\'"></div>' +
+      '<div class=”img-viewer”><div id=”imgPlaceholder” style=”padding:32px;text-align:center;color:var(--color-muted);font-size:13px;”>Loading image&#8230;</div></div>' +
       ttsBodyHtml();
 
-    showProc('Loading OCR engineâ€¦', 5, '#10B981');
+    showProc('Fetching image…', 5, '#10B981');
 
     try {
-      var blob = await fetchBlob(fileId);
-      await loadScript('/js/ocrengine.js?v=mqypss88');
+      var { blob } = await fetchFile(fileId);
+      var blobUrl = URL.createObjectURL(blob);
+
+      /* Swap placeholder for real image rendered from authenticated blob */
+      var ph = document.getElementById('imgPlaceholder');
+      if (ph) ph.outerHTML = '<img id=”bookImgEl” style=”max-width:100%;border-radius:8px;display:block;margin:0 auto;” src=”'+blobUrl+'” alt=”'+esc(title)+'”>';
+
+      showProc('Loading OCR engine…', 15, '#10B981');
+      await loadScript('/js/ocrengine.js?v=mrr39s6t');
       var ocrKey = 'ronyx_ocr_' + fileId;
       var text   = await window.RonyxOCR.processBlob(blob, ocrKey, function(p) {
         showProc(p.label, p.pct, '#10B981');
       });
       hideProc();
-      initTtsFromText(text);
+      initTtsFromText(text, title);
     } catch (err) {
       hideProc();
       document.getElementById('content').innerHTML +=
-        '<p style="color:var(--color-danger);font-size:13px;margin-top:12px;">&#9888; OCR failed: '+esc(err.message)+'</p>';
+        '<p style=”color:var(--color-danger);font-size:13px;margin-top:12px;”>&#9888; Could not load image: '+esc(err.message)+'</p>';
     }
   }
 
-  /* â”€â”€ Text / Markdown handler â”€â”€ */
+  /* ── Text / Markdown handler ── */
   async function handleText(title, fileId) {
     var book = { title:title, cover:'&#128221;', author:'My Upload', subject:'', readMinutes:0 };
     try {
-      var url  = String(RonyxData.fileViewUrl(fileId));
-      var resp = await fetch(url, { credentials:'include' });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      book.summary = await resp.text();
+      var { blob } = await fetchFile(fileId);
+      book.summary = await blob.text();
     } catch(e) {
-      book.summary = '(Could not load file content â€” please try again.)';
+      book.summary = '(Could not load file content — please try again.)';
     }
     showBook(book);
+  }
+
+  /* ── Word / DOCX handler ──
+     Renders the document faithfully using mammoth.js (Word-to-HTML).
+     Styled to look like a printed document page.
+     TTS reads from the rendered content via a hidden buffer.
+     Accepts an optional pre-fetched ArrayBuffer to avoid a double-fetch
+     when handlePdf detects it received a DOCX file instead of a PDF.   */
+  async function handleDocx(title, fileId, preloadedBuf) {
+    document.getElementById('content').innerHTML =
+      procHtml() +
+      '<div class="doc-body" id="docBody" style="padding-bottom:120px;"></div>' +
+      ttsBodyHtml();
+
+    showProc('Loading document…', 15);
+
+    var buf = preloadedBuf || null;
+    try {
+      if (!buf) {
+        var _f = await fetchFile(fileId);
+        buf = _f.buf;
+      }
+
+      showProc('Loading…', 50);
+      await loadScript('/js/mammoth.min.js?v=mrr39s6t');
+
+      var result  = await window.mammoth.convertToHtml({ arrayBuffer: buf });
+      var html    = result.value || '<p>(Empty document)</p>';
+
+      var docBody = document.getElementById('docBody');
+      if (docBody) docBody.innerHTML = html;
+      hideProc();
+
+      /* Feed document text into TTS so the listen button works */
+      initTtsFromText(docBody ? docBody.innerText : '', title);
+
+      /* Track in reading library */
+      var _trackId = bookId || fileId;
+      if (_trackId) {
+        var _ex = RLIB.get(_trackId);
+        RLIB.set(_trackId, Object.assign({ title: title, cover: '&#128221;', type: 'doc' },
+          { lastRead: Date.now(), percent: _ex ? _ex.percent : 1 }));
+        if (!_currentBookId) initFavBtn(_trackId);
+      }
+
+    } catch (err) {
+      hideProc();
+      var extUrl = String(RonyxData.fileViewUrl(fileId));
+      document.getElementById('content').innerHTML +=
+        '<div style="margin-top:12px;">' +
+          '<p style="color:var(--color-danger);font-size:13px;margin-bottom:12px;">' +
+            '&#9888; Could not open document: ' + esc(err.message) + '</p>' +
+          '<a href="' + extUrl + '" target="_blank" rel="noopener" ' +
+             'class="btn btn--ghost" style="display:block;text-align:center;">' +
+            'Download Document</a>' +
+        '</div>';
+    }
   }
 
   /* ============================================================
@@ -569,7 +1077,7 @@
   ============================================================ */
   var _params = new URLSearchParams(location.search);
   var bookId  = _params.get('id');
-  var fileId  = _params.get('file');
+  var fileId  = _params.get('fileId') || _params.get('file');
 
   (async function(){
 
@@ -577,7 +1085,8 @@
     if (fileId) {
       var title    = _params.get('title') ? decodeURIComponent(_params.get('title')) : 'Document';
       var fileType = (_params.get('type') || 'pdf').toLowerCase();
-      document.getElementById('appbarTitle').textContent = title;
+      var _ftEmoji = fileType === 'pdf' ? '\u{1F4C4}' : /^(jpg|jpeg|png|gif|webp)$/.test(fileType) ? '\u{1F5BC}' : '\u{1F4DD}';
+      document.getElementById('appbarTitle').textContent = _ftEmoji + ' ' + title;
       document.title = title + ' â€” Ronyx';
 
       if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED || !window.RonyxData) {
@@ -592,6 +1101,8 @@
         await handlePdf(title, fileId);
       } else if (/^(jpg|jpeg|png|gif|webp|image)$/.test(fileType)) {
         await handleImage(title, fileId, fileType);
+      } else if (/^(docx|doc|odt|wps|rtf)$/.test(fileType)) {
+        await handleDocx(title, fileId);
       } else {
         document.getElementById('content').innerHTML =
           heroHtml(title, '&#128196;', fileType.toUpperCase()) +

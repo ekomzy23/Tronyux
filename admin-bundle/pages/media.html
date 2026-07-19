@@ -80,57 +80,42 @@
     <nav class="tabbar" data-nav-admin="more"></nav>
   </div>
 
-  <!-- ── Publish to Library sheet ── -->
+  <!-- ── File options sheet ── -->
   <div class="sheet-overlay" id="publishOverlay" onclick="closeSheet(event)">
     <div class="sheet" id="publishSheet">
       <div class="sheet-handle"></div>
-      <div class="sheet-title">&#128218; Publish to Student Library</div>
+      <div class="sheet-title">&#128218; Add to Student Library</div>
       <div class="sheet-sub" id="sheetFilename">file.pdf</div>
 
-      <div class="field">
-        <label class="field__label">Book Title *</label>
-        <input class="input" id="pubTitle" placeholder="Enter book title">
-      </div>
-      <div class="field">
-        <label class="field__label">Author <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
-        <input class="input" id="pubAuthor" placeholder="e.g. Prof. John Doe">
-      </div>
-      <div class="btn-row">
-        <div class="field" style="flex:1;">
-          <label class="field__label">Faculty <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
-          <input class="input" id="pubFaculty" placeholder="Faculty of Science">
-        </div>
-        <div class="field" style="flex:1;">
-          <label class="field__label">Department <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
-          <input class="input" id="pubDept" placeholder="Biochemistry">
-        </div>
-      </div>
-      <div class="btn-row">
-        <div class="field" style="flex:1;">
-          <label class="field__label">Course Code <span style="color:var(--color-muted);font-weight:400;">(optional)</span></label>
-          <input class="input" id="pubCode" placeholder="BCH301">
-        </div>
-        <div class="field" style="flex:1;">
-          <label class="field__label">Cover emoji</label>
-          <input class="input" id="pubCover" placeholder="&#128214;" maxlength="2" value="&#128196;">
-        </div>
+      <!-- Option 1: direct storage access (no DB record) -->
+      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:14px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:800;margin-bottom:3px;color:#34d399;">&#128196; Quick Add — Storage File</div>
+        <div style="font-size:12px;color:var(--color-muted);margin-bottom:10px;">Students access the raw file directly from storage. No database record. Fastest option.</div>
+        <a id="previewLink" href="#" target="_blank"
+           class="btn btn--ghost" style="display:block;text-align:center;color:#34d399;border-color:rgba(16,185,129,.4);">
+          &#128065;&nbsp; Preview in Student Reader
+        </a>
       </div>
 
-      <button class="btn btn--primary" style="width:100%;margin-top:8px;" onclick="publishBook()">
-        &#128218;&nbsp; Add to Student Library
-      </button>
-      <button class="btn" style="width:100%;margin-top:8px;" onclick="closePublishSheet()">
-        Cancel
-      </button>
+      <!-- Option 2: full book record in database -->
+      <div style="background:rgba(109,94,252,.07);border:1px solid rgba(109,94,252,.25);border-radius:14px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:800;margin-bottom:3px;color:var(--color-primary-2);">&#128218; Full Book Record — Database</div>
+        <div style="font-size:12px;color:var(--color-muted);margin-bottom:10px;">Add author, faculty, dept, summary, and takeaways. Appears in all library shelves with rich metadata.</div>
+        <button class="btn btn--primary" style="width:100%;" onclick="goBookEditor()">
+          &#9998;&nbsp; Create Book Record
+        </button>
+      </div>
+
+      <button class="btn" style="width:100%;margin-top:4px;" onclick="closePublishSheet()">Cancel</button>
     </div>
   </div>
 
-  <script src="../js/appwrite.min.js?v=mqypss88"></script>
-  <script src="../js/config.js?v=mqypss88"></script>
-  <script src="../js/appwrite.js?v=mqypss88"></script>
-  <script src="../js/admin-data.js?v=mqypss88"></script>
-  <script src="../js/theme.js?v=mqypss88"></script>
-  <script src="../js/ui.js?v=mqypss88"></script>
+  <script src="../js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="../js/config.js?v=mrr39s6t"></script>
+  <script src="../js/appwrite.js?v=mrr39s6t"></script>
+  <script src="../js/admin-data.js?v=mrr39s6t"></script>
+  <script src="../js/theme.js?v=mrr39s6t"></script>
+  <script src="../js/ui.js?v=mrr39s6t"></script>
   <script>
     requireAdmin();
 
@@ -194,60 +179,44 @@
       }).join('');
     }
 
-    /* ── Publish sheet ── */
+    /* ── File options sheet ── */
+    var _sheetFileId   = null;
+    var _sheetFileName = null;
+
     function openPublishSheet(fileId, fileName) {
-      _pubFileId = fileId;
-      document.getElementById('sheetFilename').textContent = fileName;
-      var suggested = fileName.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
-      document.getElementById('pubTitle').value  = suggested;
-      document.getElementById('pubAuthor').value = '';
-      document.getElementById('pubFaculty').value = '';
-      document.getElementById('pubDept').value   = '';
-      document.getElementById('pubCode').value   = '';
-      document.getElementById('pubCover').value  = '📄';
+      _sheetFileId   = fileId;
+      _sheetFileName = fileName || '';
+
+      /* Set the sheet title/sub */
+      document.getElementById('sheetFilename').textContent = fileName || 'document';
+
+      /* Build the direct student-reader URL */
+      var ext  = (_sheetFileName.split('.').pop() || 'pdf').toLowerCase();
+      var ttl  = _sheetFileName.replace(/\.[^.]+$/, '');
+      var link = '/pages/student/book.html?fileId=' + encodeURIComponent(fileId)
+               + '&type=' + ext
+               + '&title=' + encodeURIComponent(ttl);
+      document.getElementById('previewLink').href = link;
+
       document.getElementById('publishOverlay').classList.add('open');
+    }
+
+    function goBookEditor() {
+      if (!_sheetFileId) return;
+      var params = '?fileId=' + encodeURIComponent(_sheetFileId)
+                 + '&fileName=' + encodeURIComponent(_sheetFileName || '');
+      location.href = 'book-edit.html' + params;
     }
 
     function closePublishSheet() {
       document.getElementById('publishOverlay').classList.remove('open');
-      _pubFileId = null;
     }
 
     function closeSheet(e) {
-      if (e.target === document.getElementById('publishOverlay')) closePublishSheet();
+      if (e && e.target && e.target.id === 'publishOverlay') closePublishSheet();
     }
 
-    async function publishBook() {
-      var title = document.getElementById('pubTitle').value.trim();
-      if (!title) { toast('Please enter a book title.'); return; }
-
-      var btn = document.querySelector('#publishSheet .btn--primary');
-      if (btn) { btn.textContent = 'Publishing...'; btn.disabled = true; }
-
-      var data = {
-        title:       title,
-        author:      document.getElementById('pubAuthor').value.trim()  || '',
-        cover:       document.getElementById('pubCover').value.trim()   || '📄',
-        faculty:     document.getElementById('pubFaculty').value.trim() || '',
-        department:  document.getElementById('pubDept').value.trim()    || '',
-        courseCode:  document.getElementById('pubCode').value.trim()    || '',
-        subject:     '',
-        readMinutes: 10,
-        summary:     '',
-        takeaways:   '[]',
-        fileId:      _pubFileId,
-      };
-
-      try {
-        await RonyxAdmin.createBook(data);
-        closePublishSheet();
-        toast('Added to student library!', 'success');
-      } catch(e) {
-        toast('Failed: ' + (e.message || 'Unknown error'), 'error');
-      }
-
-      if (btn) { btn.textContent = '📚 Add to Student Library'; btn.disabled = false; }
-    }
+    async function publishBook() { /* kept for compat */ }
 
     /* ── Upload ── */
     async function uploadFiles(input) {

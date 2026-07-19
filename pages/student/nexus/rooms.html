@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Hive — Ronyx</title>
+<link rel="stylesheet" href="/css/base.css">
+<style>
+/* ── Theme tokens ── */
+:root {
+  --nx-bg:     #06060e;
+  --nx-surf:   #0d0d1a;
+  --nx-surf2:  #111128;
+  --nx-border: rgba(124,109,245,.16);
+  --nx-p:      #7c6df5;
+  --nx-c:      #00d2ff;
+  --nx-g:      #00f09a;
+  --nx-pk:     #ff4d8c;
+  --nx-text:   #e2e0ff;
+  --nx-muted:  #6868a0;
+  --nx-glow:   0 0 32px rgba(124,109,245,.28);
+  --nx-hdr:    rgba(6,6,14,.94);
+}
+@media (prefers-color-scheme: light) { :root {
+  --nx-bg:     #f0effe; --nx-surf: #ffffff; --nx-surf2: #f4f2ff;
+  --nx-border: rgba(124,109,245,.2); --nx-text: #1a1040; --nx-muted: #7070a0;
+  --nx-glow:   0 0 32px rgba(124,109,245,.12); --nx-hdr: rgba(240,239,254,.96);
+}}
+:root[data-theme="light"] {
+  --nx-bg:     #f0effe; --nx-surf: #ffffff; --nx-surf2: #f4f2ff;
+  --nx-border: rgba(124,109,245,.2); --nx-text: #1a1040; --nx-muted: #7070a0;
+  --nx-glow:   0 0 32px rgba(124,109,245,.12); --nx-hdr: rgba(240,239,254,.96);
+}
+:root[data-theme="dark"] {
+  --nx-bg:     #06060e; --nx-surf: #0d0d1a; --nx-surf2: #111128;
+  --nx-border: rgba(124,109,245,.16); --nx-text: #e2e0ff; --nx-muted: #6868a0;
+  --nx-glow:   0 0 32px rgba(124,109,245,.28); --nx-hdr: rgba(6,6,14,.94);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Override base.css shell layout — rooms is a fullscreen column page */
+html { height: 100%; }
+body {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--nx-bg); color: var(--nx-text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── Canvas ── */
+#heroCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .3; }
+
+/* ── Header ── */
+.nx-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px;
+  height: 60px;
+  min-height: 60px;
+  background: var(--nx-hdr); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--nx-border);
+  flex-shrink: 0;
+  z-index: 60;
+  width: 100%;
+}
+.nx-hdr-mid {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.nx-logo__glyph {
+  width: 36px; height: 36px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--nx-p), var(--nx-c));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 0 16px rgba(124,109,245,.4);
+  flex-shrink: 0;
+}
+.nx-logo__name {
+  font-size: 16px; font-weight: 900; letter-spacing: -.5px;
+  background: linear-gradient(90deg, var(--nx-p), var(--nx-c));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.nx-logo__sub { font-size: 9px; color: var(--nx-muted); letter-spacing: 1.5px; text-transform: uppercase; }
+
+.hdr-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--nx-border); background: var(--nx-surf2);
+  color: var(--nx-text); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; transition: border-color .15s, background .15s;
+  flex-shrink: 0;
+}
+.icon-btn:hover { border-color: var(--nx-p); background: rgba(124,109,245,.12); }
+.icon-btn--theme { font-size: 15px; }
+
+/* ── Scrollable content ── */
+.nx-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  position: relative; z-index: 1;
+  max-width: 600px; width: 100%; margin: 0 auto;
+  padding: 0 14px 110px;
+  box-sizing: border-box;
+}
+
+/* ── Hero ── */
+.nx-hero { text-align: center; padding: 28px 0 20px; }
+.nx-hero__eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--nx-g); background: rgba(0,240,154,.1); border: 1px solid rgba(0,240,154,.22);
+  padding: 4px 12px; border-radius: 20px; margin-bottom: 12px;
+}
+.nx-hero__eyebrow::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--nx-g);
+  animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.nx-hero h1 {
+  font-size: clamp(26px, 6vw, 46px); font-weight: 900; letter-spacing: -1px; line-height: 1.08;
+  background: linear-gradient(140deg, var(--nx-text) 20%, var(--nx-p) 65%, var(--nx-c) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.nx-hero p { color: var(--nx-muted); font-size: 14px; margin-top: 8px; line-height: 1.55; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex; border: 1px solid var(--nx-border); border-radius: 14px;
+  overflow: hidden; margin-bottom: 18px; background: var(--nx-surf);
+}
+.stats-bar__item { flex: 1; text-align: center; padding: 12px 0; border-right: 1px solid var(--nx-border); }
+.stats-bar__item:last-child { border-right: none; }
+.stats-bar__n { font-size: 20px; font-weight: 900; color: var(--nx-p); }
+.stats-bar__l { font-size: 10px; color: var(--nx-muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+/* ── Level filter ── */
+.nx-levels { display: flex; gap: 7px; overflow-x: auto; padding: 2px 0 14px; scrollbar-width: none; }
+.nx-levels::-webkit-scrollbar { display: none; }
+.nx-chip {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  border: 1px solid var(--nx-border); color: var(--nx-muted); cursor: pointer;
+  white-space: nowrap; transition: all .15s; background: var(--nx-surf); flex-shrink: 0;
+}
+.nx-chip.active {
+  background: linear-gradient(135deg, var(--nx-p), var(--nx-c));
+  color: #fff; border-color: transparent; box-shadow: 0 0 14px rgba(124,109,245,.4);
+}
+.nx-chip:not(.active):hover { border-color: var(--nx-p); color: var(--nx-text); background: rgba(124,109,245,.08); }
+
+/* ── Hive cards — COLUMN layout ── */
+.nx-rooms { display: flex; flex-direction: column; gap: 12px; }
+
+.hive-card {
+  background: var(--nx-surf); border: 1px solid var(--nx-border);
+  border-radius: 18px; overflow: hidden; display: block;
+  text-decoration: none; transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+.hive-card:hover {
+  border-color: rgba(124,109,245,.45);
+  box-shadow: 0 0 28px rgba(124,109,245,.15), 0 4px 16px rgba(0,0,0,.25);
+  transform: translateY(-2px);
+}
+
+/* top section: emoji + title/sub + count */
+.hive-card__top {
+  display: flex; align-items: flex-start; gap: 12px; padding: 16px 16px 12px;
+}
+.hive-card__emoji-wrap { position: relative; flex-shrink: 0; }
+.hive-card__emoji {
+  width: 54px; height: 54px; border-radius: 15px;
+  background: linear-gradient(135deg, rgba(124,109,245,.15), rgba(0,210,255,.1));
+  border: 1px solid rgba(124,109,245,.25);
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  box-shadow: 0 0 14px rgba(124,109,245,.18);
+}
+.hive-live-dot {
+  position: absolute; top: -3px; right: -3px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--nx-g); border: 2px solid var(--nx-surf);
+  animation: blink 1.8s ease-in-out infinite;
+}
+.hive-card__info { flex: 1; min-width: 0; padding-top: 2px; }
+.hive-card__title {
+  font-size: 15px; font-weight: 800; color: var(--nx-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hive-card__sub {
+  font-size: 12px; color: var(--nx-muted); margin-top: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hive-card__count { text-align: right; flex-shrink: 0; }
+.hive-count-n {
+  font-size: 24px; font-weight: 900; line-height: 1;
+  background: linear-gradient(90deg, var(--nx-p), var(--nx-c));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hive-count-l { font-size: 10px; color: var(--nx-muted); letter-spacing: .5px; margin-top: 2px; }
+
+/* bottom section: badges + actions */
+.hive-card__foot {
+  padding: 0 16px 14px;
+  border-top: 1px solid var(--nx-border);
+  margin-top: 0;
+}
+.hive-card__badges { display: flex; align-items: center; gap: 6px; padding: 10px 0 10px; }
+.badge {
+  font-size: 10px; font-weight: 800; padding: 3px 9px;
+  border-radius: 10px; letter-spacing: .4px;
+}
+.badge--live  { background: rgba(0,240,154,.12); color: var(--nx-g); border: 1px solid rgba(0,240,154,.25); }
+.badge--level { background: rgba(124,109,245,.12); color: var(--nx-p); border: 1px solid rgba(124,109,245,.2); }
+
+.hive-card__actions { display: flex; gap: 8px; }
+.join-btn {
+  flex: 1; padding: 10px 0; border-radius: 22px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 800; text-align: center;
+  background: linear-gradient(135deg, var(--nx-p), var(--nx-c));
+  color: #fff; box-shadow: 0 0 14px rgba(124,109,245,.4);
+  text-decoration: none; display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s;
+}
+.join-btn:hover { opacity: .88; }
+.share-hive-btn {
+  width: 42px; height: 42px; border-radius: 22px; border: 1.5px solid var(--nx-border);
+  background: var(--nx-surf2); color: var(--nx-muted); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.share-hive-btn:hover { border-color: var(--nx-p); color: var(--nx-p); }
+
+/* ── Empty ── */
+.nx-empty { text-align: center; padding: 60px 20px; color: var(--nx-muted); font-size: 14px; }
+.nx-empty__icon { font-size: 44px; margin-bottom: 14px; }
+.nx-empty p { max-width: 240px; margin: 0 auto; line-height: 1.55; }
+
+/* ── FAB ── */
+.nx-fab {
+  position: fixed; bottom: 28px; right: 16px; z-index: 100;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 22px; height: 52px; border-radius: 26px;
+  background: linear-gradient(135deg, var(--nx-p), var(--nx-c));
+  border: none; color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 0 28px rgba(124,109,245,.5), 0 4px 20px rgba(0,0,0,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.nx-fab:hover { transform: scale(1.04); }
+.nx-fab:active { transform: scale(.96); }
+
+/* ── Spinner ── */
+.nx-spin {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid rgba(124,109,245,.2); border-top-color: var(--nx-p);
+  animation: spin .7s linear infinite; margin: 50px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Modal (create + share) ── */
+.nx-modal-bg {
+  position: fixed; inset: 0; background: rgba(4,4,12,.88);
+  backdrop-filter: blur(12px); z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.nx-modal-bg.open { opacity: 1; pointer-events: all; }
+.nx-modal {
+  background: var(--nx-surf); border: 1px solid rgba(124,109,245,.22);
+  border-top-left-radius: 24px; border-top-right-radius: 24px;
+  padding: 0 0 40px; width: 100%; max-width: 520px;
+  transform: translateY(100%); transition: transform .28s cubic-bezier(.18,.85,.2,1);
+  overflow: hidden; max-height: 92dvh; overflow-y: auto;
+}
+.nx-modal-bg.open .nx-modal { transform: translateY(0); }
+.modal-drag { width: 38px; height: 4px; border-radius: 2px; background: rgba(124,109,245,.3); margin: 12px auto 0; }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 12px; border-bottom: 1px solid var(--nx-border);
+  position: sticky; top: 0; background: var(--nx-surf); z-index: 5;
+}
+.modal-header h3 { font-size: 16px; font-weight: 900; }
+.modal-close {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--nx-surf2);
+  border: 1px solid var(--nx-border); color: var(--nx-muted); cursor: pointer;
+  font-size: 13px; display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 16px 20px; }
+
+.field-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--nx-muted); margin-bottom: 7px; margin-top: 14px; display: block;
+}
+.field-label:first-child { margin-top: 0; }
+
+.nx-input {
+  width: 100%; background: var(--nx-surf2); border: 1px solid var(--nx-border);
+  border-radius: 11px; padding: 11px 14px; color: var(--nx-text);
+  font-size: 14px; outline: none; font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+.nx-input:focus { border-color: var(--nx-p); box-shadow: 0 0 0 3px rgba(124,109,245,.12); }
+.nx-input::placeholder { color: var(--nx-muted); }
+.nx-input option { background: var(--nx-surf2); }
+
+.nx-emoji-row { display: flex; gap: 7px; flex-wrap: wrap; }
+.nx-emoji-btn {
+  width: 38px; height: 38px; border-radius: 10px; font-size: 20px;
+  border: 1.5px solid var(--nx-border); background: var(--nx-surf2);
+  cursor: pointer; transition: all .15s;
+}
+.nx-emoji-btn.sel {
+  border-color: var(--nx-p); background: rgba(124,109,245,.18);
+  box-shadow: 0 0 10px rgba(124,109,245,.3);
+}
+
+.modal-actions { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+.btn-primary {
+  padding: 13px; border-radius: 12px; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 800;
+  background: linear-gradient(135deg, var(--nx-p), var(--nx-c));
+  color: #fff; box-shadow: 0 0 20px rgba(124,109,245,.4);
+  transition: opacity .15s;
+}
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost {
+  padding: 12px; border-radius: 12px; border: 1.5px solid var(--nx-border);
+  background: transparent; color: var(--nx-muted); font-size: 14px; font-weight: 700; cursor: pointer;
+}
+
+/* ── Share modal ── */
+.share-platforms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+.share-plat {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 14px 8px; border-radius: 14px; border: 1.5px solid var(--nx-border);
+  background: var(--nx-surf2); cursor: pointer; font-size: 12px; font-weight: 700;
+  color: var(--nx-text); transition: all .15s;
+}
+.share-plat:hover { border-color: var(--nx-p); background: rgba(124,109,245,.1); }
+.share-plat__icon { font-size: 24px; }
+.share-plat--wa:hover  { border-color: #25D366; }
+.share-plat--fb:hover  { border-color: #1877F2; }
+.share-plat--tt:hover  { border-color: #ff004f; }
+.share-plat--copy:hover{ border-color: var(--nx-c); }
+.link-preview {
+  background: var(--nx-surf2); border: 1px solid var(--nx-border); border-radius: 10px;
+  padding: 10px 12px; font-size: 11px; color: var(--nx-muted); word-break: break-all;
+  font-family: monospace;
+}
+</style>
+<script>
+/* Restore saved theme before paint */
+(function(){
+  var t = localStorage.getItem('ronyx_theme');
+  if (t) document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+</head>
+<body>
+
+<canvas id="heroCanvas"></canvas>
+
+<header class="nx-header">
+  <button class="icon-btn" onclick="history.back()" title="Back">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div class="nx-hdr-mid">
+    <div class="nx-logo__glyph">🐝</div>
+    <div style="min-width:0;">
+      <div class="nx-logo__name">The Hive</div>
+      <div class="nx-logo__sub">Live Study Sessions</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="icon-btn icon-btn--theme" id="themeBtn" onclick="toggleTheme()" title="Theme">🌙</button>
+    <a class="icon-btn" href="/pages/student/nexus/feed.html" title="Pulse">⚡</a>
+    <a class="icon-btn" href="/pages/student/nexus/profile.html" title="Profile">👤</a>
+  </div>
+</header>
+
+<div class="nx-content">
+  <div class="nx-hero">
+    <div class="nx-hero__eyebrow">Live Now</div>
+    <h1>Enter the Hive.<br>Study Together.</h1>
+    <p>Drop into a live study session and collaborate in real time with your peers.</p>
+  </div>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stats-bar__item">
+      <div class="stats-bar__n" id="statHives">—</div>
+      <div class="stats-bar__l">Active Hives</div>
+    </div>
+    <div class="stats-bar__item">
+      <div class="stats-bar__n" id="statMembers">—</div>
+      <div class="stats-bar__l">Studying Now</div>
+    </div>
+    <div class="stats-bar__item">
+      <div class="stats-bar__n">∞</div>
+      <div class="stats-bar__l">Subjects</div>
+    </div>
+  </div>
+
+  <div class="nx-levels" id="levelFilter">
+    <div class="nx-chip active" data-level="0" onclick="setLevel(0,this)">All</div>
+    <div class="nx-chip" data-level="1" onclick="setLevel(1,this)">Year 1</div>
+    <div class="nx-chip" data-level="2" onclick="setLevel(2,this)">Year 2</div>
+    <div class="nx-chip" data-level="3" onclick="setLevel(3,this)">Year 3</div>
+    <div class="nx-chip" data-level="4" onclick="setLevel(4,this)">Year 4</div>
+    <div class="nx-chip" data-level="5" onclick="setLevel(5,this)">Year 5</div>
+  </div>
+
+  <div class="nx-rooms" id="roomList">
+    <div class="nx-spin"></div>
+  </div>
+</div>
+
+<button class="nx-fab" onclick="openModal()">
+  <span>🐝</span> Start a Hive
+</button>
+
+<!-- Create Modal -->
+<div class="nx-modal-bg" id="modalBg">
+  <div class="nx-modal">
+    <div class="modal-drag"></div>
+    <div class="modal-header">
+      <h3>🐝 Start a Hive</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">Hive Name</label>
+      <input class="nx-input" id="inTitle" placeholder="e.g. Thermodynamics Crunch…" maxlength="100">
+
+      <label class="field-label">Subject / Topic</label>
+      <input class="nx-input" id="inSubject" placeholder="Optional" maxlength="100">
+
+      <label class="field-label">Hive Icon</label>
+      <div class="nx-emoji-row" id="emojiRow"></div>
+
+      <label class="field-label">Year Level</label>
+      <select class="nx-input" id="inLevel" style="appearance:none;-webkit-appearance:none;cursor:pointer;">
+        <option value="0">Open to all levels</option>
+        <option value="1">Year 1</option>
+        <option value="2">Year 2</option>
+        <option value="3">Year 3</option>
+        <option value="4">Year 4</option>
+        <option value="5">Year 5</option>
+      </select>
+
+      <div class="modal-actions">
+        <button class="btn-primary" id="createBtn" onclick="createRoom()">Start Hive →</button>
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="nx-modal-bg" id="shareBg">
+  <div class="nx-modal">
+    <div class="modal-drag"></div>
+    <div class="modal-header">
+      <h3>🔗 Share this Hive</h3>
+      <button class="modal-close" onclick="closeShare()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--nx-muted);margin-bottom:16px;">Invite people to join your study session</p>
+      <div class="share-platforms">
+        <button class="share-plat share-plat--wa" onclick="doShare('whatsapp')">
+          <span class="share-plat__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></span>
+          WhatsApp
+        </button>
+        <button class="share-plat share-plat--fb" onclick="doShare('facebook')">
+          <span class="share-plat__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span>
+          Facebook
+        </button>
+        <button class="share-plat share-plat--tt" onclick="doShare('tiktok')">
+          <span class="share-plat__icon"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="#010101" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.09a8.16 8.16 0 004.77 1.52V7.15a4.85 4.85 0 01-1-.46z"/><path fill="#fe2c55" d="M12.49 15.28a2.89 2.89 0 00-2.89 2.89 2.89 2.89 0 002.89 2.89 2.89 2.89 0 002.88-2.5V2h3.45v.44A4.83 4.83 0 0022.59 6.69a4.85 4.85 0 001 .46v3.46a8.16 8.16 0 01-4.77-1.52v6.91a6.34 6.34 0 01-6.33 6.34z"/><path fill="#25f4ee" d="M9.6 18.17a2.89 2.89 0 012.89-2.89c.27 0 .53.04.79.1V11.9a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 003.45 5.61 2.89 2.89 0 01-.02-1.63z"/></svg></span>
+          TikTok
+        </button>
+        <button class="share-plat share-plat--copy" onclick="doShare('copy')" id="copyShareBtn">
+          <span class="share-plat__icon" id="copyShareIcon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></span>
+          Copy Link
+        </button>
+      </div>
+      <div class="link-preview" id="shareLinkPreview"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="/js/config.js?v=mrr39s6t"></script>
+<script src="/js/appwrite.js?v=mrr39s6t"></script>
+<script src="/js/data.js?v=mrr39s6t"></script>
+<script src="/js/nexus-data.js?v=mrr39s6t"></script>
+<script>
+/* ── Particle canvas ── */
+(function () {
+  const canvas = document.getElementById('heroCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, pts = [];
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  for (let i = 0; i < 50; i++) pts.push({
+    x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
+    vx: (Math.random()-.5)*.3, vy: (Math.random()-.5)*.3,
+    hue: Math.random() > .6 ? 200 : 260,
+  });
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p => { p.x = (p.x+p.vx+W)%W; p.y = (p.y+p.vy+H)%H; });
+    for (let i = 0; i < pts.length; i++)
+      for (let j = i+1; j < pts.length; j++) {
+        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if (d < 120) {
+          ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle=`hsla(${pts[i].hue},65%,65%,${(1-d/120)*.22})`; ctx.lineWidth=.7; ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(pts[i].x,pts[i].y,1.5,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${pts[i].hue},65%,68%,.45)`; ctx.fill();
+      }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── Emoji picker ── */
+const EMOJIS = ['🐝','🧠','📐','⚗️','🌌','💡','⚡','🔬','🎯','📊','🚀','🌐','🔮','🎓','⬡','🔷'];
+let selEmoji = EMOJIS[0];
+let shareRoomId = '', shareRoomTitle = '';
+
+(function(){
+  const row = document.getElementById('emojiRow');
+  EMOJIS.forEach((e, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'nx-emoji-btn' + (i===0?' sel':'');
+    btn.textContent = e; btn.type = 'button';
+    btn.onclick = function() {
+      document.querySelectorAll('.nx-emoji-btn').forEach(b=>b.classList.remove('sel'));
+      btn.classList.add('sel'); selEmoji = e;
+    };
+    row.appendChild(btn);
+  });
+})();
+
+let currentLevel = 0;
+function setLevel(lv, el) {
+  currentLevel = lv;
+  document.querySelectorAll('.nx-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  loadRooms();
+}
+
+async function loadRooms() {
+  const list = document.getElementById('roomList');
+  list.innerHTML = '<div class="nx-spin"></div>';
+  try {
+    const rooms = await NexusData.listRooms(currentLevel);
+    document.getElementById('statHives').textContent = rooms.length;
+    const total = rooms.reduce((s,r)=>s+(r.memberCount||0),0);
+    document.getElementById('statMembers').textContent = total;
+
+    if (!rooms.length) {
+      list.innerHTML = `<div class="nx-empty"><div class="nx-empty__icon">🐝</div>
+        <p>No active hives right now.</p>
+        <p style="margin-top:6px;font-size:12px;">Be the first — tap <strong>Start a Hive</strong>.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = rooms.map(r => {
+      const lvl = r.level > 0 ? `Year ${r.level}` : 'All levels';
+      const roomUrl = `/pages/student/nexus/room.html?id=${r.$id}`;
+      return `
+        <div class="hive-card">
+          <!-- top -->
+          <div class="hive-card__top">
+            <div class="hive-card__emoji-wrap">
+              <div class="hive-card__emoji">${r.emoji||'🐝'}</div>
+              <div class="hive-live-dot"></div>
+            </div>
+            <div class="hive-card__info">
+              <div class="hive-card__title">${esc(r.title)}</div>
+              <div class="hive-card__sub">${esc(r.subject||'Open study session')}</div>
+            </div>
+            <div class="hive-card__count">
+              <div class="hive-count-n">${r.memberCount||0}</div>
+              <div class="hive-count-l">studying</div>
+            </div>
+          </div>
+          <!-- foot -->
+          <div class="hive-card__foot">
+            <div class="hive-card__badges">
+              <span class="badge badge--live">● LIVE</span>
+              <span class="badge badge--level">${lvl}</span>
+            </div>
+            <div class="hive-card__actions">
+              <a class="join-btn" href="${roomUrl}">Join Hive →</a>
+              <button class="share-hive-btn" onclick="openShare('${r.$id}','${escAttr(r.title)}',event)" title="Share">🔗</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="nx-empty"><div class="nx-empty__icon">⚠️</div><p>Could not load hives.</p></div>`;
+  }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+/* ── Create modal ── */
+function openModal() { document.getElementById('modalBg').classList.add('open'); }
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+document.getElementById('modalBg').addEventListener('click', function(e) { if (e.target===this) closeModal(); });
+
+async function createRoom() {
+  const title = document.getElementById('inTitle').value.trim();
+  if (!title) { document.getElementById('inTitle').focus(); return; }
+  const subject = document.getElementById('inSubject').value.trim();
+  const level   = parseInt(document.getElementById('inLevel').value)||0;
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const room = await NexusData.createRoom({ title, subject, emoji: selEmoji, level });
+    closeModal();
+    window.location.href = `/pages/student/nexus/room.html?id=${room.$id}&host=1`;
+  } catch(err) {
+    alert('Could not create hive. Please try again.');
+    btn.disabled = false; btn.textContent = 'Start Hive →';
+  }
+}
+
+/* ── Share modal ── */
+function openShare(roomId, roomTitle, evt) {
+  evt.preventDefault(); evt.stopPropagation();
+  shareRoomId = roomId; shareRoomTitle = roomTitle;
+  const url = window.location.origin + `/pages/student/nexus/room.html?id=${roomId}`;
+  document.getElementById('shareLinkPreview').textContent = url;
+  document.getElementById('shareBg').classList.add('open');
+}
+function closeShare() { document.getElementById('shareBg').classList.remove('open'); }
+document.getElementById('shareBg').addEventListener('click', function(e) { if (e.target===this) closeShare(); });
+
+function doShare(platform) {
+  const url = window.location.origin + `/pages/student/nexus/room.html?id=${shareRoomId}`;
+  const text = `Join my study session "${shareRoomTitle}" on Ronyx! 🐝\n${url}`;
+  if (platform === 'whatsapp') {
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  } else if (platform === 'facebook') {
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank');
+  } else if (platform === 'tiktok') {
+    copyToClipboard(url);
+    alert('Link copied! Open TikTok and paste it in your bio or DMs.');
+  } else if (platform === 'copy') {
+    copyToClipboard(url);
+    closeShare();
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(()=>{});
+  } else {
+    const el = document.createElement('textarea');
+    el.value = text; el.style.position = 'fixed'; el.style.opacity = '0';
+    document.body.appendChild(el); el.select(); document.execCommand('copy');
+    document.body.removeChild(el);
+  }
+  const iconEl = document.getElementById('copyShareIcon');
+  if (iconEl) {
+    iconEl.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#00f09a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(()=>{
+      iconEl.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
+    }, 2000);
+  }
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = (root.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('ronyx_theme', next);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const t = localStorage.getItem('ronyx_theme') || 'dark';
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+  const check = setInterval(function() {
+    if (window.NexusData && window.account) { clearInterval(check); loadRooms(); }
+  }, 100);
+});
+</script>
+</body>
+</html>

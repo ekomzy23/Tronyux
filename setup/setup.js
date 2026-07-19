@@ -60,13 +60,21 @@ async function aEnum(c, k, vals, req=false, def=undefined) {
 }
 
 /* ---- permissions ---- */
-const shared    = [
+
+/* Admin content: students can read + admin can create; update/delete locked to document owner (set at create time) */
+const adminContent = [
+  Permission.read(Role.users()),
+  Permission.create(Role.users()), // client SDK requires this; document-level perms handle update/delete
+];
+
+/* User-owned data: students write their own docs; document-level perms lock read/update/delete to owner */
+const ownerOnly = [Permission.create(Role.users())];
+
+/* Shared: read + create for all users; update/delete via document perms */
+const shared = [
   Permission.read(Role.users()),
   Permission.create(Role.users()),
-  Permission.update(Role.users()),
-  Permission.delete(Role.users()),
 ];
-const ownerOnly = [Permission.create(Role.users())];  // doc-level security handles read/update/delete
 
 async function run() {
   console.log('\n══════════════════════════════════════');
@@ -83,15 +91,17 @@ async function run() {
 
   /* ---- Collections ---- */
   console.log('\n▶ collections…');
-  await safe('users',         () => dbs.createCollection(DB,'users',        'Users',         shared,    true));
-  await safe('exams',         () => dbs.createCollection(DB,'exams',        'Exams',         shared,    false));
-  await safe('questions',     () => dbs.createCollection(DB,'questions',    'Questions',     shared,    false));
-  await safe('attempts',      () => dbs.createCollection(DB,'attempts',     'Attempts',      ownerOnly, true));
-  await safe('results',       () => dbs.createCollection(DB,'results',      'Results',       ownerOnly, true));
-  await safe('drafts',        () => dbs.createCollection(DB,'drafts',       'Drafts',        ownerOnly, true));
-  await safe('notifications', () => dbs.createCollection(DB,'notifications','Notifications', ownerOnly, true));
-  await safe('notes',         () => dbs.createCollection(DB,'notes',        'Notes',         ownerOnly, true));
-  await safe('books',         () => dbs.createCollection(DB,'books',        'Books',         shared,    false));
+  /* Admin-managed content: no collection-level update/delete — admin-data.js sets document-level owner perms on create */
+  await safe('exams',         () => dbs.createCollection(DB,'exams',        'Exams',         adminContent, false));
+  await safe('questions',     () => dbs.createCollection(DB,'questions',    'Questions',     adminContent, false));
+  await safe('books',         () => dbs.createCollection(DB,'books',        'Books',         adminContent, false));
+  await safe('notifications', () => dbs.createCollection(DB,'notifications','Notifications', adminContent, true));
+  /* User-owned data: students write their own docs; document perms restrict to owner */
+  await safe('users',         () => dbs.createCollection(DB,'users',        'Users',         shared,       true));
+  await safe('attempts',      () => dbs.createCollection(DB,'attempts',     'Attempts',      ownerOnly,    true));
+  await safe('results',       () => dbs.createCollection(DB,'results',      'Results',       ownerOnly,    true));
+  await safe('drafts',        () => dbs.createCollection(DB,'drafts',       'Drafts',        ownerOnly,    true));
+  await safe('notes',         () => dbs.createCollection(DB,'notes',        'Notes',         ownerOnly,    true));
 
   /* ---- USERS ---- */
   console.log('\n▶ users attributes…');
@@ -107,6 +117,7 @@ async function run() {
   await aInt('users','level',false,1);
   await aStr('users','phone',32);
   await aStr('users','bio',500);
+  await aStr('users','pushSubscription',2000); /* JSON-encoded Web Push subscription for device notifications */
 
   /* ---- EXAMS ---- */
   console.log('\n▶ exams attributes…');
@@ -222,6 +233,7 @@ async function run() {
   await aStr('books','faculty',256);
   await aStr('books','department',256);
   await aStr('books','courseCode',64);
+  await aStr('books','category',64);
 
   /* ---- wait for async attribute processing ---- */
   console.log('\n⏳ waiting 12 s for attributes to be ready before indexing…');

@@ -6,6 +6,12 @@
     "build": "node build.js",
     "restore": "node build.js --restore"
   },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "mammoth": "^1.12.0",
+    "node-appwrite": "^14.1.0",
+    "web-push": "^3.6.7"
+  },
   "devDependencies": {
     "javascript-obfuscator": "^4.1.1"
   }

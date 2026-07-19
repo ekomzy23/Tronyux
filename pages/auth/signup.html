@@ -30,7 +30,8 @@
       </div>
       <div class="field">
         <label class="field__label">Email address</label>
-        <input class="input" id="email" type="email" placeholder="you@example.com" oninput="saveField('email',this.value)">
+        <input class="input" id="email" type="email" placeholder="you@gmail.com" autocomplete="email" oninput="saveField('email',this.value)">
+        <p style="font-size:11px;color:var(--color-muted);margin-top:4px;">A verification code will be sent here. Check your spam folder if you don&rsquo;t see it.</p>
       </div>
       <div class="field">
         <label class="field__label">Department / Programme</label>
@@ -60,7 +61,8 @@
         I agree to the <a href="/pages/auth/terms.html" target="_blank" rel="noopener" class="link">Terms &amp; Privacy Policy</a>
       </label>
 
-      <button class="btn btn--primary" id="signupBtn" onclick="doSignup()">Create account</button>
+      <p id="signupErr" style="font-size:13px;color:var(--color-danger,#f43f5e);text-align:center;margin-bottom:10px;display:none;"></p>
+      <button class="btn btn--primary" id="signupBtn" data-label="Continue →" onclick="doSignup()">Continue →</button>
 
       <p class="text-center text-muted mt-4">
         Already have an account? <a href="/pages/auth/login.html" class="link">Log in</a>
@@ -68,10 +70,10 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
   <script>
     /* ── Restore form fields after coming back from Terms page ── */
     function saveField(key, val) {
@@ -103,7 +105,7 @@
 
       var btn = document.getElementById('signupBtn');
       btn.disabled = true;
-      btn.textContent = 'Creating account…';
+      btn.textContent = 'Sending code…';
 
       try {
         var cfg = window.RONYX_CONFIG;
@@ -113,11 +115,14 @@
         var acc = new Appwrite.Account(client);
         try { await acc.deleteSession('current'); } catch(e) {}
 
-        await acc.create(Appwrite.ID.unique(), email, password, name);
+        /* Send OTP only — do NOT create the account yet.
+           The account is created in otp.html after the code is verified.
+           This prevents unverified users from appearing in Auth.          */
         var token = await acc.createEmailToken(Appwrite.ID.unique(), email);
 
         sessionStorage.setItem('ronyx_email',      email);
         sessionStorage.setItem('ronyx_userId',     token.userId);
+        sessionStorage.setItem('ronyx_password',   password);
         sessionStorage.setItem('ronyx_name',       name);
         sessionStorage.setItem('ronyx_department', department);
         sessionStorage.setItem('ronyx_level',      String(level));
@@ -127,9 +132,8 @@
       } catch(err) {
         console.error('[Ronyx signup error]', err);
         btn.disabled = false;
-        btn.textContent = 'Create account';
+        btn.textContent = 'Continue →';
         var map = {
-          'user_already_exists':         'An account with this email already exists. Try logging in.',
           'general_rate_limit_exceeded': 'Too many attempts — wait a moment and try again.',
           'general_argument_invalid':    'Invalid input — check your details and try again.',
         };
@@ -139,7 +143,8 @@
 
     function showErr(msg) {
       if (typeof toast === 'function') return toast(msg);
-      alert(msg);
+      var el = document.getElementById('signupErr');
+      if (el) { el.textContent = msg; el.style.display = ''; }
     }
   </script>
 </body>

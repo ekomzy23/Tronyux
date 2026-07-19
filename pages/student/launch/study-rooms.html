@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Study Rooms — Ronyx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <style>
+    .room-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .room-card__title { font-size: 16px; font-weight: 700; }
+    .room-card__meta  { font-size: 12px; color: var(--text-muted); }
+    .room-card__footer {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-top: 4px;
+    }
+    .attendee-pill {
+      background: rgba(52,211,153,.15);
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 3px 10px;
+    }
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-sheet {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 36px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-sheet h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .form-field { margin-bottom: 14px; }
+    .form-field label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px; }
+    .form-field input, .form-field select, .form-field textarea {
+      width: 100%; box-sizing: border-box;
+      padding: 12px 14px;
+      background: var(--surface-2, rgba(255,255,255,.06));
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-field textarea { min-height: 80px; resize: vertical; }
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -4px; }
+    .chip-s { border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+    .chip-s.sel { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <div class="appbar">
+      <button onclick="history.back()" class="iconbtn" style="font-size:20px;">&#8592;</button>
+      <h2 style="font-family:var(--font-display);font-size:18px;font-weight:700;flex:1;text-align:center;">Study Rooms</h2>
+      <button onclick="openCreateModal()" class="iconbtn" title="Create Room" style="font-size:22px;">&#43;</button>
+    </div>
+
+    <div class="app__body">
+
+      <div class="card card--brand" style="padding:14px 16px;">
+        <p style="font-size:13px;opacity:.9;line-height:1.5;">
+          📹 Host or join a group video study session.<br>
+          <strong>Earn +3 points</strong> for every room you join.
+        </p>
+      </div>
+
+      <!-- Level filter -->
+      <div class="chips mb-4 mt-5" id="levelChips">
+        <div class="chip is-active" data-level="0">All Years</div>
+        <div class="chip" data-level="1">Year 1</div>
+        <div class="chip" data-level="2">Year 2</div>
+        <div class="chip" data-level="3">Year 3</div>
+        <div class="chip" data-level="4">Year 4</div>
+        <div class="chip" data-level="5">Year 5</div>
+      </div>
+
+      <div id="roomsList">
+        <div class="empty"><div class="empty__icon">⏳</div><p>Loading…</p></div>
+      </div>
+
+      <div style="height:32px;"></div>
+    </div>
+  </div>
+
+  <!-- Create Room Modal -->
+  <div class="modal-backdrop" id="createModal" onclick="if(event.target===this)closeCreateModal()">
+    <div class="modal-sheet">
+      <h3>🎙 Create Study Room</h3>
+
+      <div class="form-field">
+        <label>Room Title *</label>
+        <input type="text" id="crTitle" placeholder="e.g. CHM 201 Group Study" maxlength="100">
+      </div>
+      <div class="form-field">
+        <label>What are you studying?</label>
+        <input type="text" id="crDesc" placeholder="Optional — e.g. Organic Chemistry chapter 3" maxlength="200">
+      </div>
+      <div class="form-field">
+        <label>Open to (year level)</label>
+        <div class="chip-row" id="crLevelChips">
+          <div class="chip-s sel" data-lv="0">All</div>
+          <div class="chip-s" data-lv="1">Year 1</div>
+          <div class="chip-s" data-lv="2">Year 2</div>
+          <div class="chip-s" data-lv="3">Year 3</div>
+          <div class="chip-s" data-lv="4">Year 4</div>
+          <div class="chip-s" data-lv="5">Year 5</div>
+        </div>
+      </div>
+
+      <p id="crErr" style="color:#f87171;font-size:12px;min-height:18px;"></p>
+      <button onclick="submitCreate()" id="crBtn" class="btn" style="width:100%;">Create &amp; Join Room</button>
+      <button onclick="closeCreateModal()" class="btn btn--outline" style="width:100%;margin-top:8px;">Cancel</button>
+    </div>
+  </div>
+
+  <script src="/js/appwrite.min.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/appwrite.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/launch-data.js"></script>
+  <script>
+    var _currentUser = null;
+    var _currentLevel = 0;
+
+    (async function () {
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) return;
+      const user = await RonyxData.currentUser();
+      if (!user) { location.href = '/pages/auth/login.html'; return; }
+      _currentUser = user;
+
+      /* Level chips */
+      const chips = document.getElementById('levelChips');
+      chips.querySelectorAll('.chip').forEach(function(c) {
+        c.addEventListener('click', function() {
+          chips.querySelectorAll('.chip').forEach(function(x) { x.classList.remove('is-active'); });
+          c.classList.add('is-active');
+          _currentLevel = parseInt(c.dataset.level) || 0;
+          loadRooms(_currentLevel);
+        });
+      });
+
+      await loadRooms(0);
+    })();
+
+    async function loadRooms(level) {
+      const list = document.getElementById('roomsList');
+      list.innerHTML = '<div class="empty"><div class="empty__icon">⏳</div><p>Loading…</p></div>';
+      const rooms = await RonyxLaunch.listStudyRooms(level || 0);
+      if (!rooms.length) {
+        list.innerHTML = '<div class="empty"><div class="empty__icon">📭</div><p>No open rooms right now — create one and invite your classmates!</p></div>';
+        return;
+      }
+      list.innerHTML = rooms.map(function(r) {
+        const levelTag = r.level > 0 ? ' · Year ' + r.level : '';
+        return '<div class="room-card">'
+          + '<div class="room-card__title">📹 ' + r.title + '</div>'
+          + (r.description ? '<div class="room-card__meta">' + r.description + '</div>' : '')
+          + '<div class="room-card__meta">👤 ' + (r.hostName || 'Host') + levelTag + '</div>'
+          + (r.bookTitle ? '<div class="room-card__meta">📖 ' + r.bookTitle + '</div>' : '')
+          + '<div class="room-card__footer">'
+          +   '<span class="attendee-pill">🟢 ' + (r.attendeeCount || 0) + ' in room</span>'
+          +   '<a href="/pages/student/launch/study-room.html?id=' + r.$id + '" class="btn btn--sm">Join</a>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    /* Create Room Modal */
+    var _selectedLevel = 0;
+
+    function openCreateModal() {
+      document.getElementById('createModal').classList.add('open');
+      /* Level chips in modal */
+      document.getElementById('crLevelChips').querySelectorAll('.chip-s').forEach(function(c) {
+        c.addEventListener('click', function() {
+          document.getElementById('crLevelChips').querySelectorAll('.chip-s').forEach(function(x) { x.classList.remove('sel'); });
+          c.classList.add('sel');
+          _selectedLevel = parseInt(c.dataset.lv) || 0;
+        });
+      });
+    }
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.remove('open');
+    }
+
+    async function submitCreate() {
+      const title = (document.getElementById('crTitle').value || '').trim();
+      const err   = document.getElementById('crErr');
+      if (!title) { err.textContent = 'Room title is required.'; return; }
+
+      const btn = document.getElementById('crBtn');
+      btn.disabled = true; btn.textContent = 'Creating…';
+      err.textContent = '';
+
+      try {
+        const room = await RonyxLaunch.createStudyRoom({
+          title,
+          description: (document.getElementById('crDesc').value || '').trim(),
+          level:       _selectedLevel,
+          hostName:    _currentUser ? _currentUser.name : 'Host',
+        });
+        /* Award points for hosting */
+        await RonyxLaunch.awardPoints(3, 'Hosted a study room: ' + title, 'study_room', room.$id);
+        location.href = '/pages/student/launch/study-room.html?id=' + room.$id;
+      } catch (e) {
+        err.textContent = 'Could not create room: ' + (e.message || 'unknown error');
+        btn.disabled = false; btn.textContent = 'Create & Join Room';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Rooms — Ronyx Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    .room-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .room-row:last-child { border-bottom: none; }
+    .room-row__info { flex: 1; min-width: 0; }
+    .room-row__title { font-size: 14px; font-weight: 700; }
+    .room-row__meta  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .room-row__actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .live-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .live-badge--open   { background: rgba(52,211,153,.15); color: #34d399; }
+    .live-badge--ended  { background: rgba(148,163,184,.12); color: #94a3b8; }
+    .stat-strip {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-strip__item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; text-align: center;
+    }
+    .stat-strip__n { font-size: 28px; font-weight: 800; font-family: var(--font-display); color: var(--color-primary); }
+    .stat-strip__l { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content">
+
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Study Rooms</h1>
+          <p class="page-subtitle">Monitor live group study sessions</p>
+        </div>
+        <button onclick="loadAll()" class="btn btn--outline">↻ Refresh</button>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="stat-strip">
+        <div class="stat-strip__item">
+          <div class="stat-strip__n" id="statOpen">—</div>
+          <div class="stat-strip__l">Open Rooms</div>
+        </div>
+        <div class="stat-strip__item">
+          <div class="stat-strip__n" id="statTotal">—</div>
+          <div class="stat-strip__l">Total Sessions</div>
+        </div>
+        <div class="stat-strip__item">
+          <div class="stat-strip__n" id="statPeople">—</div>
+          <div class="stat-strip__l">People in Rooms</div>
+        </div>
+      </div>
+
+      <!-- Open rooms -->
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;">🟢 Live Now</h3>
+        <div id="openRooms"><p style="color:var(--text-muted);font-size:13px;">Loading…</p></div>
+      </div>
+
+      <!-- Ended rooms -->
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;">📋 Recent Sessions</h3>
+        <div id="endedRooms"><p style="color:var(--text-muted);font-size:13px;">Loading…</p></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/appwrite.js"></script>
+  <script src="../js/admin-data.js"></script>
+  <script src="../js/launch-admin-data.js"></script>
+  <script src="../js/admin-ui.js"></script>
+  <script>
+    (async function () {
+      if (!window.RONYX_CONFIG || !RONYX_CONFIG.CONFIGURED) return;
+      await loadAll();
+    })();
+
+    async function loadAll() {
+      const rooms = await RonyxLaunchAdmin.listAllRooms();
+      const open  = rooms.filter(function(r) { return r.status === 'open'; });
+      const ended = rooms.filter(function(r) { return r.status === 'ended'; });
+      const totalPeople = open.reduce(function(s, r) { return s + (r.attendeeCount || 0); }, 0);
+
+      document.getElementById('statOpen').textContent   = open.length;
+      document.getElementById('statTotal').textContent  = rooms.length;
+      document.getElementById('statPeople').textContent = totalPeople;
+
+      function roomRow(r, isOpen) {
+        const ago = timeAgo(r.$createdAt);
+        return '<div class="room-row">'
+          + '<div class="room-row__info">'
+          +   '<div class="room-row__title">📹 ' + r.title + '</div>'
+          +   '<div class="room-row__meta">'
+          +     '👤 ' + (r.hostName || 'Host') + (r.level > 0 ? ' · Year ' + r.level : '')
+          +     ' · ' + (r.attendeeCount || 0) + ' participants'
+          +     (r.description ? ' · ' + r.description.slice(0,50) : '')
+          +     ' · ' + ago
+          +   '</div>'
+          + '</div>'
+          + '<span class="live-badge live-badge--' + r.status + '">' + (r.status === 'open' ? '🟢 Live' : 'Ended') + '</span>'
+          + '<div class="room-row__actions">'
+          +   (isOpen
+                ? '<button onclick="forceEnd(\'' + r.$id + '\')" class="btn btn--sm" style="background:#ef4444;font-size:12px;">Force End</button>'
+                : '')
+          +   '<button onclick="deleteRoom(\'' + r.$id + '\')" class="btn btn--sm btn--outline" style="color:#f87171;border-color:#f87171;font-size:12px;">Delete</button>'
+          + '</div>'
+          + '</div>';
+      }
+
+      document.getElementById('openRooms').innerHTML = open.length
+        ? open.map(function(r) { return roomRow(r, true); }).join('')
+        : '<p style="color:var(--text-muted);font-size:13px;">No rooms open right now.</p>';
+
+      document.getElementById('endedRooms').innerHTML = ended.length
+        ? ended.slice(0,30).map(function(r) { return roomRow(r, false); }).join('')
+        : '<p style="color:var(--text-muted);font-size:13px;">No ended sessions yet.</p>';
+    }
+
+    function timeAgo(iso) {
+      const ms  = Date.now() - new Date(iso);
+      const m   = Math.floor(ms / 60000);
+      if (m < 2)  return 'just now';
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    async function forceEnd(id) {
+      if (!confirm('Force-end this room? Students will see "Room Ended".')) return;
+      await RonyxLaunchAdmin.forceEndRoom(id);
+      await loadAll();
+      if (window.showToast) showToast('Room ended.', 'success');
+    }
+
+    async function deleteRoom(id) {
+      if (!confirm('Delete this room record permanently?')) return;
+      await RonyxLaunchAdmin.deleteRoom(id);
+      await loadAll();
+      if (window.showToast) showToast('Deleted.', 'success');
+    }
+  </script>
+</body>
+</html>

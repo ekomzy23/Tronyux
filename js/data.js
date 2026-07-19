@@ -34,29 +34,45 @@
   }
 
   /* ---- PROFILE (level lives here) ---- */
+
+  /* Called once immediately after OTP verification to create the profile document.
+     This is the authoritative write — only verified users ever call this.         */
+  async function createStudentProfile(name, email, department, level) {
+    if (!databases) return null;
+    const u = await currentUser(); if (!u) return null;
+    try {
+      const perms = [
+        Perm.read(RoleRef.users()),
+        Perm.update(RoleRef.user(u.$id)),
+        Perm.delete(RoleRef.user(u.$id)),
+      ];
+      return await databases.createDocument(DB, C.users, u.$id, {
+        name:       name       || u.name  || 'Student',
+        email:      email      || u.email || '',
+        role:       'student',
+        department: department || '',
+        level:      parseInt(level) || 1,
+      }, perms);
+    } catch (e) {
+      if (e.type === 'document_already_exists') return null; /* idempotent */
+      return null;
+    }
+  }
+
   async function getProfile() {
     if (!databases) return null;
     const u = await currentUser(); if (!u) return null;
     try {
       return await databases.getDocument(DB, C.users, u.$id);
     } catch (e) {
-      // create profile on first login — pull signup data from sessionStorage if present
+      /* Fallback: profile wasn't created yet (e.g. older account).
+         Pull any leftover signup data from sessionStorage and create it. */
       const dept  = sessionStorage.getItem('ronyx_department') || '';
       const level = parseInt(sessionStorage.getItem('ronyx_level') || '1') || 1;
       sessionStorage.removeItem('ronyx_department');
       sessionStorage.removeItem('ronyx_level');
       sessionStorage.removeItem('ronyx_name');
-      try {
-        const perms = [
-          Perm.read(RoleRef.users()),           // admin can read all profiles
-          Perm.update(RoleRef.user(u.$id)),
-          Perm.delete(RoleRef.user(u.$id)),
-        ];
-        return await databases.createDocument(DB, C.users, u.$id,
-          { name: u.name || 'Student', email: u.email || '', role: 'student',
-            department: dept, level },
-          perms);
-      } catch (err) { return null; }
+      return createStudentProfile(u.name, u.email, dept, level);
     }
   }
   async function getLevel() {
@@ -81,7 +97,10 @@
   async function listExams(level) {
     if (!databases) return [];
     const filters = [Query.equal('status', 'published'), Query.limit(200), Query.orderDesc('$createdAt')];
-    const res = await databases.listDocuments(DB, C.exams, filters);
+    const res = await Promise.race([
+      databases.listDocuments(DB, C.exams, filters),
+      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout')); }, 10000); })
+    ]);
     let docs = res.documents;
     /* Backward-compat: if a specific non-zero level is passed, still filter server-side */
     if (level && parseInt(level) !== 0) {
@@ -165,23 +184,34 @@
   /* ---- BOOKS (library) ---- */
   async function listBooks() {
     if (!databases) return [];
-    const res = await databases.listDocuments(DB, C.books, [Query.limit(100)]);
-    return res.documents;
+    try {
+      const res = await databases.listDocuments(DB, C.books, [Query.limit(100)]);
+      return res.documents;
+    } catch(e) { return []; }
   }
   async function listAllBooks() {
     if (!databases) return [];
-    let all = [], last = null;
-    while (true) {
-      const q = [Query.limit(100)];
-      if (last) q.push(Query.cursorAfter(last));
-      const res = await databases.listDocuments(DB, C.books, q);
-      all = all.concat(res.documents);
-      if (res.documents.length < 100) break;
-      last = res.documents[res.documents.length - 1].$id;
+    try {
+      const res = await databases.listDocuments(DB, C.books, [Query.limit(200)]);
+      return res.documents;
+    } catch(e) {
+      console.warn('[Ronyx] listAllBooks:', e.message);
+      return [];
     }
-    return all;
   }
   async function getBook(id) { if (!databases) return null; return databases.getDocument(DB, C.books, id); }
+
+  /* ---- STORAGE FILES (Media Library → Student Library) ---- */
+  async function listStorageFiles() {
+    if (!storage) return [];
+    try {
+      const res = await storage.listFiles(cfg.BUCKETS.uploads, [Query.limit(100)]);
+      return (res.files || []).filter(function(f) {
+        return /\.(pdf|doc|docx)$/i.test(f.name);
+      });
+    } catch(e) { return []; }
+  }
+
   function fileViewUrl(fileId) {
     if (!storage || !fileId) return null;
     return storage.getFileView(cfg.BUCKETS.uploads, fileId);
@@ -217,12 +247,31 @@
     try { return await storage.getFile(cfg.BUCKETS.uploads, fileId); } catch(e) { return null; }
   }
 
+  /* ---- PUSH SUBSCRIPTIONS ---- */
+  async function savePushSubscription(subJson) {
+    if (!databases || !subJson) return;
+    const u = await currentUser(); if (!u) return;
+    try {
+      await databases.updateDocument(DB, C.users, u.$id, { pushSubscription: subJson });
+    } catch(e) {
+      /* Profile may not exist yet — create it then retry */
+      try { await getProfile(); await databases.updateDocument(DB, C.users, u.$id, { pushSubscription: subJson }); } catch(e2) {}
+    }
+  }
+
+  async function removePushSubscription() {
+    if (!databases) return;
+    const u = await currentUser(); if (!u) return;
+    try { await databases.updateDocument(DB, C.users, u.$id, { pushSubscription: null }); } catch(e) {}
+  }
+
   window.RonyxData = {
-    currentUser, getProfile, getLevel, setLevel,
+    currentUser, getProfile, createStudentProfile, getLevel, setLevel,
     listExams, getExam, listQuestions,
     startAttempt, saveAnswers, submitAttempt,
     listResults, listNotifications, markNotificationRead, getUnreadCount,
-    listBooks, listAllBooks, getBook, fileViewUrl, getFileInfo,
+    listBooks, listAllBooks, listStorageFiles, getBook, fileViewUrl, getFileInfo,
     uploadFile, uploadMyFile, deleteMyFile,
+    savePushSubscription, removePushSubscription,
   };
 })();

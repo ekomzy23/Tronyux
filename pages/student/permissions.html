@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Permissions — Ronyx</title>
+  <title>Device Check — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,39 +16,158 @@
   <div class="app">
 
     <div class="appbar">
-      <a href="/pages/student/instructions.html" class="iconbtn">←</a>
-      <span class="appbar__title">Permissions</span>
+      <a href="/pages/student/instructions.html" class="iconbtn" id="backBtn">←</a>
+      <span class="appbar__title">Device check</span>
     </div>
 
     <div class="app__body">
-      <h1 class="title-lg" style="margin-bottom: 4px;">Permission required</h1>
-      <p class="text-muted mb-4">We need the following to keep your exam secure and fair.</p>
+      <h1 class="title-lg" style="margin-bottom:4px;">Before you begin</h1>
+      <p class="text-muted mb-6">Make sure your device is ready for the exam.</p>
 
-      <div class="list-item">
-        <div class="list-item__icon">📷</div>
-        <div style="flex:1;"><div class="list-item__text">Camera access</div><div class="list-item__sub">Enable proctoring monitoring</div></div>
-        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
+      <!-- Network -->
+      <div class="list-item" style="margin-bottom:8px;">
+        <div class="list-item__icon">🌐</div>
+        <div style="flex:1;">
+          <div class="list-item__text">Internet connection</div>
+          <div class="list-item__sub" id="netSub">Checking…</div>
+        </div>
+        <span id="netBadge" style="font-size:18px;">⏳</span>
       </div>
-      <div class="list-item">
+
+      <!-- Microphone -->
+      <div class="list-item" style="margin-bottom:8px;">
         <div class="list-item__icon">🎙️</div>
-        <div style="flex:1;"><div class="list-item__text">Microphone access</div><div class="list-item__sub">Detect background activity</div></div>
-        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
+        <div style="flex:1;">
+          <div class="list-item__text">Microphone</div>
+          <div class="list-item__sub" id="micSub">Checking…</div>
+        </div>
+        <span id="micBadge" style="font-size:18px;">⏳</span>
       </div>
-      <div class="list-item">
-        <div class="list-item__icon">📁</div>
-        <div style="flex:1;"><div class="list-item__text">Storage access</div><div class="list-item__sub">Upload answer files</div></div>
-        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
-      </div>
-      <div class="list-item">
-        <div class="list-item__icon">🔔</div>
-        <div style="flex:1;"><div class="list-item__text">Notifications</div><div class="list-item__sub">Send exam alerts</div></div>
-        <div class="toggle is-on" onclick="this.classList.toggle('is-on')"></div>
-      </div>
+      <button id="micGrantBtn" class="btn btn--ghost" style="display:none;margin-bottom:16px;font-size:13px;">
+        Tap to grant microphone access
+      </button>
 
-      <a href="/pages/student/exam.html" id="toExam" class="btn btn--primary mt-6">Continue to exam</a>
-    <script>(function(){var e=new URLSearchParams(location.search).get("exam");if(e)document.getElementById("toExam").href="/pages/student/exam.html?exam="+e;})();</script>
+      <!-- Notifications -->
+      <div class="list-item" style="margin-bottom:8px;">
+        <div class="list-item__icon">🔔</div>
+        <div style="flex:1;">
+          <div class="list-item__text">Notifications</div>
+          <div class="list-item__sub" id="notifSub">Checking…</div>
+        </div>
+        <span id="notifBadge" style="font-size:18px;">⏳</span>
+      </div>
+      <button id="notifGrantBtn" class="btn btn--ghost" style="display:none;margin-bottom:16px;font-size:13px;">
+        Tap to enable exam notifications
+      </button>
+
+      <p class="text-muted mt-4" style="font-size:11px;line-height:1.6;">
+        Voice input and notifications are optional — you can always type your answers. You can proceed even if permissions are blocked.
+      </p>
+
+      <a href="/pages/student/exam.html" id="toExam" class="btn btn--primary mt-6">Start exam →</a>
     </div>
   </div>
-  <script src="/js/theme.js?v=mqypss88"></script>
+
+  <script src="/js/theme.js?v=mrr39s6t"></script>
+  <script>
+  (function () {
+    var examId = new URLSearchParams(location.search).get('exam') || '';
+    if (examId) {
+      document.getElementById('toExam').href = '/pages/student/exam.html?exam=' + examId;
+      document.getElementById('backBtn').href = '/pages/student/instructions.html?exam=' + examId;
+    }
+
+    /* ── Network ── */
+    var netOk = navigator.onLine;
+    document.getElementById('netSub').textContent    = netOk ? 'Connected' : 'No internet — some features may be unavailable';
+    document.getElementById('netBadge').textContent  = netOk ? '✅' : '⚠️';
+
+    /* ── Microphone ── */
+    function setMicStatus(state) {
+      var sub   = document.getElementById('micSub');
+      var badge = document.getElementById('micBadge');
+      var btn   = document.getElementById('micGrantBtn');
+      if (state === 'granted') {
+        sub.textContent = 'Allowed — voice input ready';
+        badge.textContent = '✅';
+        btn.style.display = 'none';
+      } else if (state === 'denied') {
+        sub.textContent = 'Blocked — voice input disabled (check browser settings)';
+        badge.textContent = '🚫';
+        btn.style.display = 'none';
+      } else if (state === 'prompt') {
+        sub.textContent = 'Not yet granted — tap to allow';
+        badge.textContent = '❓';
+        btn.style.display = '';
+      } else {
+        sub.textContent = 'Not available on this device';
+        badge.textContent = '—';
+        btn.style.display = 'none';
+      }
+    }
+
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'microphone' }).then(function (r) {
+        setMicStatus(r.state);
+        r.onchange = function () { setMicStatus(r.state); };
+      }).catch(function () { setMicStatus('unavailable'); });
+    } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      /* Fallback: try to get mic silently to see if already granted */
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (s) {
+        s.getTracks().forEach(function (t) { t.stop(); });
+        setMicStatus('granted');
+      }).catch(function (e) {
+        setMicStatus(e.name === 'NotAllowedError' ? 'denied' : 'unavailable');
+      });
+    } else {
+      setMicStatus('unavailable');
+    }
+
+    document.getElementById('micGrantBtn').addEventListener('click', function () {
+      if (!navigator.mediaDevices) return;
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (s) {
+        s.getTracks().forEach(function (t) { t.stop(); });
+        setMicStatus('granted');
+      }).catch(function (e) {
+        setMicStatus(e.name === 'NotAllowedError' ? 'denied' : 'unavailable');
+      });
+    });
+
+    /* ── Notifications ── */
+    function setNotifStatus(perm) {
+      var sub   = document.getElementById('notifSub');
+      var badge = document.getElementById('notifBadge');
+      var btn   = document.getElementById('notifGrantBtn');
+      if (perm === 'granted') {
+        sub.textContent   = 'Allowed — you\'ll receive exam alerts';
+        badge.textContent = '✅';
+        btn.style.display = 'none';
+      } else if (perm === 'denied') {
+        sub.textContent   = 'Blocked — check browser settings to enable';
+        badge.textContent = '🚫';
+        btn.style.display = 'none';
+      } else if (perm === 'default') {
+        sub.textContent   = 'Not yet granted — tap to allow';
+        badge.textContent = '❓';
+        btn.style.display = '';
+      } else {
+        sub.textContent   = 'Not supported on this device';
+        badge.textContent = '—';
+        btn.style.display = 'none';
+      }
+    }
+
+    if ('Notification' in window) {
+      setNotifStatus(Notification.permission);
+    } else {
+      setNotifStatus('unsupported');
+    }
+
+    document.getElementById('notifGrantBtn').addEventListener('click', function () {
+      if (!('Notification' in window)) return;
+      Notification.requestPermission().then(function (p) { setNotifStatus(p); });
+    });
+  })();
+  </script>
 </body>
 </html>

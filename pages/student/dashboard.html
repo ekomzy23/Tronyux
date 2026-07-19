@@ -20,6 +20,20 @@
         <p class="text-muted" style="margin-bottom: 2px;" id="greetMsg">Hello &#128075;</p>
         <h2 id="userName" style="font-family: var(--font-display); font-size: 21px; font-weight: 600;">Welcome</h2>
       </div>
+      <a href="/pages/student/community.html" class="iconbtn"
+         title="Social" style="position:relative;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+             stroke="url(#dash-social-grad)" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <defs>
+            <linearGradient id="dash-social-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7c6df5"/>
+              <stop offset="100%" stop-color="#ff4d8c"/>
+            </linearGradient>
+          </defs>
+          <path d="M13 2L3 14h9l-1 8 10-12h-9z"/>
+        </svg>
+      </a>
       <a href="/pages/student/notifications.html" class="iconbtn">&#128276;</a>
       <a href="/pages/student/search.html" class="iconbtn">&#128269;</a>
     </div>
@@ -41,9 +55,29 @@
         <div class="stat"><div class="stat__n">–</div><div class="stat__l">Avg rank</div></div>
       </div>
 
+      <!-- Social banner — unmissable entry point -->
+      <a href="/pages/student/community.html"
+         style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;
+                background:linear-gradient(135deg,rgba(124,109,245,.18),rgba(255,77,140,.12));
+                border:1.5px solid rgba(124,109,245,.45);text-decoration:none;margin-bottom:20px;
+                box-shadow:0 0 24px rgba(124,109,245,.15);">
+        <span style="font-size:28px;line-height:1;flex-shrink:0;">⚡</span>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:13px;font-weight:800;margin:0 0 2px;
+             background:linear-gradient(90deg,#7c6df5,#ff4d8c);
+             -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+            Pulse · Social Feed
+          </p>
+          <p style="font-size:12px;color:var(--color-muted);margin:0;">
+            Share notes, ask questions &amp; follow classmates
+          </p>
+        </div>
+        <span style="color:#7c6df5;font-size:18px;flex-shrink:0;">›</span>
+      </a>
+
       <div class="between mb-4">
-        <h3 class="title-md">Upcoming exams</h3>
-        <a href="/pages/student/exams.html" class="link text-tiny">View all</a>
+        <h3 class="title-md">Just Added</h3>
+        <a href="/pages/student/exams.html" class="link text-tiny" id="viewAllLink">View</a>
       </div>
 
       <div class="chips mb-4" id="yearChips">
@@ -54,8 +88,7 @@
         <div class="chip" data-level="5">Year 5</div>
       </div>
 
-
-      <!-- exams load from Appwrite -->
+      <!-- exams load from Appwrite — preview only (max 3), full list on exams page -->
       <div id="examList">
         <div class="empty"><div class="empty__icon">&#9203;</div><p>Loading&hellip;</p></div>
       </div>
@@ -68,14 +101,35 @@
         <span>&#8250;</span>
       </a>
 
-      <!-- Community Banner -->
-      <a href="https://chat.whatsapp.com/HJY9q7CJg6V5ICqLpbkfMA" target="_blank" rel="noopener"
+      <!-- Pulse + Hive Community Banner -->
+      <h3 class="title-md mb-4 mt-6">Community</h3>
+      <a href="/pages/student/nexus/feed.html" class="row-card mt-0"
+         style="background:linear-gradient(135deg,rgba(124,109,245,.14),rgba(255,77,140,.07));border-color:rgba(124,109,245,.35);text-decoration:none;">
+        <div class="row-card__icon" style="font-size:26px;">&#9889;</div>
+        <div class="row-card__meta">
+          <h4 style="background:linear-gradient(90deg,#7c6df5,#ff4d8c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Pulse</h4>
+          <p>Share notes, ask questions &amp; follow classmates</p>
+        </div>
+        <span style="color:#7c6df5;font-size:20px;">&#8250;</span>
+      </a>
+      <a href="/pages/student/nexus/rooms.html" class="row-card mt-4"
+         style="background:linear-gradient(135deg,rgba(0,210,255,.1),rgba(124,109,245,.08));border-color:rgba(0,210,255,.3);text-decoration:none;">
+        <div class="row-card__icon" style="font-size:26px;">&#128029;</div>
+        <div class="row-card__meta">
+          <h4 style="background:linear-gradient(90deg,#7c6df5,#00d2ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">The Hive</h4>
+          <p>Join live study sessions with other students</p>
+        </div>
+        <span style="color:#00d2ff;font-size:20px;">&#8250;</span>
+      </a>
+
+      <!-- WhatsApp Community Banner -->
+      <a href="https://chat.whatsapp.com/JixuoADKrsX9O8z0wlr3FC" target="_blank" rel="noopener"
          class="row-card mt-4" id="communityCard"
          style="background:linear-gradient(135deg,rgba(37,211,102,.12),rgba(18,140,126,.12));border-color:rgba(37,211,102,.4);text-decoration:none;">
         <div class="row-card__icon" style="font-size:28px;">&#128172;</div>
         <div class="row-card__meta">
-          <h4 style="color:#25D366;">Join our Community</h4>
-          <p>Connect with other students &amp; get exam tips on WhatsApp</p>
+          <h4 style="color:#25D366;">Join our WhatsApp</h4>
+          <p>Exam tips &amp; announcements on WhatsApp</p>
         </div>
         <span style="color:#25D366;font-size:20px;">&#8250;</span>
       </a>
@@ -84,12 +138,12 @@
     <nav class="tabbar" data-nav="dashboard"></nav>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/data.js?v=mqypss88"></script>
-  <script src="/js/ui.js?v=mqypss88"></script>
-  <script src="/js/render.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
+  <script src="/js/ui.js?v=mrr39s6t"></script>
+  <script src="/js/render.js?v=mrr39s6t"></script>
   <script>
     (async function () {
       // Set greeting by time of day
@@ -103,36 +157,63 @@
       if (user) document.getElementById('userName').textContent = (user.name || 'Student').split(' ')[0];
 
       let level = await RonyxData.getLevel();
-      const chips = document.getElementById('yearChips');
-      const listEl = document.getElementById('examList');
+      const chips    = document.getElementById('yearChips');
+      const listEl   = document.getElementById('examList');
+      const viewLink = document.getElementById('viewAllLink');
 
-      function markYear(l){ [...chips.children].forEach(c => c.classList.toggle('is-active', +c.dataset.level === l)); }
+      const PREVIEW = 3; /* max cards shown on dashboard */
+
+      function markYear(l) {
+        [...chips.children].forEach(c => c.classList.toggle('is-active', +c.dataset.level === l));
+        /* Keep "View" link in sync with the active level so the exams page opens pre-filtered */
+        viewLink.href = '/pages/student/exams.html?level=' + l;
+      }
 
       async function loadExams(l) {
         listEl.innerHTML = '<div class="empty"><div class="empty__icon">&#9203;</div><p>Loading&hellip;</p></div>';
-        /* Fetch all published exams; filter client-side so level mismatch never hides content */
-        const all = await RonyxData.listExams(0);
-        const exams = l ? all.filter(e => !e.level || e.level === l) : all;
-        if (!exams.length && all.length) {
-          /* There are exams but none match this year — show all instead */
-          listEl.innerHTML = all.map(renderExamCard).join('');
-          const first = all[0];
-          document.getElementById('nextExamTitle').textContent = first.title;
-          document.getElementById('nextExamMeta').textContent = (first.durationMinutes || 60) + ' min · ' + (first.totalMarks || 0) + ' marks';
-          document.getElementById('nextExamLink').style.display = '';
-          document.getElementById('nextExamLink').href = '/pages/student/instructions.html?exam=' + first.$id;
-        } else if (!exams.length) {
-          listEl.innerHTML = '<div class="empty"><div class="empty__icon">&#128587;</div><p>No published exams yet. Check back soon.</p></div>';
+        let all;
+        try {
+          all = await RonyxData.listExams(0);
+        } catch (e) {
+          listEl.innerHTML = '<div class="empty"><div class="empty__icon">&#9888;&#65039;</div><p>' +
+            (e.message === 'timeout' ? 'Request timed out — check your connection and reload.' : 'Could not load exams. Check your connection.') +
+            '</p></div>';
+          return;
+        }
+
+        /* Strict level match — only exams explicitly set to this year appear */
+        const exams = all.filter(ex => Number(ex.level) === l);
+
+        if (!exams.length) {
+          listEl.innerHTML = '<div class="empty"><div class="empty__icon">&#128587;</div><p>No exams for Year ' + l + ' yet.</p></div>';
           document.getElementById('nextExamTitle').textContent = 'No upcoming exam';
           document.getElementById('nextExamLink').style.display = 'none';
-        } else {
-          listEl.innerHTML = exams.map(renderExamCard).join('');
-          const first = exams[0];
-          document.getElementById('nextExamTitle').textContent = first.title;
-          document.getElementById('nextExamMeta').textContent = (first.durationMinutes || 60) + ' min · ' + (first.totalMarks || 0) + ' marks';
-          document.getElementById('nextExamLink').style.display = '';
-          document.getElementById('nextExamLink').href = '/pages/student/instructions.html?exam=' + first.$id;
+          return;
         }
+
+        /* Hero card — first exam for this level */
+        const first = exams[0];
+        document.getElementById('nextExamTitle').textContent = first.title;
+        document.getElementById('nextExamMeta').textContent =
+          (first.courseCode ? first.courseCode + ' · ' : '') +
+          (first.durationMinutes || 60) + ' min · ' + (first.totalMarks || 0) + ' marks';
+        document.getElementById('nextExamLink').style.display = '';
+        document.getElementById('nextExamLink').href = '/pages/student/instructions.html?exam=' + first.$id;
+
+        /* Preview — show max PREVIEW cards */
+        const preview = exams.slice(0, PREVIEW);
+        const remaining = exams.length - PREVIEW;
+        let html = preview.map(renderExamCard).join('');
+
+        /* "X more" nudge when there are more than PREVIEW */
+        if (remaining > 0) {
+          html += '<a href="' + viewLink.href + '" style="display:flex;align-items:center;justify-content:center;' +
+            'gap:6px;padding:12px;border:1.5px dashed var(--color-stroke);border-radius:14px;' +
+            'color:var(--color-primary-2);font-size:13px;font-weight:700;text-decoration:none;margin-bottom:10px;">' +
+            '+ ' + remaining + ' more exam' + (remaining > 1 ? 's' : '') + ' &rarr;</a>';
+        }
+
+        listEl.innerHTML = html;
       }
 
       markYear(level);
@@ -143,8 +224,8 @@
       });
     })();
   </script>
-  <script src="/js/theme.js?v=mqypss88"></script>
-  <script src="/js/onboarding.js?v=mqypss88"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
+  <script src="/js/onboarding.js?v=mrr39s6t"></script>
 </body>
 </html>
 

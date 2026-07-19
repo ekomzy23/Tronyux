@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Ronyx Hive</title>
+<style>
+/* ── Theme tokens ── */
+:root {
+  --nx-bg:    #06060e; --nx-surf:  #0d0d1a; --nx-surf2: #13132a;
+  --nx-bdr:   rgba(124,109,245,.18); --nx-p: #7c6df5; --nx-c: #00d2ff;
+  --nx-g:     #00f09a; --nx-pk: #ff4d8c; --nx-txt: #e2e0ff; --nx-mut: #6060a0;
+  --nx-hdr:   rgba(13,13,26,.97); --hh: 54px;
+}
+@media (prefers-color-scheme: light) { :root {
+  --nx-bg: #f0effe; --nx-surf: #ffffff; --nx-surf2: #f4f2ff;
+  --nx-bdr: rgba(124,109,245,.2); --nx-txt: #1a1040; --nx-mut: #7070a0;
+  --nx-hdr: rgba(240,239,254,.97);
+}}
+:root[data-theme="light"] {
+  --nx-bg: #f0effe; --nx-surf: #ffffff; --nx-surf2: #f4f2ff;
+  --nx-bdr: rgba(124,109,245,.2); --nx-txt: #1a1040; --nx-mut: #7070a0;
+  --nx-hdr: rgba(240,239,254,.97);
+}
+:root[data-theme="dark"] {
+  --nx-bg: #06060e; --nx-surf: #0d0d1a; --nx-surf2: #13132a;
+  --nx-bdr: rgba(124,109,245,.18); --nx-txt: #e2e0ff; --nx-mut: #6060a0;
+  --nx-hdr: rgba(13,13,26,.97);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--nx-bg);color:var(--nx-txt);
+  font-family:'Segoe UI',system-ui,sans-serif}
+
+#bgCanvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.2}
+
+/* ── Layout ── */
+.nx-wrap{
+  position:relative;z-index:1;display:grid;
+  height:100dvh;min-height:100dvh;
+  grid-template-rows:var(--hh) 1fr auto;
+  grid-template-columns:180px 1fr 220px;
+  grid-template-areas:"hd hd hd" "lp mc rp" "lp ib rp";
+}
+@media(max-width:680px){
+  .nx-wrap{grid-template-columns:1fr !important;grid-template-areas:"hd" "mc" "ib" !important}
+  /* !important needed because .nx-lp/.nx-rp display:flex is declared later in this stylesheet */
+  .nx-lp,.nx-rp{display:none !important}
+  .nx-lp.mob-show,.nx-rp.mob-show{
+    display:flex!important;position:fixed;inset:0;z-index:500;
+    background:var(--nx-bg);flex-direction:column;overflow:hidden;
+  }
+  .mob-panel-hdr{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;border-bottom:1px solid var(--nx-bdr);flex-shrink:0;
+  }
+  .mob-panel-hdr h4{font-size:15px;font-weight:800}
+  .mob-close{background:none;border:1px solid var(--nx-bdr);border-radius:8px;
+    color:var(--nx-mut);cursor:pointer;font-size:13px;padding:5px 10px}
+  /* Wider bubbles on mobile */
+  .msg-body{max-width:85%}
+  /* Compact header on small screens */
+  .hd-title{font-size:13px}
+  .hd-sub{display:none}
+  /* Hide cmd hints by default on mobile, toggle with button */
+  .cmd-hints{display:none}
+  .cmd-hints.mob-open{display:flex}
+  /* Bigger touch targets */
+  .like-btn,.reply-btn,.edit-btn,.del-btn{min-height:32px}
+  /* Input row full width */
+  .input-row{padding:8px 10px}
+  #msgInput{font-size:14px}
+  /* AI fab visible on mobile */
+  .ai-fab{display:flex!important}
+}
+
+/* ── Header ── */
+.nx-hd{
+  grid-area:hd;display:flex;align-items:center;gap:8px;padding:0 12px;
+  background:var(--nx-hdr);border-bottom:1px solid var(--nx-bdr);
+  backdrop-filter:blur(14px);
+}
+.nx-dot{width:7px;height:7px;border-radius:50%;background:var(--nx-g);
+  box-shadow:0 0 7px var(--nx-g);flex-shrink:0}
+.hd-emoji{width:32px;height:32px;border-radius:9px;flex-shrink:0;font-size:17px;
+  background:rgba(124,109,245,.12);border:1px solid rgba(124,109,245,.2);
+  display:flex;align-items:center;justify-content:center}
+.hd-info{flex:1;min-width:0}
+.hd-title{font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hd-sub{font-size:11px;color:var(--nx-mut);margin-top:1px}
+.hd-acts{display:flex;gap:5px;flex-shrink:0}
+.ico-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--nx-bdr);
+  background:transparent;color:var(--nx-mut);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ico-btn:hover{color:var(--nx-txt);border-color:var(--nx-p)}
+.ico-btn--danger:hover{color:var(--nx-pk);border-color:var(--nx-pk)}
+
+/* ── Left panel ── */
+.nx-lp{grid-area:lp;display:flex;flex-direction:column;overflow:hidden;
+  border-right:1px solid var(--nx-bdr);background:rgba(13,13,26,.5)}
+[data-theme="light"] .nx-lp{background:rgba(255,255,255,.7)}
+.panel-hd{padding:10px 13px 8px;font-size:10px;font-weight:800;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--nx-mut);border-bottom:1px solid var(--nx-bdr);flex-shrink:0}
+.member-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--nx-bdr) transparent}
+.member-row{display:flex;align-items:center;gap:9px;padding:9px 13px;
+  border-bottom:1px solid rgba(124,109,245,.05)}
+.mem-av{width:27px;height:27px;border-radius:50%;flex-shrink:0;font-size:10px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;border:2px solid}
+.mem-info{flex:1;min-width:0}
+.mem-name{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mem-sub{font-size:10px;color:var(--nx-mut)}
+.mem-tag{font-size:9px;font-weight:800;color:var(--nx-p);letter-spacing:.5px;
+  background:rgba(124,109,245,.12);border-radius:6px;padding:2px 6px;flex-shrink:0}
+.kick-btn{width:22px;height:22px;border-radius:6px;border:1px solid var(--nx-bdr);
+  background:transparent;color:var(--nx-mut);cursor:pointer;font-size:11px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s}
+.kick-btn:hover{border-color:var(--nx-pk);color:var(--nx-pk);background:rgba(255,77,140,.1)}
+
+/* ── Quick access ── */
+.qa-section{border-top:1px solid var(--nx-bdr);flex-shrink:0;padding:8px}
+.qa-link{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:9px;
+  text-decoration:none;color:var(--nx-mut);font-size:12px;font-weight:600;
+  transition:all .15s;margin-bottom:4px;border:1px solid transparent}
+.qa-link:hover{color:var(--nx-txt);background:rgba(124,109,245,.1);border-color:var(--nx-bdr)}
+.qa-icon{width:26px;height:26px;border-radius:7px;flex-shrink:0;font-size:13px;
+  background:rgba(124,109,245,.1);display:flex;align-items:center;justify-content:center}
+
+/* ── Main chat ── */
+.nx-mc{grid-area:mc;display:flex;flex-direction:column;overflow:hidden}
+.nx-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:2px;
+  scrollbar-width:thin;scrollbar-color:rgba(124,109,245,.2) transparent}
+.nx-msgs::-webkit-scrollbar{width:3px}
+.nx-msgs::-webkit-scrollbar-thumb{background:rgba(124,109,245,.2);border-radius:3px}
+
+/* Pinned strip */
+.pinned-strip{background:rgba(255,77,140,.06);border-bottom:1px solid rgba(255,77,140,.15);
+  padding:7px 13px;font-size:12px;display:none;align-items:center;gap:8px;flex-shrink:0}
+.pinned-strip.show{display:flex}
+.pin-lbl{font-size:9px;font-weight:800;color:var(--nx-pk);letter-spacing:1px;
+  text-transform:uppercase;flex-shrink:0}
+
+/* ── Messages ── */
+.nx-msg{display:flex;gap:9px;animation:mi .22s ease-out;padding:3px 0;position:relative}
+@keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.nx-msg.mine{flex-direction:row-reverse}
+.msg-av{width:27px;height:27px;border-radius:50%;flex-shrink:0;border:1.5px solid;
+  font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  align-self:flex-start;margin-top:2px}
+.msg-body{max-width:74%;min-width:0}
+.msg-handle{font-size:10px;font-weight:800;letter-spacing:.3px;margin-bottom:2px;
+  padding:0 3px;text-transform:uppercase}
+.nx-msg.mine .msg-handle{text-align:right}
+.msg-bubble{padding:9px 12px;border-radius:15px;border-top-left-radius:4px;
+  font-size:13.5px;line-height:1.5;background:var(--nx-surf2);
+  border-left:3px solid;word-break:break-word;position:relative}
+.nx-msg.mine .msg-bubble{border-top-left-radius:15px;border-top-right-radius:4px;
+  border-left:none;border-right:3px solid}
+.msg-time{font-size:10px;color:var(--nx-mut);margin-top:3px;padding:0 3px}
+.nx-msg.mine .msg-time{text-align:right}
+.msg-edited{font-size:9px;color:var(--nx-mut);font-style:italic;margin-left:4px}
+
+/* Reply quote */
+.msg-quote{background:rgba(124,109,245,.08);border-left:3px solid var(--nx-p);
+  border-radius:6px;padding:6px 10px;font-size:12px;color:var(--nx-mut);
+  margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-quote strong{color:var(--nx-p);font-size:10px;display:block;margin-bottom:2px;
+  text-transform:uppercase;letter-spacing:.3px}
+
+/* ── Action row ── */
+.msg-actions{display:flex;align-items:center;gap:4px;margin-top:4px;padding:0 2px;flex-wrap:wrap}
+.like-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;
+  border:1px solid var(--nx-bdr);background:rgba(255,255,255,.03);
+  cursor:pointer;font-size:13px;color:var(--nx-mut);transition:all .15s;user-select:none}
+.like-btn:hover,.like-btn.liked{border-color:#ff4d8c;color:#ff4d8c;background:rgba(255,77,140,.1)}
+.like-btn .lc{font-size:11px;font-weight:700}
+.reply-btn,.edit-btn,.del-btn{display:flex;align-items:center;gap:4px;padding:3px 9px;
+  border-radius:20px;border:1px solid var(--nx-bdr);background:rgba(255,255,255,.03);
+  cursor:pointer;font-size:12px;color:var(--nx-mut);transition:all .15s}
+.reply-btn:hover{border-color:var(--nx-p);color:var(--nx-p);background:rgba(124,109,245,.1)}
+.edit-btn:hover{border-color:var(--nx-c);color:var(--nx-c);background:rgba(0,210,255,.08)}
+.del-btn:hover{border-color:var(--nx-pk);color:var(--nx-pk);background:rgba(255,77,140,.08)}
+
+/* Reaction chips */
+.rx-chips{display:flex;gap:4px;flex-wrap:wrap}
+.rx-chip{display:flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;
+  border:1px solid var(--nx-bdr);background:rgba(255,255,255,.03);
+  cursor:pointer;font-size:13px;color:var(--nx-mut);transition:all .15s;user-select:none}
+.rx-chip:hover,.rx-chip.glowing{border-color:var(--nx-p);background:rgba(124,109,245,.12);color:var(--nx-txt)}
+.rx-chip .rc{font-size:11px;font-weight:700;color:var(--nx-txt)}
+.rx-picker-wrap{position:relative;display:inline-block}
+.rx-add-btn{padding:3px 9px;border-radius:20px;border:1px solid var(--nx-bdr);
+  background:rgba(255,255,255,.03);cursor:pointer;font-size:14px;color:var(--nx-mut);transition:all .15s}
+.rx-add-btn:hover{border-color:var(--nx-p);color:var(--nx-txt)}
+.rx-picker{position:absolute;bottom:calc(100% + 6px);left:0;z-index:80;
+  background:var(--nx-surf2);border:1px solid var(--nx-bdr);border-radius:14px;
+  padding:8px;display:flex;gap:4px;flex-wrap:wrap;width:180px;
+  box-shadow:0 8px 32px rgba(0,0,0,.45);opacity:0;pointer-events:none;
+  transform:translateY(6px);transition:all .15s}
+.rx-picker.open{opacity:1;pointer-events:all;transform:translateY(0)}
+.rx-picker button{width:34px;height:34px;border-radius:8px;border:none;
+  background:rgba(255,255,255,.04);font-size:18px;cursor:pointer;transition:background .12s;
+  display:flex;align-items:center;justify-content:center}
+.rx-picker button:hover{background:rgba(124,109,245,.18)}
+
+/* Edit textarea */
+.edit-textarea{width:100%;background:transparent;color:var(--nx-txt);border:none;
+  outline:none;resize:none;font-family:inherit;font-size:13.5px;line-height:1.5;
+  min-height:40px}
+.edit-save-row{display:flex;gap:6px;margin-top:6px}
+.edit-save-btn{padding:4px 12px;border-radius:8px;border:none;cursor:pointer;
+  font-size:12px;font-weight:700;background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff}
+.edit-cancel-btn{padding:4px 12px;border-radius:8px;border:1px solid var(--nx-bdr);
+  background:transparent;color:var(--nx-mut);cursor:pointer;font-size:12px;font-weight:700}
+
+/* System messages */
+.nx-sys{text-align:center;font-size:11px;color:var(--nx-mut);padding:5px 0;letter-spacing:.4px}
+
+/* Special cards */
+.nx-card{margin:4px 0;border-radius:14px;padding:14px;border:1px solid var(--nx-bdr);
+  background:var(--nx-surf2);animation:mi .22s ease-out}
+.nx-card--quiz{border-color:rgba(0,210,255,.3)}
+.nx-card--note{border-color:rgba(255,77,140,.3)}
+.nx-card--focus{border-color:rgba(0,240,154,.3)}
+.nx-card--drop{border-color:rgba(255,200,0,.3)}
+.nx-card--request{border-color:rgba(255,200,0,.35);background:rgba(255,200,0,.04)}
+.card-hd{font-size:10px;font-weight:800;letter-spacing:1px;margin-bottom:9px;text-transform:uppercase}
+.nx-card--quiz .card-hd{color:var(--nx-c)}.nx-card--note .card-hd{color:var(--nx-pk)}
+.nx-card--focus .card-hd{color:var(--nx-g)}.nx-card--drop .card-hd{color:#ffc800}
+.nx-card--request .card-hd{color:#ffc800}
+.quiz-q{font-size:14px;font-weight:700;margin-bottom:9px}
+.quiz-opt{padding:8px 12px;border-radius:9px;font-size:12px;border:1px solid var(--nx-bdr);
+  background:rgba(255,255,255,.03);margin-bottom:5px;display:flex;align-items:center;gap:10px;
+  cursor:pointer;transition:all .15s}
+.quiz-opt:hover{border-color:var(--nx-c);background:rgba(0,210,255,.08)}
+.quiz-opt.voted{border-color:var(--nx-c);background:rgba(0,210,255,.12);pointer-events:none}
+.quiz-opt .bw{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
+.quiz-opt .bar{height:100%;background:var(--nx-c);border-radius:4px}
+.quiz-opt .pct{font-size:11px;font-weight:700;color:var(--nx-c);width:28px;text-align:right;flex-shrink:0}
+.nx-timer{font-size:38px;font-weight:900;text-align:center;color:var(--nx-g);
+  font-variant-numeric:tabular-nums;letter-spacing:-1px;margin:7px 0}
+.nx-tsub{text-align:center;font-size:11px;color:var(--nx-mut)}
+.admit-row{display:flex;gap:8px;margin-top:10px}
+.admit-btn{flex:1;padding:8px;border-radius:10px;border:none;cursor:pointer;font-size:12px;font-weight:800;
+  background:linear-gradient(135deg,var(--nx-g),var(--nx-c));color:#06060e;transition:opacity .15s}
+.deny-btn{flex:1;padding:8px;border-radius:10px;border:1.5px solid rgba(255,77,140,.4);
+  background:transparent;color:var(--nx-pk);cursor:pointer;font-size:12px;font-weight:800}
+.admit-btn:disabled,.deny-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Input area ── */
+.nx-ib{grid-area:ib;display:flex;flex-direction:column;
+  background:var(--nx-hdr);border-top:1px solid var(--nx-bdr);flex-shrink:0}
+.reply-preview{display:none;align-items:center;gap:8px;padding:7px 12px;
+  background:rgba(124,109,245,.08);border-bottom:1px solid var(--nx-bdr);
+  font-size:12px;color:var(--nx-mut)}
+.reply-preview.show{display:flex}
+.reply-preview__text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reply-preview strong{color:var(--nx-p)}
+.reply-cancel{background:none;border:none;color:var(--nx-mut);cursor:pointer;font-size:16px;flex-shrink:0}
+.reply-cancel:hover{color:var(--nx-pk)}
+.cmd-hints{padding:5px 12px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--nx-bdr)}
+.cmd-tag{padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;
+  background:rgba(124,109,245,.1);color:var(--nx-p);cursor:pointer;border:none;transition:background .12s}
+.cmd-tag:hover{background:rgba(124,109,245,.2)}
+.input-row{display:flex;align-items:flex-end;gap:8px;padding:10px 12px}
+#msgInput{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--nx-bdr);
+  border-radius:12px;padding:10px 13px;color:var(--nx-txt);font-size:13.5px;
+  outline:none;resize:none;line-height:1.4;font-family:inherit;min-height:40px;max-height:100px;
+  transition:border-color .15s,box-shadow .15s}
+#msgInput:focus{border-color:var(--nx-p);box-shadow:0 0 0 2px rgba(124,109,245,.15)}
+#msgInput::placeholder{color:var(--nx-mut)}
+.send-btn{width:40px;height:40px;border-radius:12px;border:none;cursor:pointer;flex-shrink:0;
+  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;font-size:17px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 14px rgba(124,109,245,.4);transition:opacity .15s,transform .1s}
+.send-btn:active{transform:scale(.92)}
+.send-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Right panel ── */
+.nx-rp{grid-area:rp;display:flex;flex-direction:column;overflow:hidden;
+  border-left:1px solid var(--nx-bdr);background:rgba(13,13,26,.5)}
+[data-theme="light"] .nx-rp{background:rgba(255,255,255,.7)}
+.ai-box{flex:1;overflow-y:auto;padding:11px;display:flex;flex-direction:column;gap:7px;
+  scrollbar-width:thin;scrollbar-color:rgba(124,109,245,.2) transparent}
+.ai-msg{background:rgba(124,109,245,.08);border:1px solid rgba(124,109,245,.15);
+  border-radius:11px;padding:10px;font-size:12px;line-height:1.5;animation:mi .2s ease-out}
+.ai-msg strong{color:var(--nx-c);font-size:10px;letter-spacing:1px;display:block;margin-bottom:4px;text-transform:uppercase}
+.ai-you{background:rgba(0,210,255,.06);border:1px solid rgba(0,210,255,.15);
+  border-radius:11px;padding:10px;font-size:12px;line-height:1.5;animation:mi .2s ease-out}
+.ai-you strong{color:var(--nx-txt);font-size:10px;letter-spacing:1px;display:block;margin-bottom:4px;text-transform:uppercase}
+.ai-input-wrap{padding:9px 11px;border-top:1px solid var(--nx-bdr)}
+#aiInput{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--nx-bdr);
+  border-radius:9px;padding:8px 11px;color:var(--nx-txt);font-size:12px;outline:none;font-family:inherit}
+#aiInput:focus{border-color:var(--nx-p)}
+#aiInput::placeholder{color:var(--nx-mut)}
+.drops-box{border-top:1px solid var(--nx-bdr);padding:8px 11px 11px;max-height:180px;overflow-y:auto}
+.drop-item{font-size:11px;color:var(--nx-txt);padding:7px 9px;border-radius:8px;
+  background:rgba(255,200,0,.07);border:1px solid rgba(255,200,0,.15);margin-bottom:6px}
+.drop-item__lbl{font-size:9px;font-weight:800;color:#ffc800;letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:2px}
+
+/* ── AI Floating Button (mobile only) ── */
+.ai-fab{
+  position:fixed;bottom:88px;right:14px;z-index:120;
+  width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;font-size:20px;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 0 20px rgba(124,109,245,.5),0 4px 16px rgba(0,0,0,.4);
+  transition:transform .15s;
+}
+.ai-fab:hover{transform:scale(1.08)}
+.ai-fab:active{transform:scale(.94)}
+@media(max-width:680px){.ai-fab{display:flex}}
+
+/* ── Video Class — Pre-start card ── */
+.vc-start-bg{position:fixed;inset:0;background:rgba(4,4,12,.92);backdrop-filter:blur(14px);
+  z-index:410;display:none;align-items:center;justify-content:center;padding:20px;}
+.vc-start-bg.open{display:flex}
+.vc-start-card{background:var(--nx-surf);border:1px solid rgba(124,109,245,.3);border-radius:24px;
+  padding:28px 24px;max-width:360px;width:100%;text-align:center;}
+.vc-start-icon{font-size:42px;margin-bottom:10px;}
+.vc-start-card h3{font-size:18px;font-weight:900;margin-bottom:6px;}
+.vc-start-card p{font-size:13px;color:var(--nx-mut);line-height:1.6;margin-bottom:18px;}
+.vc-link-row{display:flex;gap:8px;margin-bottom:20px;}
+.vc-link-inp{flex:1;min-width:0;background:var(--nx-surf2);border:1px solid var(--nx-bdr);
+  border-radius:10px;padding:9px 12px;font-size:11px;color:var(--nx-mut);
+  font-family:monospace;outline:none;}
+.vc-link-copy{padding:9px 14px;border-radius:10px;border:1px solid var(--nx-bdr);
+  background:var(--nx-surf2);color:var(--nx-txt);font-size:12px;font-weight:700;
+  cursor:pointer;flex-shrink:0;}
+.vc-link-copy:hover{border-color:var(--nx-p);}
+.vc-go-live{width:100%;padding:14px;border-radius:14px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#c00,#e8004d);color:#fff;font-size:15px;font-weight:900;
+  margin-bottom:10px;box-shadow:0 0 22px rgba(200,0,60,.4);letter-spacing:.3px;}
+.vc-go-live:hover{opacity:.9}
+.vc-start-cancel{width:100%;background:transparent;border:1.5px solid var(--nx-bdr);
+  border-radius:12px;padding:10px;color:var(--nx-mut);font-size:13px;cursor:pointer;}
+
+/* ── Video Class Modal (live grid) ── */
+.vc-modal{position:fixed;inset:0;background:#000;z-index:400;display:none;flex-direction:column;}
+.vc-modal.open{display:flex}
+.vc-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,0,0,.85);flex-shrink:0;}
+.vc-hdr h4{flex:1;font-size:13px;font-weight:800;color:#fff;margin:0}
+.vc-action{padding:7px 12px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:700;color:#fff;transition:opacity .15s}
+.vc-action:hover{opacity:.8}
+.vc-grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px;padding:4px;background:#111;align-content:start;}
+.vc-tile{position:relative;background:#1a1a2e;border-radius:10px;overflow:hidden;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;}
+.vc-tile video{width:100%;height:100%;object-fit:cover;}
+.vc-tile__name{position:absolute;bottom:6px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;}
+
+/* ── VC Join Notification (members only) ── */
+.vc-notif{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--nx-surf);border:1px solid rgba(124,109,245,.4);border-radius:16px;
+  padding:14px 18px;z-index:450;display:none;align-items:center;gap:12px;
+  max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.4);transition:all .25s;}
+.vc-notif.show{display:flex;transform:translateX(-50%) translateY(0);}
+.vc-notif__txt{flex:1;font-size:13px;}
+.vc-notif__title{font-weight:800;margin-bottom:2px;}
+.vc-notif__sub{font-size:11px;color:var(--nx-mut);}
+.vc-notif__join{padding:8px 16px;border-radius:10px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;font-size:12px;font-weight:800;flex-shrink:0;}
+.vc-notif__dismiss{padding:6px 10px;border-radius:8px;border:1px solid var(--nx-bdr);
+  background:transparent;color:var(--nx-mut);font-size:11px;cursor:pointer;flex-shrink:0;}
+
+/* ── Whiteboard Modal ── */
+.wb-modal{
+  position:fixed;inset:0;z-index:450;
+  display:none;flex-direction:column;
+  background:var(--nx-bg);
+}
+.wb-modal.open{display:flex}
+.wb-hdr{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  background:var(--nx-surf);border-bottom:1px solid var(--nx-bdr);
+  flex-shrink:0;min-height:50px;flex-wrap:wrap;
+}
+.wb-hdr-title{font-size:13px;font-weight:800;flex:1;}
+.wb-tools{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.wb-tool-btn{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--nx-bdr);
+  background:var(--nx-surf2);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.wb-tool-btn.active,.wb-tool-btn:hover{border-color:var(--nx-p);background:rgba(124,109,245,.18);}
+#wbColorPick{width:32px;height:32px;padding:2px;border:1px solid var(--nx-bdr);border-radius:8px;cursor:pointer;background:none;flex-shrink:0;}
+#wbSizeSlider{width:72px;accent-color:var(--nx-p);}
+.wb-close-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,77,140,.4);background:rgba(255,77,140,.1);color:var(--nx-pk);cursor:pointer;font-size:12px;font-weight:700;}
+#wbCanvas{flex:1;display:block;touch-action:none;cursor:crosshair;}
+
+/* ── Toast ── */
+.nx-toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(12px);
+  background:var(--nx-surf2);border:1px solid var(--nx-bdr);border-radius:10px;
+  padding:9px 18px;font-size:13px;z-index:999;opacity:0;
+  transition:all .22s;pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.35)}
+.nx-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Overlays ── */
+.nx-overlay{position:fixed;inset:0;background:rgba(6,6,14,.95);backdrop-filter:blur(16px);
+  z-index:300;display:none;flex-direction:column;align-items:center;
+  justify-content:center;gap:16px;text-align:center;padding:24px}
+.nx-overlay.show{display:flex}
+.nx-overlay h2{font-size:22px;font-weight:900}
+.nx-overlay p{color:var(--nx-mut);font-size:14px;max-width:280px;line-height:1.5}
+.ol-btn{padding:12px 28px;border-radius:12px;font-size:15px;font-weight:800;border:none;cursor:pointer}
+.ol-btn--p{background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff}
+.ol-btn--g{background:transparent;border:1.5px solid var(--nx-bdr);color:var(--nx-txt)}
+.ol-btn--d{background:transparent;border:1.5px solid rgba(255,77,140,.4);color:var(--nx-pk)}
+
+/* Join request panel */
+.join-box{background:var(--nx-surf);border:1px solid rgba(255,200,0,.35);
+  border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center}
+.join-box h2{font-size:20px;font-weight:900;margin-top:8px}
+.join-box p{font-size:13px;color:var(--nx-mut);margin-top:8px;line-height:1.5}
+.join-msg-input{width:100%;background:var(--nx-surf2);border:1px solid var(--nx-bdr);
+  border-radius:11px;padding:10px 13px;color:var(--nx-txt);font-size:13px;
+  outline:none;resize:none;font-family:inherit;margin-top:14px;min-height:68px}
+.join-msg-input:focus{border-color:var(--nx-p)}
+.join-msg-input::placeholder{color:var(--nx-mut)}
+.join-req-btn{width:100%;margin-top:12px;padding:13px;border-radius:12px;border:none;
+  cursor:pointer;font-size:14px;font-weight:800;
+  background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;
+  box-shadow:0 0 18px rgba(124,109,245,.4)}
+.join-req-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Share modal ── */
+.share-modal-bg{position:fixed;inset:0;background:rgba(4,4,12,.88);backdrop-filter:blur(12px);
+  z-index:200;display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.share-modal-bg.open{opacity:1;pointer-events:all}
+.share-modal{background:var(--nx-surf);border:1px solid rgba(124,109,245,.22);
+  border-top-left-radius:24px;border-top-right-radius:24px;
+  padding:0 0 40px;width:100%;max-width:480px;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.18,.85,.2,1)}
+.share-modal-bg.open .share-modal{transform:translateY(0)}
+.share-drag{width:38px;height:4px;border-radius:2px;background:rgba(124,109,245,.3);margin:12px auto 0}
+.share-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px 12px;border-bottom:1px solid var(--nx-bdr)}
+.share-hdr h3{font-size:16px;font-weight:900}
+.share-x{width:30px;height:30px;border-radius:50%;background:var(--nx-surf2);
+  border:1px solid var(--nx-bdr);color:var(--nx-mut);cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center}
+.share-body{padding:16px 20px}
+.share-desc{font-size:13px;color:var(--nx-mut);margin-bottom:14px}
+.share-platforms{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:360px){.share-platforms{grid-template-columns:repeat(2,1fr)}}
+.share-plat{display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 6px;border-radius:14px;border:1.5px solid var(--nx-bdr);
+  background:var(--nx-surf2);cursor:pointer;font-size:11px;font-weight:700;
+  color:var(--nx-txt);transition:all .15s}
+.share-plat:hover{border-color:var(--nx-p);background:rgba(124,109,245,.1)}
+.share-plat__icon{font-size:22px}
+.link-preview{background:var(--nx-surf2);border:1px solid var(--nx-bdr);border-radius:10px;
+  padding:10px 12px;font-size:11px;color:var(--nx-mut);word-break:break-all;font-family:monospace}
+
+/* ── Spinner ── */
+.nx-spin{width:22px;height:22px;border-radius:50%;
+  border:2px solid rgba(124,109,245,.2);border-top-color:var(--nx-p);
+  animation:spin .7s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+<script>(function(){ var t=localStorage.getItem('ronyx_theme'); if(t) document.documentElement.setAttribute('data-theme',t); })();</script>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<div class="nx-wrap">
+
+  <!-- Header -->
+  <header class="nx-hd">
+    <div class="nx-dot"></div>
+    <div class="hd-emoji" id="spaceEmoji">⬡</div>
+    <div class="hd-info">
+      <div class="hd-title" id="spaceTitle">Connecting…</div>
+      <div class="hd-sub" id="spaceSub"></div>
+    </div>
+    <div class="hd-acts">
+      <button class="ico-btn" onclick="toggleLeft()" title="Members">👥</button>
+      <button class="ico-btn" onclick="openShareModal()" title="Share Hive">🔗</button>
+      <button class="ico-btn" id="vcBtn" onclick="startVideoClass()" title="Video Class">📹</button>
+      <button class="ico-btn" id="themeBtn" onclick="toggleTheme()" title="Theme">🌙</button>
+      <button class="ico-btn ico-btn--danger" onclick="confirmLeave()" title="Leave">⏏</button>
+    </div>
+  </header>
+
+  <!-- Left — Members -->
+  <aside class="nx-lp" id="leftPanel">
+    <div class="mob-panel-hdr" style="display:none" id="mobMembersHdr">
+      <h4>👥 Members</h4>
+      <button class="mob-close" onclick="toggleLeft()">Close ✕</button>
+    </div>
+    <div class="panel-hd">⬡ Members</div>
+    <div class="member-list" id="memberList"><div class="nx-spin"></div></div>
+    <div class="qa-section">
+      <div class="panel-hd" style="padding:8px 13px 7px;border-bottom:none;border-top:1px solid var(--nx-bdr)">⚡ Quick Access</div>
+      <a href="/pages/student/library.html" target="_blank" class="qa-link"><div class="qa-icon">📚</div>Library</a>
+      <a href="/pages/student/exams.html" target="_blank" class="qa-link"><div class="qa-icon">📝</div>Exams</a>
+      <a href="/pages/student/dashboard.html" target="_blank" class="qa-link"><div class="qa-icon">🏠</div>Dashboard</a>
+    </div>
+  </aside>
+
+  <!-- Main chat -->
+  <main class="nx-mc">
+    <div class="pinned-strip" id="pinnedStrip">
+      <span class="pin-lbl">📌 Pinned</span>
+      <span id="pinnedText"></span>
+    </div>
+    <div class="nx-msgs" id="msgList"></div>
+  </main>
+
+  <!-- Input -->
+  <div class="nx-ib" id="inputArea">
+    <div class="reply-preview" id="replyPreview">
+      <div class="reply-preview__text" id="replyText"></div>
+      <button class="reply-cancel" onclick="cancelReply()">✕</button>
+    </div>
+    <div class="cmd-hints" id="cmdHints">
+      <button class="cmd-tag" onclick="insertCmd('/quiz ')">⟡ /quiz</button>
+      <button class="cmd-tag" onclick="insertCmd('/note ')">◈ /note</button>
+      <button class="cmd-tag" onclick="insertCmd('/focus ')">⏱ /focus</button>
+      <button class="cmd-tag" onclick="insertCmd('/drop ')">✦ /drop</button>
+    </div>
+    <div class="input-row">
+      <button class="ico-btn" onclick="document.getElementById('cmdHints').classList.toggle('mob-open')" title="Commands" style="flex-shrink:0;display:none;" id="cmdToggleBtn">⌘</button>
+      <textarea id="msgInput" placeholder="Message the Hive…" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">↑</button>
+    </div>
+  </div>
+
+  <!-- Right — AI -->
+  <aside class="nx-rp" id="rightPanel">
+    <div class="mob-panel-hdr" style="display:none" id="mobAiHdr">
+      <h4>✦ Ronyx AI</h4>
+      <button class="mob-close" onclick="toggleRight()">Close ✕</button>
+    </div>
+    <div class="panel-hd">✦ Ronyx AI</div>
+    <div class="ai-box" id="aiBox">
+      <div class="ai-msg"><strong>Ronyx AI</strong>Ask me anything — formulas, concepts, summaries. I'm here.</div>
+    </div>
+    <div class="ai-input-wrap">
+      <input id="aiInput" placeholder="Ask Ronyx AI…">
+    </div>
+    <div class="panel-hd" style="border-top:1px solid var(--nx-bdr);padding-top:8px;">✦ Knowledge Drops</div>
+    <div class="drops-box" id="dropBox">
+      <div style="font-size:11px;color:var(--nx-mut)">Use /drop to save key facts here.</div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- AI FAB (mobile) -->
+<button class="ai-fab" onclick="toggleRight()" title="Ask Ronyx AI">✦</button>
+
+<!-- VC Pre-Start Card (host only — shown before going live) -->
+<div class="vc-start-bg" id="vcStartBg">
+  <div class="vc-start-card">
+    <div class="vc-start-icon">📹</div>
+    <h3>Start a Video Class</h3>
+    <p>You're about to go live in <strong id="vcStartRoomName">this Hive</strong>.<br>Members will get an in-app notification and can join with one tap — no sign-up needed.</p>
+    <div class="vc-link-row">
+      <input class="vc-link-inp" id="vcRoomLinkInp" type="text" readonly>
+      <button class="vc-link-copy" onclick="copyVcLink()">Copy link</button>
+    </div>
+    <button class="vc-go-live" onclick="_doStartVideoClass()">🔴 Go Live Now</button>
+    <button class="vc-start-cancel" onclick="document.getElementById('vcStartBg').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Video Class Modal -->
+<div class="vc-modal" id="vcModal">
+  <div class="vc-hdr">
+    <span style="font-size:18px;">📹</span>
+    <h4 id="vcLabel">Virtual Classroom</h4>
+    <button class="vc-action" style="background:rgba(0,240,154,.4);" onclick="openWhiteboard()">🎨 Board</button>
+    <button class="vc-action" id="vcEndBtn" style="background:rgba(255,77,140,.6);display:none;" onclick="endVideoClass()">⏹ End Class</button>
+    <button class="vc-action" id="vcLeaveBtn" style="background:rgba(255,140,0,.5);" onclick="leaveVideoClass()">✕ Leave</button>
+  </div>
+  <div class="vc-grid" id="vcGrid"></div>
+</div>
+
+<!-- VC Join Notification Popup -->
+<div class="vc-notif" id="vcNotif">
+  <span style="font-size:24px;">📹</span>
+  <div class="vc-notif__txt">
+    <div class="vc-notif__title" id="vcNotifTitle">Video Class Live</div>
+    <div class="vc-notif__sub" id="vcNotifSub">Tap Join to enter</div>
+  </div>
+  <button class="vc-notif__join" onclick="joinVideoClass()">Join</button>
+  <button class="vc-notif__dismiss" onclick="hideVcNotif()">✕</button>
+</div>
+
+<!-- Whiteboard -->
+<div class="wb-modal" id="wbModal">
+  <div class="wb-hdr">
+    <span style="font-size:16px;">✏️</span>
+    <span class="wb-hdr-title">Whiteboard</span>
+    <div class="wb-tools">
+      <button class="wb-tool-btn active" id="wbBtnPen" onclick="wbSetTool('pen')" title="Pen">✏️</button>
+      <button class="wb-tool-btn" id="wbBtnEraser" onclick="wbSetTool('eraser')" title="Eraser">🧹</button>
+      <input type="color" id="wbColorPick" value="#7c6df5" title="Colour" oninput="_wbColor=this.value">
+      <input type="range" id="wbSizeSlider" min="2" max="30" value="5" title="Brush size" oninput="_wbSize=parseInt(this.value)">
+      <button class="wb-tool-btn" onclick="wbClear()" title="Clear all">🗑️</button>
+    </div>
+    <button class="wb-close-btn" onclick="closeWhiteboard()">✕ Close</button>
+  </div>
+  <canvas id="wbCanvas"></canvas>
+</div>
+
+<!-- Toast -->
+<div class="nx-toast" id="toast"></div>
+
+<!-- Hive Ended overlay -->
+<div class="nx-overlay" id="endOverlay">
+  <div style="font-size:48px">⬡</div>
+  <h2 id="overlayTitle">Hive Ended</h2>
+  <p id="overlayMsg">The Keeper has closed this session.</p>
+  <button class="ol-btn ol-btn--p" onclick="window.location.href='/pages/student/nexus/rooms.html'">← Back to Hive</button>
+  <button class="ol-btn ol-btn--g" onclick="document.getElementById('endOverlay').classList.remove('show')">Stay</button>
+</div>
+
+<!-- Kicked overlay -->
+<div class="nx-overlay" id="kickedOverlay">
+  <div style="font-size:48px">🚪</div>
+  <h2>Removed from Hive</h2>
+  <p>The Keeper has removed you from this session.</p>
+  <button class="ol-btn ol-btn--p" onclick="window.location.href='/pages/student/nexus/rooms.html'">← Find Another Hive</button>
+</div>
+
+<!-- Join Request overlay -->
+<div class="nx-overlay" id="joinOverlay">
+  <div class="join-box">
+    <div style="font-size:42px">🐝</div>
+    <h2>Request to Join</h2>
+    <p>This Hive requires the Keeper's approval to enter.</p>
+    <div id="joinRequestForm">
+      <textarea class="join-msg-input" id="joinMsg" placeholder="Optional message to the Keeper…" maxlength="200" rows="3"></textarea>
+      <button class="join-req-btn" id="joinReqBtn" onclick="sendJoinRequest()">Send Request →</button>
+    </div>
+    <div id="joinWaiting" style="display:none;margin-top:14px;">
+      <div class="nx-spin" style="margin:0 auto 12px;"></div>
+      <p style="font-size:13px;color:var(--nx-mut);">Waiting for the Keeper to admit you…</p>
+    </div>
+    <a href="/pages/student/nexus/rooms.html" style="display:inline-block;margin-top:14px;font-size:12px;color:var(--nx-mut);">← Back to Hives</a>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div class="share-modal-bg" id="shareBg">
+  <div class="share-modal">
+    <div class="share-drag"></div>
+    <div class="share-hdr">
+      <h3>🔗 Share this Hive</h3>
+      <button class="share-x" onclick="closeShareModal()">✕</button>
+    </div>
+    <div class="share-body">
+      <p class="share-desc">Invite people to join your study session</p>
+      <div class="share-platforms">
+        <button class="share-plat" onclick="shareRoom('whatsapp')">
+          <span class="share-plat__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></span>WhatsApp
+        </button>
+        <button class="share-plat" onclick="shareRoom('facebook')">
+          <span class="share-plat__icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></span>Facebook
+        </button>
+        <button class="share-plat" onclick="shareRoom('tiktok')">
+          <span class="share-plat__icon"><svg viewBox="0 0 24 24" width="26" height="26"><path fill="#010101" d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.09a8.16 8.16 0 004.77 1.52V7.15a4.85 4.85 0 01-1-.46z"/><path fill="#fe2c55" d="M12.49 15.28a2.89 2.89 0 00-2.89 2.89 2.89 2.89 0 002.89 2.89 2.89 2.89 0 002.88-2.5V2h3.45v.44A4.83 4.83 0 0022.59 6.69a4.85 4.85 0 001 .46v3.46a8.16 8.16 0 01-4.77-1.52v6.91a6.34 6.34 0 01-6.33 6.34z"/><path fill="#25f4ee" d="M9.6 18.17a2.89 2.89 0 012.89-2.89c.27 0 .53.04.79.1V11.9a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 003.45 5.61 2.89 2.89 0 01-.02-1.63z"/></svg></span>TikTok
+        </button>
+        <button class="share-plat" id="copyLinkBtn" onclick="shareRoom('copy')">
+          <span class="share-plat__icon" id="copyIcon"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></span>Copy
+        </button>
+      </div>
+      <div class="link-preview" id="roomLinkPreview"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="/js/config.js?v=mrr39s6t"></script>
+<script src="/js/appwrite.js?v=mrr39s6t"></script>
+<script src="/js/data.js?v=mrr39s6t"></script>
+<script src="/js/nexus-data.js?v=mrr39s6t"></script>
+<script>
+/* ════════ CANVAS ════════ */
+(function(){
+  const cv=document.getElementById('bgCanvas'),ctx=cv.getContext('2d');
+  let W,H,pts=[],_pulse=0,tick=0;
+  window._nxPulse=()=>{_pulse=20};
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<45;i++)pts.push({x:Math.random()*W,y:Math.random()*H,
+    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3});
+  const COLS=['rgba(124,109,245,','rgba(0,210,255,','rgba(0,240,154,'];
+  function draw(){
+    ctx.clearRect(0,0,W,H);tick+=.002;
+    const ci=Math.floor(tick)%COLS.length,a=_pulse>0?.45:.2;
+    if(_pulse>0)_pulse--;
+    pts.forEach(p=>{p.x=(p.x+p.vx+W)%W;p.y=(p.y+p.vy+H)%H});
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<120){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
+        ctx.strokeStyle=COLS[ci]+((1-d/120)*a)+')';ctx.lineWidth=.6;ctx.stroke()}
+    }
+    pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,1.4,0,Math.PI*2);ctx.fillStyle=COLS[ci]+'.4)';ctx.fill()});
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ════════ STATE ════════ */
+let roomId='',myId='',myHandle='',myColor='',isHost=false,isAdmitted=false;
+let roomHostId='',roomTitle='';
+let unsub=null,unsubRoom=null;
+let members={};
+let quizVoted={},focusTimers={},drops=[];
+let replyTo=null;
+let isMobile = window.innerWidth <= 680;
+
+const EMOJIS_RX = ['❤️','🔥','🧠','⚡','🎯','🚀','✨','🤯','🫡','💎'];
+
+/* ════════ UTILS ════════ */
+function toast(msg,dur){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur||2200);
+}
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function escAttr(s){ return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function fmt(iso){
+  const d=new Date(iso);
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+function getParams(){
+  const p=new URLSearchParams(window.location.search);
+  return{id:p.get('id'),host:p.get('host')==='1'};
+}
+
+/* ════════ MEMBERS ════════ */
+function trackMember(doc){
+  if(doc.userId && !members[doc.userId]){
+    members[doc.userId]={handle:doc.handle||'?',color:doc.userColor||'#7c6df5',name:doc.userName||''};
+    renderMembers();
+  }
+}
+function renderMembers(){
+  const list=document.getElementById('memberList');
+  const arr=Object.entries(members);
+  if(!arr.length){list.innerHTML='<div style="padding:12px 13px;font-size:11px;color:var(--nx-mut)">No one here yet.</div>';return;}
+  list.innerHTML=arr.map(([uid,m])=>`
+    <div class="member-row">
+      <div class="mem-av" style="color:${m.color};border-color:${m.color};background:${m.color}18;">${m.handle.charAt(0)}</div>
+      <div class="mem-info">
+        <div class="mem-name">${esc(m.handle)}</div>
+        <div class="mem-sub">${esc(m.name)}${uid===roomHostId?' · Keeper':''}</div>
+      </div>
+      ${isHost && uid!==myId ? `<button class="kick-btn" onclick="kickMember('${uid}','${escAttr(m.handle)}')" title="Remove from Hive">✕</button>` : ''}
+      ${uid===myId ? '<span class="mem-tag">You</span>' : ''}
+    </div>`).join('');
+}
+
+async function kickMember(uid,handle){
+  if(!confirm(`Remove ${handle} from this Hive?`))return;
+  try{
+    await NexusData.kickUser(roomId,uid,handle);
+    delete members[uid]; renderMembers();
+    toast(`${handle} was removed.`);
+  }catch(_){toast('Could not remove member.');}
+}
+
+/* ════════ REACTIONS ════════ */
+function parseRx(str){try{return JSON.parse(str||'{}')}catch(_){return{}}}
+function rxChipsHtml(msgId,rxStr){
+  const r=parseRx(rxStr);
+  return Object.entries(r).filter(([,n])=>n>0)
+    .map(([e,n])=>`<div class="rx-chip" onclick="addRx('${msgId}','${e}')">${e} <span class="rc">${n}</span></div>`)
+    .join('');
+}
+function actionRowHtml(msgId,rxStr,likeCount,handle,bubbleText,isOwn){
+  const chips=rxChipsHtml(msgId,rxStr);
+  const sh=escAttr(handle), st=escAttr((bubbleText||'').slice(0,60));
+  return `<div class="msg-actions" id="acts-${msgId}">
+    <div class="like-btn" id="like-${msgId}" onclick="likeMsg('${msgId}')">❤️ <span class="lc">${likeCount>0?likeCount:''}</span></div>
+    <button class="reply-btn" onclick="setReply('${msgId}','${sh}','${st}')">💬 Reply</button>
+    ${isOwn?`<button class="edit-btn" onclick="editMsg('${msgId}')">✏️</button><button class="del-btn" onclick="deleteMsg('${msgId}')">🗑️</button>`:''}
+    <div class="rx-chips" id="chips-${msgId}">${chips}</div>
+    <div class="rx-picker-wrap">
+      <button class="rx-add-btn" onclick="togglePicker('${msgId}',event)">＋</button>
+      <div class="rx-picker" id="picker-${msgId}">
+        ${EMOJIS_RX.map(e=>`<button onclick="addRx('${msgId}','${e}');closePicker('${msgId}')">${e}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+async function likeMsg(msgId){
+  const btn=document.getElementById('like-'+msgId);
+  if(btn){btn.classList.toggle('liked');window._nxPulse();}
+  try{await NexusData.addReaction(msgId,'❤️')}catch(_){}
+}
+async function addRx(msgId,emoji){
+  window._nxPulse();
+  try{await NexusData.addReaction(msgId,emoji)}catch(_){}
+}
+function togglePicker(msgId,ev){
+  ev.stopPropagation();
+  document.querySelectorAll('.rx-picker.open').forEach(p=>{if(p.id!=='picker-'+msgId)p.classList.remove('open')});
+  document.getElementById('picker-'+msgId)?.classList.toggle('open');
+}
+function closePicker(msgId){document.getElementById('picker-'+msgId)?.classList.remove('open')}
+document.addEventListener('click',()=>{document.querySelectorAll('.rx-picker.open').forEach(p=>p.classList.remove('open'))});
+function refreshRx(msgId,rxStr,likeCount){
+  const chips=document.getElementById('chips-'+msgId);
+  if(chips)chips.innerHTML=rxChipsHtml(msgId,rxStr);
+  const lc=document.querySelector(`#like-${msgId} .lc`);
+  if(lc)lc.textContent=likeCount>0?likeCount:'';
+}
+
+/* ════════ REPLY ════════ */
+function setReply(msgId,handle,text){
+  replyTo={msgId,handle,text};
+  document.getElementById('replyText').innerHTML=`<strong>${handle}</strong> ${text}`;
+  document.getElementById('replyPreview').classList.add('show');
+  document.getElementById('msgInput').focus();
+}
+function cancelReply(){replyTo=null;document.getElementById('replyPreview').classList.remove('show')}
+
+/* ════════ EDIT / DELETE ════════ */
+function editMsg(msgId){
+  const bubble=document.querySelector(`#msg-${msgId} .msg-bubble`);
+  if(!bubble)return;
+  const curText=bubble.textContent.replace(/\[edited\]/,'').trim();
+  const orig=bubble.innerHTML;
+  bubble.setAttribute('data-orig',orig);
+  bubble.innerHTML=`<textarea class="edit-textarea" id="etarea-${msgId}" rows="3">${curText}</textarea>
+    <div class="edit-save-row">
+      <button class="edit-save-btn" onclick="saveEdit('${msgId}')">Save</button>
+      <button class="edit-cancel-btn" onclick="cancelEdit('${msgId}')">Cancel</button>
+    </div>`;
+  const ta=document.getElementById('etarea-'+msgId);
+  if(ta){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);}
+}
+async function saveEdit(msgId){
+  const ta=document.getElementById('etarea-'+msgId);
+  if(!ta)return;
+  const newText=ta.value.trim();
+  if(!newText)return;
+  try{
+    await NexusData.editMessage(msgId,newText);
+    const bubble=document.querySelector(`#msg-${msgId} .msg-bubble`);
+    if(bubble)bubble.innerHTML=esc(newText)+'<span class="msg-edited"> · edited</span>';
+    toast('Message updated');
+  }catch(_){toast('Could not save edit.');}
+}
+function cancelEdit(msgId){
+  const bubble=document.querySelector(`#msg-${msgId} .msg-bubble`);
+  if(bubble){const orig=bubble.getAttribute('data-orig');if(orig)bubble.innerHTML=orig;}
+}
+async function deleteMsg(msgId){
+  if(!confirm('Delete this message?'))return;
+  try{
+    await NexusData.deleteMessage(msgId);
+    const el=document.getElementById('msg-'+msgId);
+    if(el)el.remove();
+    toast('Message deleted');
+  }catch(_){toast('Could not delete message.');}
+}
+
+/* ════════ RENDER MESSAGES ════════ */
+function renderMsg(doc){
+  /* Resolve virtual type: join_request/join_approved/kicked are stored as
+     type:'system' with extra._vtype due to Appwrite enum constraints */
+  let extra={};try{extra=JSON.parse(doc.extra||'{}')}catch(_){}
+  const msgType=extra._vtype||doc.type;
+
+  if(msgType!=='system'&&msgType!=='join_request'&&msgType!=='join_approved'&&msgType!=='kicked')trackMember(doc);
+  const list=document.getElementById('msgList');
+
+  /* Join request — visible to all, actionable by host */
+  if(msgType==='join_request'){
+    const reqHandle=extra.handle||doc.handle||'Someone';
+    const reqUserId=extra.userId||doc.userId;
+    const reqMsg=extra.msg||'';
+    const el=document.createElement('div');
+    el.className='nx-card nx-card--request';el.id='req-'+reqUserId;
+    el.innerHTML=`<div class="card-hd">🐝 Join Request</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px;">${esc(reqHandle)} wants to join the Hive</div>
+      ${reqMsg?`<div style="font-size:12px;color:var(--nx-mut);margin-bottom:8px;">"${esc(reqMsg)}"</div>`:''}
+      <div class="admit-row" id="admitRow-${reqUserId}">
+        <button class="admit-btn" onclick="admitMember('${reqUserId}','${escAttr(reqHandle)}',this)">✓ Admit</button>
+        <button class="deny-btn" onclick="denyMember('${reqUserId}',this)">✕ Deny</button>
+      </div>`;
+    list.appendChild(el);list.scrollTop=list.scrollHeight;
+    /* hide admit buttons if not host */
+    if(!isHost){const row=el.querySelector('.admit-row');if(row)row.style.display='none';}
+    return;
+  }
+
+  /* Admitted */
+  if(msgType==='join_approved'){
+    if(extra.userId===myId&&!isAdmitted){
+      isAdmitted=true;
+      document.getElementById('joinOverlay').classList.remove('show');
+      document.getElementById('msgInput').disabled=false;
+      document.getElementById('sendBtn').disabled=false;
+      toast('✅ You\'ve been admitted to the Hive!');
+    }
+    const reqCard=document.getElementById('req-'+extra.userId);
+    if(reqCard)reqCard.remove();
+    const sys=document.createElement('div');sys.className='nx-sys';sys.textContent=doc.text;
+    list.appendChild(sys);list.scrollTop=list.scrollHeight;
+    return;
+  }
+
+  /* Kicked */
+  if(msgType==='kicked'){
+    if(extra.userId===myId&&!isHost){
+      if(unsub)unsub();if(unsubRoom)unsubRoom();
+      document.getElementById('kickedOverlay').classList.add('show');
+      return;
+    }
+    delete members[extra.userId];renderMembers();
+    const sys=document.createElement('div');sys.className='nx-sys';sys.textContent=doc.text;
+    list.appendChild(sys);list.scrollTop=list.scrollHeight;
+    return;
+  }
+
+  /* Video class started — notify members, render system message */
+  if(msgType==='vc_started'){
+    const el=document.createElement('div');el.className='nx-sys';
+    el.innerHTML=`📹 <strong>${esc(doc.text||'Video Class started')}</strong>`;
+    list.appendChild(el);list.scrollTop=list.scrollHeight;
+    if(!isHost)showVcNotif(extra.peerId,extra.hostName||doc.userName);
+    return;
+  }
+  /* Video class ended */
+  if(msgType==='vc_ended'){
+    const el=document.createElement('div');el.className='nx-sys';
+    el.textContent='📹 Video class ended.';
+    list.appendChild(el);list.scrollTop=list.scrollHeight;
+    hideVcNotif();
+    if(!isHost&&_vcActive)_cleanupVc();
+    return;
+  }
+
+  if(msgType==='system'){
+    const el=document.createElement('div');el.className='nx-sys';el.textContent=doc.text;
+    list.appendChild(el);list.scrollTop=list.scrollHeight;return;
+  }
+  if(doc.type==='quiz'){renderQuiz(doc);return}
+  if(doc.type==='note'){renderNote(doc);return}
+  if(doc.type==='focus'){renderFocus(doc);return}
+  if(doc.type==='drop'){renderDrop(doc);return}
+
+  /* Normal chat message */
+  const mine=doc.userId===myId;
+  const likeCount=parseRx(doc.reactions)['❤️']||0;
+  const quoteHtml=extra.quoteHandle?`
+    <div class="msg-quote"><strong>${esc(extra.quoteHandle)}</strong>${esc(extra.quoteText||'')}</div>`:'';
+
+  const el=document.createElement('div');
+  el.className='nx-msg'+(mine?' mine':'');
+  el.id='msg-'+doc.$id;
+  el.innerHTML=`
+    <div class="msg-av" style="color:${doc.userColor};border-color:${doc.userColor};background:${doc.userColor}18;">
+      ${(doc.handle||'?').charAt(0)}
+    </div>
+    <div class="msg-body">
+      <div class="msg-handle" style="color:${doc.userColor}">${esc(doc.handle)}</div>
+      <div class="msg-bubble" style="border-color:${doc.userColor}">
+        ${quoteHtml}${esc(doc.text)}
+      </div>
+      ${actionRowHtml(doc.$id,doc.reactions,likeCount,doc.handle,doc.text,mine)}
+      <div class="msg-time">${fmt(doc.$createdAt||new Date())}</div>
+    </div>`;
+  list.appendChild(el);
+  list.scrollTop=list.scrollHeight;
+  window._nxPulse();
+}
+
+/* ── Admit / Deny ── */
+async function admitMember(uid,handle,btn){
+  btn.disabled=true;const row=btn.parentElement;
+  if(row)row.querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{
+    await NexusData.admitUser(roomId,uid,handle);
+    toast(`${handle} admitted ✓`);
+    const reqCard=document.getElementById('req-'+uid);
+    if(reqCard)reqCard.remove();
+  }catch(_){toast('Could not admit user.');if(row)row.querySelectorAll('button').forEach(b=>b.disabled=false);}
+}
+function denyMember(uid,btn){
+  const row=btn.parentElement;
+  if(row)row.querySelectorAll('button').forEach(b=>b.disabled=true);
+  const reqCard=document.getElementById('req-'+uid);
+  if(reqCard){reqCard.style.opacity='.4';setTimeout(()=>reqCard.remove(),2000);}
+  toast('Request denied.');
+}
+
+/* ── Special cards ── */
+function renderQuiz(doc){
+  let extra={};try{extra=JSON.parse(doc.extra||'{}')}catch(_){}
+  const opts=extra.opts||[],votes=extra.votes||opts.map(()=>0);
+  const el=document.createElement('div');el.className='nx-card nx-card--quiz';el.id='msg-'+doc.$id;
+  el.innerHTML=`<div class="card-hd">⟡ Quick Poll · ${esc(doc.handle)}</div>
+    <div class="quiz-q">${esc(extra.q||'')}</div>
+    <div id="qopts-${doc.$id}">
+      ${opts.map((o,i)=>{const tot=votes.reduce((a,b)=>a+b,0);const pct=tot>0?Math.round(votes[i]/tot*100):0;
+        return`<div class="quiz-opt" onclick="voteQuiz('${doc.$id}',${i})">
+          <span style="flex-shrink:0">${esc(o)}</span>
+          <div class="bw"><div class="bar" style="width:${pct}%"></div></div>
+          <span class="pct">${pct}%</span>
+        </div>`;}).join('')}
+    </div>`;
+  document.getElementById('msgList').appendChild(el);document.getElementById('msgList').scrollTop=99999;
+}
+function voteQuiz(msgId,idx){
+  if(quizVoted[msgId]!==undefined)return;
+  quizVoted[msgId]=idx;
+  document.querySelectorAll(`#qopts-${msgId} .quiz-opt`).forEach((el,i)=>{if(i===idx)el.classList.add('voted')});
+  toast('Vote cast ✦');
+}
+
+function renderNote(doc){
+  const el=document.createElement('div');el.className='nx-card nx-card--note';el.id='msg-'+doc.$id;
+  el.innerHTML=`<div class="card-hd">◈ Note · ${esc(doc.handle)}</div>
+    <div style="font-size:14px;line-height:1.6">${esc(doc.text)}</div>
+    <div style="margin-top:8px">
+      <button class="rx-add-btn" style="font-size:12px;padding:4px 12px" onclick="pinMsg('${doc.$id}',${!doc.pinned})">
+        ${doc.pinned?'📌 Unpin':'📌 Pin note'}
+      </button>
+    </div>`;
+  document.getElementById('msgList').appendChild(el);document.getElementById('msgList').scrollTop=99999;
+  if(doc.pinned)showPinned(doc.text);
+}
+async function pinMsg(msgId,pin){await NexusData.pinMessage(msgId,pin);toast(pin?'📌 Note pinned':'Unpinned')}
+function showPinned(text){document.getElementById('pinnedText').textContent=text.slice(0,90);document.getElementById('pinnedStrip').classList.add('show')}
+
+function renderFocus(doc){
+  let extra={};try{extra=JSON.parse(doc.extra||'{}')}catch(_){}
+  const mins=extra.mins||25;
+  const el=document.createElement('div');el.className='nx-card nx-card--focus';el.id='msg-'+doc.$id;
+  el.innerHTML=`<div class="card-hd">⏱ Focus Session · ${esc(doc.handle)}</div>
+    <div class="nx-timer" id="ftimer-${doc.$id}">${String(mins).padStart(2,'0')}:00</div>
+    <div class="nx-tsub" id="fsub-${doc.$id}">${mins}min focus block</div>
+    <div style="margin-top:9px"><button class="rx-add-btn" style="font-size:12px;padding:4px 12px" onclick="joinFocus('${doc.$id}',${mins})">⬡ Join</button></div>`;
+  document.getElementById('msgList').appendChild(el);document.getElementById('msgList').scrollTop=99999;
+}
+function joinFocus(msgId,mins){
+  if(focusTimers[msgId])return;
+  let secs=mins*60;
+  const sub=document.getElementById('fsub-'+msgId);if(sub)sub.textContent='Focus locked ⬡';
+  focusTimers[msgId]=setInterval(()=>{
+    secs--;
+    const el=document.getElementById('ftimer-'+msgId);
+    if(el)el.textContent=Math.floor(secs/60).toString().padStart(2,'0')+':'+(secs%60).toString().padStart(2,'0');
+    if(secs<=0){clearInterval(focusTimers[msgId]);toast('⏱ Focus done! Take a break.');}
+  },1000);
+  toast('⏱ Focus started!');
+}
+
+function renderDrop(doc){
+  const el=document.createElement('div');el.className='nx-card nx-card--drop';el.id='msg-'+doc.$id;
+  el.innerHTML=`<div class="card-hd">✦ Knowledge Drop · ${esc(doc.handle)}</div>
+    <div style="font-size:14px;line-height:1.6">${esc(doc.text)}</div>`;
+  document.getElementById('msgList').appendChild(el);document.getElementById('msgList').scrollTop=99999;
+  drops.unshift({text:doc.text,handle:doc.handle});renderDrops();
+}
+function renderDrops(){
+  const box=document.getElementById('dropBox');
+  if(!drops.length){box.innerHTML='<div style="font-size:11px;color:var(--nx-mut)">Use /drop to save key facts here.</div>';return;}
+  box.innerHTML=drops.slice(0,8).map(d=>`<div class="drop-item"><div class="drop-item__lbl">✦ ${esc(d.handle)}</div>${esc(d.text.slice(0,110))}</div>`).join('');
+}
+
+/* ════════ SEND ════════ */
+function parseCommand(text){
+  const t=text.trim();
+  if(t.startsWith('/quiz ')){
+    const parts=t.slice(6).split('|').map(s=>s.trim()).filter(Boolean);
+    if(parts.length<2){toast('Usage: /quiz Question | Option A | Option B');return null}
+    return{type:'quiz',text:'',extra:{q:parts[0],opts:parts.slice(1),votes:parts.slice(1).map(()=>0)}};
+  }
+  if(t.startsWith('/note '))return{type:'note',text:t.slice(6).trim(),extra:{}};
+  if(t.startsWith('/focus')){const m=t.match(/\/focus\s*(\d+)?/);return{type:'focus',text:'',extra:{mins:m&&m[1]?parseInt(m[1]):25}};}
+  if(t.startsWith('/drop '))return{type:'drop',text:t.slice(6).trim(),extra:{}};
+  return null;
+}
+
+async function sendMsg(){
+  if(!isAdmitted)return;
+  const inp=document.getElementById('msgInput');
+  const text=inp.value.trim();
+  if(!text)return;
+  inp.value='';inp.style.height='';
+  const cmd=parseCommand(text);
+  try{
+    const extra=replyTo?{quoteHandle:replyTo.handle,quoteText:replyTo.text}:null;
+    cancelReply();
+    if(cmd){await NexusData.sendMessage(roomId,cmd.text,cmd.type,cmd.extra);}
+    else{await NexusData.sendMessage(roomId,text,'text',extra);}
+  }catch(_){toast('Could not send. Check connection.');}
+}
+
+document.getElementById('msgInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+});
+document.getElementById('msgInput').addEventListener('input',function(){
+  this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';
+});
+function insertCmd(cmd){const i=document.getElementById('msgInput');i.value=cmd;i.focus();}
+
+/* ════════ JOIN REQUEST ════════ */
+async function sendJoinRequest(){
+  const btn=document.getElementById('joinReqBtn');
+  const msg=document.getElementById('joinMsg').value.trim();
+  btn.disabled=true; btn.textContent='Sending…';
+  try{
+    await NexusData.sendMessage(roomId, myHandle + ' wants to join the Hive.', 'join_request', {userId:myId,handle:myHandle,msg});
+    document.getElementById('joinRequestForm').style.display='none';
+    document.getElementById('joinWaiting').style.display='block';
+    /* subscribe to realtime to catch join_approved */
+    unsub=NexusData.subscribeRoom(roomId,handleRealtime);
+  }catch(_){
+    toast('Could not send request. Try again.');
+    btn.disabled=false; btn.textContent='Send Request →';
+  }
+}
+
+/* ════════ AI ════════ */
+const AI_RESP={
+  formula:'State the formula name and I\'ll break it down — variables, conditions, and a worked example.',
+  explain:'Best way to understand: (1) plain-words definition, (2) concrete example, (3) why it matters.',
+  summary:'A strong summary covers: main idea, key supporting points, conclusion. What should I summarise?',
+  help:'I\'m Ronyx AI — ask about formulas, concepts, past questions, or study tips.',
+  focus:'For deep focus: try /focus 25 for a Pomodoro. Tackle one concept at a time.',
+  default:'Break it into smaller parts — start with what you know, then find the gap.',
+};
+function askAI(q){
+  if(!q)return;
+  const box=document.getElementById('aiBox');
+  const u=document.createElement('div');u.className='ai-you';u.innerHTML=`<strong>You</strong>${esc(q)}`;box.appendChild(u);
+  setTimeout(()=>{
+    const ql=q.toLowerCase();
+    let ans=AI_RESP.default;
+    if(/formula|equation|derive/.test(ql))ans=AI_RESP.formula;
+    else if(/explain|what is|how does|why/.test(ql))ans=AI_RESP.explain;
+    else if(/summar|recap|overview/.test(ql))ans=AI_RESP.summary;
+    else if(/help/.test(ql))ans=AI_RESP.help;
+    else if(/focus|pomodoro|distract/.test(ql))ans=AI_RESP.focus;
+    const a=document.createElement('div');a.className='ai-msg';
+    a.innerHTML=`<strong>Ronyx AI</strong>${ans}`;box.appendChild(a);box.scrollTop=box.scrollHeight;
+  },550);
+  box.scrollTop=box.scrollHeight;
+}
+document.getElementById('aiInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&this.value.trim()){askAI(this.value.trim());this.value='';}
+});
+
+/* ════════ PANEL TOGGLES (mobile) ════════ */
+function toggleLeft(){
+  const p=document.getElementById('leftPanel');
+  const hdr=document.getElementById('mobMembersHdr');
+  const isOpen=p.classList.contains('mob-show');
+  p.classList.toggle('mob-show');
+  if(hdr)hdr.style.display=isOpen?'none':'flex';
+}
+function toggleRight(){
+  const p=document.getElementById('rightPanel');
+  const hdr=document.getElementById('mobAiHdr');
+  const isOpen=p.classList.contains('mob-show');
+  p.classList.toggle('mob-show');
+  if(hdr)hdr.style.display=isOpen?'none':'flex';
+}
+
+/* ════════ SHARE ════════ */
+function getRoomUrl(){return window.location.origin+`/pages/student/nexus/room.html?id=${roomId}`;}
+function openShareModal(){
+  const url=getRoomUrl();
+  document.getElementById('roomLinkPreview').textContent=url;
+  document.getElementById('shareBg').classList.add('open');
+}
+function closeShareModal(){document.getElementById('shareBg').classList.remove('open')}
+document.getElementById('shareBg').addEventListener('click',function(e){if(e.target===this)closeShareModal();});
+
+function shareRoom(platform){
+  const url=getRoomUrl();
+  const text=`Join my study session "${roomTitle}" on Ronyx! 🐝\n${url}`;
+  if(platform==='whatsapp'){window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');}
+  else if(platform==='facebook'){window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(url),'_blank');}
+  else if(platform==='tiktok'){
+    copyToClip(url);
+    toast('Link copied! Paste it into TikTok.');
+    closeShareModal();
+  }else if(platform==='copy'){
+    copyToClip(url);toast('Link copied! 🔗');closeShareModal();
+  }
+}
+function copyToClip(text){
+  if(navigator.clipboard){navigator.clipboard.writeText(text).catch(()=>{})}
+  else{const el=document.createElement('textarea');el.value=text;el.style.position='fixed';el.style.opacity='0';document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);}
+  const iconEl=document.getElementById('copyIcon');
+  if(iconEl){
+    iconEl.innerHTML='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#00f09a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(()=>{iconEl.innerHTML='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';},2000);
+  }
+}
+
+function toggleTheme(){
+  const root=document.documentElement;
+  const next=(root.getAttribute('data-theme')||'dark')==='dark'?'light':'dark';
+  root.setAttribute('data-theme',next);
+  localStorage.setItem('ronyx_theme',next);
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=next==='dark'?'🌙':'☀️';
+}
+
+/* ════════ VIDEO CLASS (PeerJS — no account required) ════════ */
+let _vcPeer=null,_vcStream=null,_vcPeerId=null,_vcActive=false,_vcConns={};
+
+function _loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');s.src=src;
+    s.onload=resolve;s.onerror=()=>reject(new Error('Failed: '+src));
+    document.head.appendChild(s);
+  });
+}
+
+async function _ensurePeerJS(){
+  if(window.Peer)return true;
+  try{await _loadScript('https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js');return true;}
+  catch(e){toast('Failed to load video library. Check your connection.');return false;}
+}
+
+/* Show the host's pre-start confirmation card */
+function startVideoClass(){
+  if(!isHost){toast('Only the room Keeper can start a Video Class.');return;}
+  if(_vcActive){document.getElementById('vcModal').classList.add('open');return;}
+  const nameEl=document.getElementById('vcStartRoomName');
+  if(nameEl)nameEl.textContent=roomTitle||'this Hive';
+  const linkInp=document.getElementById('vcRoomLinkInp');
+  if(linkInp)linkInp.value=window.location.href;
+  document.getElementById('vcStartBg').classList.add('open');
+}
+
+function copyVcLink(){
+  const v=document.getElementById('vcRoomLinkInp');if(!v)return;
+  navigator.clipboard.writeText(v.value)
+    .then(()=>toast('Room link copied!'))
+    .catch(()=>{v.select();document.execCommand('copy');toast('Room link copied!');});
+}
+
+/* Host confirmed — actually start PeerJS session */
+async function _doStartVideoClass(){
+  document.getElementById('vcStartBg').classList.remove('open');
+  if(!await _ensurePeerJS())return;
+
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}
+  catch(e){toast('Camera/mic access denied — please allow and try again.');return;}
+
+  _vcStream=stream;
+  const hostPeerId='rxvc'+Date.now().toString(36);
+  _vcPeerId=hostPeerId;
+
+  const peer=new Peer(hostPeerId,{debug:1});
+  _vcPeer=peer;
+
+  peer.on('open',async(id)=>{
+    _vcActive=true;
+    _addVcTile('local',stream,(myHandle||'You')+' ★',true);
+    document.getElementById('vcModal').classList.add('open');
+    document.getElementById('vcLabel').textContent=(roomTitle||'Hive')+' — Live Class';
+    document.getElementById('vcEndBtn').style.display='';
+    document.getElementById('vcLeaveBtn').style.display='none';
+    try{
+      await NexusData.sendMessage(roomId,
+        (myHandle||'Host')+' started a Video Class — tap Join to enter!',
+        'vc_started',{peerId:id,hostName:myHandle||'Host'});
+    }catch(e){toast('Could not notify members.');}
+  });
+
+  peer.on('call',(call)=>{
+    call.answer(_vcStream);
+    /* Use the joining member's peerId as their display handle when we don't know their name */
+    call.on('stream',(rs)=>_addVcTile(call.peer,rs,call.peer,false));
+    call.on('close',()=>_removeVcTile(call.peer));
+    _vcConns[call.peer]=call;
+  });
+  peer.on('error',(e)=>toast('Video error: '+(e.type||e.message)));
+}
+
+async function joinVideoClass(peerId){
+  peerId=peerId||_vcPeerId;
+  if(!peerId){toast('No active class found in this room.');return;}
+  hideVcNotif();
+  if(!await _ensurePeerJS())return;
+
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});}
+  catch(e){toast('Camera/mic access denied — please allow and try again.');return;}
+
+  _vcStream=stream;
+  const peer=new Peer({debug:1});
+  _vcPeer=peer;
+
+  peer.on('open',()=>{
+    _vcActive=true;
+    _addVcTile('local',stream,myHandle||'You',false);
+    document.getElementById('vcModal').classList.add('open');
+    document.getElementById('vcLabel').textContent=(roomTitle||'Hive')+' — Live Class';
+    document.getElementById('vcLeaveBtn').style.display='';
+
+    const call=peer.call(peerId,stream);
+    call.on('stream',(rs)=>_addVcTile('host',rs,'Host ★',false));
+    call.on('close',()=>{_removeVcTile('host');toast('Host ended the class.');_cleanupVc();});
+    _vcConns['host']=call;
+  });
+  peer.on('error',(e)=>toast('Could not connect to class: '+(e.type||e.message)));
+}
+
+function endVideoClass(){
+  try{NexusData.sendMessage(roomId,'Video class ended.','vc_ended',{});}catch(_){}
+  _cleanupVc();
+}
+
+function leaveVideoClass(){_cleanupVc();}
+
+function _cleanupVc(){
+  _vcActive=false;_vcPeerId=null;
+  if(_vcStream){_vcStream.getTracks().forEach(t=>t.stop());_vcStream=null;}
+  if(_vcPeer){try{_vcPeer.destroy();}catch(_){}_vcPeer=null;}
+  _vcConns={};
+  document.getElementById('vcModal').classList.remove('open');
+  document.getElementById('vcGrid').innerHTML='';
+  document.getElementById('vcEndBtn').style.display='none';
+  document.getElementById('vcLeaveBtn').style.display='';
+}
+
+function _addVcTile(id,stream,label,muted){
+  const grid=document.getElementById('vcGrid');
+  let tile=document.getElementById('vct-'+id);
+  if(!tile){
+    tile=document.createElement('div');tile.className='vc-tile';tile.id='vct-'+id;
+    tile.innerHTML=`<video autoplay playsinline></video><div class="vc-tile__name">${esc(label)}</div>`;
+    grid.appendChild(tile);
+  }
+  const v=tile.querySelector('video');v.srcObject=stream;if(muted)v.muted=true;
+}
+
+function _removeVcTile(id){const t=document.getElementById('vct-'+id);if(t)t.remove();}
+
+function showVcNotif(peerId,hostName){
+  _vcPeerId=peerId;
+  const el=document.getElementById('vcNotifTitle');
+  const sub=document.getElementById('vcNotifSub');
+  if(el)el.textContent=(hostName||'Host')+' started a Video Class';
+  if(sub)sub.textContent='Tap Join to enter the live class';
+  document.getElementById('vcNotif').classList.add('show');
+}
+
+function hideVcNotif(){document.getElementById('vcNotif').classList.remove('show');}
+
+/* ════════ WHITEBOARD ════════ */
+let _wbTool='pen',_wbColor='#7c6df5',_wbSize=5;
+let _wbDown=false,_wbCtx=null,_wbLast={x:0,y:0},_wbInited=false;
+
+function openWhiteboard(){
+  const modal=document.getElementById('wbModal');
+  modal.classList.add('open');
+  requestAnimationFrame(()=>{if(!_wbInited){_initWb();}});
+}
+function closeWhiteboard(){
+  document.getElementById('wbModal').classList.remove('open');
+}
+function _initWb(){
+  _wbInited=true;
+  const canvas=document.getElementById('wbCanvas');
+  const modal=document.getElementById('wbModal');
+  canvas.width=modal.clientWidth;
+  canvas.height=modal.clientHeight-modal.querySelector('.wb-hdr').offsetHeight;
+  _wbCtx=canvas.getContext('2d');
+  const dark=document.documentElement.getAttribute('data-theme')!=='light';
+  _wbCtx.fillStyle=dark?'#0d0d1a':'#f4f2ff';
+  _wbCtx.fillRect(0,0,canvas.width,canvas.height);
+
+  const start=e=>{_wbDown=true;_wbLast=_wbPos(e,canvas);};
+  const move=e=>{if(!_wbDown)return;const p=_wbPos(e,canvas);_wbDraw(p);};
+  const end=()=>{_wbDown=false;};
+  const tstart=e=>{e.preventDefault();_wbDown=true;_wbLast=_wbTouchPos(e,canvas);};
+  const tmove=e=>{e.preventDefault();if(!_wbDown)return;_wbDraw(_wbTouchPos(e,canvas));};
+
+  canvas.addEventListener('mousedown',start);
+  canvas.addEventListener('mousemove',move);
+  canvas.addEventListener('mouseup',end);
+  canvas.addEventListener('mouseleave',end);
+  canvas.addEventListener('touchstart',tstart,{passive:false});
+  canvas.addEventListener('touchmove',tmove,{passive:false});
+  canvas.addEventListener('touchend',end);
+}
+function wbSetTool(t){
+  _wbTool=t;
+  document.getElementById('wbBtnPen').classList.toggle('active',t==='pen');
+  document.getElementById('wbBtnEraser').classList.toggle('active',t==='eraser');
+}
+function wbClear(){
+  if(!_wbCtx)return;
+  const c=document.getElementById('wbCanvas');
+  const dark=document.documentElement.getAttribute('data-theme')!=='light';
+  _wbCtx.fillStyle=dark?'#0d0d1a':'#f4f2ff';
+  _wbCtx.fillRect(0,0,c.width,c.height);
+}
+function _wbPos(e,c){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+function _wbTouchPos(e,c){const r=c.getBoundingClientRect(),t=e.touches[0];return{x:t.clientX-r.left,y:t.clientY-r.top};}
+function _wbDraw(pos){
+  if(!_wbCtx)return;
+  const dark=document.documentElement.getAttribute('data-theme')!=='light';
+  _wbCtx.beginPath();
+  _wbCtx.moveTo(_wbLast.x,_wbLast.y);
+  _wbCtx.lineTo(pos.x,pos.y);
+  _wbCtx.strokeStyle=_wbTool==='eraser'?(dark?'#0d0d1a':'#f4f2ff'):_wbColor;
+  _wbCtx.lineWidth=_wbTool==='eraser'?_wbSize*5:_wbSize;
+  _wbCtx.lineCap='round';
+  _wbCtx.lineJoin='round';
+  _wbCtx.stroke();
+  _wbLast=pos;
+}
+
+/* ════════ LEAVE ════════ */
+function confirmLeave(){
+  if(confirm(isHost?'End this Hive for everyone?':'Leave this Hive?'))leaveRoom();
+}
+async function leaveRoom(){
+  try{if(unsub)unsub();if(unsubRoom)unsubRoom();
+    if(isHost)await NexusData.endRoom(roomId);
+    else await NexusData.updateMemberCount(roomId,-1);
+  }catch(_){}
+  window.location.href='/pages/student/nexus/rooms.html';
+}
+
+/* ════════ REALTIME ════════ */
+function handleRealtime(events,doc){
+  const isCreate=events.some(e=>e.includes('.create'));
+  const isUpdate=events.some(e=>e.includes('.update'));
+  const isDelete=events.some(e=>e.includes('.delete'));
+  if(isDelete){const el=document.getElementById('msg-'+doc.$id);if(el)el.remove();return;}
+  if(isCreate){renderMsg(doc);if(doc.pinned)showPinned(doc.text);}
+  if(isUpdate){
+    const likeCount=parseRx(doc.reactions)['❤️']||0;
+    refreshRx(doc.$id,doc.reactions,likeCount);
+    if(doc.pinned)showPinned(doc.text);
+    /* Update text if message was edited (text field changed) */
+    const bubble=document.querySelector(`#msg-${doc.$id} .msg-bubble`);
+    if(bubble&&!bubble.querySelector('textarea')&&doc.text){
+      const curText=bubble.textContent.replace('[edited]','').trim();
+      if(curText!==doc.text)bubble.innerHTML=esc(doc.text)+'<span class="msg-edited"> · edited</span>';
+    }
+  }
+}
+
+/* ════════ INIT ════════ */
+async function init(){
+  const{id,host}=getParams();
+  if(!id){window.location.href='/pages/student/nexus/rooms.html';return;}
+  roomId=id;
+
+  try{
+    const me=await new Promise(res=>{
+      const iv=setInterval(async()=>{
+        if(window.account&&window.NexusData){clearInterval(iv);res(await NexusData.getMe());}
+      },80);
+      setTimeout(()=>{clearInterval(iv);res(null);},6000);
+    });
+    if(!me){window.location.href='/pages/auth/login.html';return;}
+    myId=me.$id;
+    myHandle=NexusData.nexusHandle(myId);
+    myColor=NexusData.userColor(myId);
+
+    const room=await NexusData.getRoom(roomId);
+    if(room.status==='ended'){
+      document.getElementById('overlayTitle').textContent='Hive Ended';
+      document.getElementById('overlayMsg').textContent='This study session has already ended.';
+      document.getElementById('endOverlay').classList.add('show');
+      return;
+    }
+
+    roomHostId=room.hostId||'';
+    roomTitle=room.title||'Hive';
+    isHost=(myId===roomHostId)||host;
+    isAdmitted=isHost;
+    if(!isHost){const vcBtn=document.getElementById('vcBtn');if(vcBtn)vcBtn.style.display='none';}
+
+    document.getElementById('spaceEmoji').textContent=room.emoji||'⬡';
+    document.getElementById('spaceTitle').textContent=room.title;
+    document.getElementById('spaceSub').textContent=
+      (room.subject?room.subject+' · ':'')+((room.memberCount||0)+' in Hive')+(isHost?' · Keeper':'');
+    document.title=room.title+' — Ronyx';
+
+    const history=await NexusData.listMessages(roomId,80);
+
+    /* Check admission from history (has own messages or join_approved for me) */
+    if(!isAdmitted){
+      const alreadyMessaged=history.some(m=>{
+        let e={};try{e=JSON.parse(m.extra||'{}')}catch(_){}
+        const mt=e._vtype||m.type;
+        return m.userId===myId&&mt!=='join_request';
+      });
+      const wasApproved=history.some(m=>{
+        let e={};try{e=JSON.parse(m.extra||'{}')}catch(_){}
+        const mt=e._vtype||m.type;
+        return mt==='join_approved'&&e.userId===myId;
+      });
+      if(alreadyMessaged||wasApproved)isAdmitted=true;
+    }
+
+    /* Disable input until admitted */
+    if(!isAdmitted){
+      document.getElementById('msgInput').disabled=true;
+      document.getElementById('sendBtn').disabled=true;
+      document.getElementById('joinOverlay').classList.add('show');
+    }
+
+    history.forEach(renderMsg);
+    document.getElementById('msgList').scrollTop=99999;
+
+    await NexusData.updateMemberCount(roomId,+1);
+    unsub=NexusData.subscribeRoom(roomId,handleRealtime);
+    unsubRoom=NexusData.subscribeRoomDoc(roomId,(evs,d)=>{
+      if(d&&d.status==='ended'&&!isHost){
+        document.getElementById('overlayTitle').textContent='Hive Ended';
+        document.getElementById('overlayMsg').textContent='The Keeper has closed this session.';
+        document.getElementById('endOverlay').classList.add('show');
+        if(unsub)unsub();
+      }
+    });
+
+    if(isAdmitted){
+      const alreadyHere=history.some(m=>m.userId===myId);
+      if(!alreadyHere){await NexusData.sendMessage(roomId,`${myHandle} joined the Hive.`,'system',null);}
+    }
+
+  }catch(err){
+    toast('Could not connect to Hive.');
+    setTimeout(()=>{window.location.href='/pages/student/nexus/rooms.html';},2500);
+  }
+}
+
+window.addEventListener('beforeunload',()=>{
+  if(unsub)try{unsub()}catch(_){}
+  NexusData.updateMemberCount(roomId,-1).catch(()=>{});
+});
+
+document.addEventListener('DOMContentLoaded', function(){
+  init();
+  /* Set initial theme icon */
+  const t=localStorage.getItem('ronyx_theme')||'dark';
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=t==='dark'?'🌙':'☀️';
+  /* Show cmd toggle button on mobile */
+  if(window.innerWidth<=680){
+    const cmdBtn=document.getElementById('cmdToggleBtn');
+    if(cmdBtn)cmdBtn.style.display='flex';
+  }
+});
+</script>
+</body>
+</html>

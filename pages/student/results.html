@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Result — Runyx</title>
+  <title>Result — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,10 +24,10 @@
       <div class="empty"><div class="empty__icon">&#8987;</div><p>Loading result&hellip;</p></div>
     </div>
 
-    <nav class="tabbar" data-nav="results"></nav>
+    <nav class="tabbar" data-nav="exams"></nav>
   </div>
 
-  <script src="/js/ui.js?v=mqypss88"></script>
+  <script src="/js/ui.js?v=mrr39s6t"></script>
   <script>
   (function () {
     var body = document.getElementById('resultBody');
@@ -50,8 +50,22 @@
     var hasSubjective = (result.questions || []).some(function(q) {
       return ['theory','fill','upload'].indexOf(q.type) !== -1;
     });
+    var hasAutoScore = (result.totalMarks || 0) > 0;
+
+    /* Grade colour */
     var gradeCol = pct >= 70 ? 'var(--color-success)' :
                    pct >= 50 ? '#f59e0b' : 'var(--color-danger)';
+
+    /* Ring centre — always show percentage */
+    var ringCenter =
+      '<div class="ring__value" style="color:' + gradeCol + '">' + pct + '%</div>' +
+      '<div class="ring__sub">' + (result.score || 0) + ' / ' + (result.totalMarks || 0) + ' marks</div>';
+
+    /* Stat labels — use Correct/Wrong when we have auto-score data */
+    var correctLbl  = hasAutoScore ? 'Correct'  : 'Answered';
+    var incorrectLbl = hasAutoScore ? 'Wrong'    : 'Unanswered';
+    var correctCol  = hasAutoScore ? 'var(--color-success)' : 'var(--color-text)';
+    var incorrectCol = hasAutoScore ? 'var(--color-danger)'  : 'var(--color-muted)';
 
     body.className = 'app__body text-center';
     body.innerHTML =
@@ -67,22 +81,19 @@
             '<stop offset="1" stop-color="#8b5cf6"></stop>' +
           '</linearGradient></defs>' +
         '</svg>' +
-        '<div class="ring__center">' +
-          '<div class="ring__value" style="color:' + gradeCol + '">' + pct + '%</div>' +
-          '<div class="ring__sub">' + (result.score || 0) + ' / ' + (result.totalMarks || 0) + ' marks</div>' +
-        '</div>' +
+        '<div class="ring__center">' + ringCenter + '</div>' +
       '</div>' +
 
       '<div class="stat-grid mb-4">' +
-        '<div class="stat"><div class="stat__n" style="color:var(--color-success)">' + (result.correct || 0) + '</div><div class="stat__l">Correct</div></div>' +
-        '<div class="stat"><div class="stat__n" style="color:var(--color-danger)">' + (result.incorrect || 0) + '</div><div class="stat__l">Wrong</div></div>' +
+        '<div class="stat"><div class="stat__n" style="color:' + correctCol + '">' + (result.correct || 0) + '</div><div class="stat__l">' + correctLbl + '</div></div>' +
+        '<div class="stat"><div class="stat__n" style="color:' + incorrectCol + '">' + (result.incorrect || 0) + '</div><div class="stat__l">' + incorrectLbl + '</div></div>' +
         '<div class="stat"><div class="stat__n">' + (result.unattempted || 0) + '</div><div class="stat__l">Skipped</div></div>' +
       '</div>' +
 
       '<div class="card between mb-2"><span class="text-muted">Grade</span><b class="title-md" style="color:' + gradeCol + '">' + (result.grade || '—') + '</b></div>' +
       '<div class="card between mb-4"><span class="text-muted">Time taken</span><b>' + (result.timeTaken || 0) + ' min</b></div>' +
 
-      (hasSubjective ? '<p class="text-muted" style="font-size:11px;margin-bottom:var(--space-4);">Score covers objective questions only. Theory / fill answers are shown in the review.</p>' : '') +
+      (hasSubjective ? '<p class="text-muted" style="font-size:11px;margin-bottom:var(--space-4);">Score covers objective questions only. Theory / essay answers are shown in the review below.</p>' : '') +
 
       '<a href="/pages/student/qreview.html" class="btn btn--primary">Review all questions &amp; answers</a>' +
       '<a href="/pages/student/dashboard.html" class="btn btn--ghost" style="margin-top:var(--space-2);">Back to dashboard</a>';
@@ -93,6 +104,6 @@
     requestAnimationFrame(function () { fg.style.strokeDashoffset = c * (1 - pct / 100); });
   })();
   </script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
 </body>
 </html>

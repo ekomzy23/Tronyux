@@ -29,8 +29,19 @@
     }
     .feedback-card.correct { background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.35); }
     .feedback-card.wrong   { background:rgba(251,113,133,.1); border:1px solid rgba(251,113,133,.3); }
-    .feedback-card__hd { font-size:13px; font-weight:700; margin-bottom:5px; }
-    .feedback-card__body { font-size:12px; color:var(--color-muted); line-height:1.55; }
+    .feedback-card__hd   { font-size:13px; font-weight:700; margin-bottom:7px; }
+    .feedback-card__body { font-size:12px; color:var(--color-muted); line-height:1.55; margin-top:8px;
+                           border-top:1px solid rgba(255,255,255,.07); padding-top:7px; }
+    /* Answer comparison rows (You chose / Correct answer) */
+    .fb-compare { display:flex; flex-direction:column; gap:5px; margin-bottom:2px; }
+    .fb-row     { display:flex; align-items:flex-start; gap:8px; font-size:12px; line-height:1.45; }
+    .fb-row__tag {
+      font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+      flex-shrink:0; padding:2px 7px; border-radius:6px; margin-top:2px; white-space:nowrap;
+    }
+    .fb-row--yours   .fb-row__tag { background:rgba(251,113,133,.18); color:var(--color-danger); }
+    .fb-row--correct .fb-row__tag { background:rgba(52,211,153,.18);  color:var(--color-success); }
+    .fb-row__val { color:var(--color-text); font-weight:600; flex:1; }
     @keyframes fbIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 
     /* ── Audio exam buttons (stacked FABs) ── */
@@ -121,6 +132,38 @@
       0%,100%{ box-shadow:0 0 0 2px rgba(225,29,72,.22); }
       50%    { box-shadow:0 0 0 4px rgba(225,29,72,.45); }
     }
+    /* ── Voice Mode button ── */
+    .audio-fab--vm { border-color:rgba(109,94,252,.45); color:var(--color-primary-2,#6d5efc); }
+    .audio-fab--vm.vm-on {
+      background:var(--color-primary-2,#6d5efc) !important;
+      border-color:transparent !important; color:#fff !important;
+      animation:vmGlow 2s ease-in-out infinite;
+    }
+    @keyframes vmGlow {
+      0%,100%{ box-shadow:0 4px 20px rgba(109,94,252,.5); }
+      50%    { box-shadow:0 4px 38px rgba(109,94,252,1);  }
+    }
+    /* ── Voice Mode status chip (floating pill near FABs) ── */
+    #vmStatus {
+      position:fixed; bottom:202px; right:70px; z-index:110;
+      background:rgba(15,10,40,.92); color:#fff; backdrop-filter:blur(8px);
+      border:1.5px solid rgba(109,94,252,.55);
+      font-size:11px; font-weight:700; letter-spacing:.04em; text-align:center;
+      padding:6px 12px; display:none; pointer-events:none;
+      border-radius:20px; max-width:196px; white-space:nowrap;
+      overflow:hidden; text-overflow:ellipsis;
+      animation:vmBannerIn .2s ease;
+    }
+    #vmStatus.show { display:block; }
+    @keyframes vmBannerIn { from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)} }
+    /* Desktop: fixed-position elements become absolute so they stay inside the .app frame */
+    @media (min-width: 768px) {
+      .audio-fab-group,
+      #speechPop,
+      #sttHint,
+      #micPanel,
+      #vmStatus { position:absolute !important; }
+    }
   </style>
 </head>
 <body>
@@ -155,8 +198,15 @@
       <button class="btn btn--primary" id="nextBtn">Next &rarr;</button>
     </nav>
 
-    <!-- Audio exam: two independent buttons -->
+    <!-- Voice mode status banner — sits just below the appbar when active -->
+    <div id="vmStatus">&#129302; Voice Mode &bull; <span id="vmStatusText">Starting&hellip;</span></div>
+
+    <!-- Audio exam FABs: Auto (voice mode) · Read · Speak -->
     <div class="audio-fab-group">
+      <div class="audio-fab-item">
+        <button class="audio-fab audio-fab--vm" id="vmBtn" title="Hands-free voice mode — reads question then listens for your answer">&#129302;</button>
+        <span class="audio-fab__lbl" id="vmLbl">Auto</span>
+      </div>
       <div class="audio-fab-item">
         <button class="audio-fab" id="ttsBtn" title="Read question &amp; options aloud">&#128266;</button>
         <span class="audio-fab__lbl">Read</span>
@@ -196,13 +246,13 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mra6sc87"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script src="/js/config.js?v=mra6sc87"></script>
-  <script src="/js/appwrite.js?v=mra6sc87"></script>
-  <script src="/js/data.js?v=mra6sc87"></script>
-  <script src="/js/scikeyboard.js?v=mra6sc87"></script>
-  <script src="/js/theme.js?v=mra6sc87"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
+  <script src="/js/scikeyboard.js?v=mrr39s6t"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
   <script>
   (function () {
     const cfg = window.RONYX_CONFIG || { CONFIGURED: false };
@@ -221,7 +271,9 @@
     const MARKED_KEY  = 'ronyx_mrk_' + examId;
 
     let questions = [], current = 0, attemptId = null, durationSec = minutes * 60;
+    var timerPaused = false; /* VoiceMode pauses this during intro speech */
     const answers = JSON.parse(sessionStorage.getItem(ANSWERS_KEY) || '{}');
+    const answeredQs = new Set(); /* questions locked after feedback is shown — cannot re-answer */
     const marked  = new Set(JSON.parse(sessionStorage.getItem(MARKED_KEY) || '[]'));
     const statusEl = document.querySelector('[data-status]');
 
@@ -354,6 +406,7 @@
              <span class="opt__key">${o === 'True' ? '✓' : '✗'}</span><span>${o}</span></div>`
         ).join('');
         body.querySelectorAll('.opt').forEach(el => el.addEventListener('click', () => {
+          if (answeredQs.has(q.$id)) return;
           body.querySelectorAll('.opt').forEach(o => {
             o.classList.remove('is-selected','fb-correct','fb-wrong');
             o.querySelector('.opt__key').textContent = o.dataset.k === 'True' ? '✓' : '✗';
@@ -361,8 +414,9 @@
           el.classList.add('is-selected');
           setAnswer(q.$id, el.dataset.k);
           showFeedback(q, el.dataset.k);
+          scrollFbIntoView();
         }));
-        if (val) showFeedback(q, val);
+        if (val) { showFeedback(q, val); scrollFbIntoView(); }
       } else {
         /* MCQ + Multi-select — parse options (supports string[] and {text,explain}[]) */
         const rawOpts = JSON.parse(q.options || '[]');
@@ -379,25 +433,29 @@
         }).join('');
 
         if (isMulti) {
+          /* Multi-select: freely toggle; options lock once feedback is revealed */
           body.querySelectorAll('.opt').forEach(el => el.addEventListener('click', () => {
+            if (answeredQs.has(q.$id)) return;
             el.classList.toggle('is-selected');
             const sel = [...body.querySelectorAll('.opt.is-selected')].map(e => e.dataset.k);
             setAnswer(q.$id, sel.join(','));
-            showFeedback(q, sel.join(','));
           }));
         } else {
+          /* Single MCQ: immediate feedback on first click, then locked */
           body.querySelectorAll('.opt').forEach(el => el.addEventListener('click', () => {
+            if (answeredQs.has(q.$id)) return;
             body.querySelectorAll('.opt').forEach(o => {
               o.classList.remove('is-selected','fb-correct','fb-wrong');
-              o.querySelector('.opt__key').textContent = keys[opts.indexOf(o)] || o.dataset.k;
+              o.querySelector('.opt__key').textContent = o.dataset.k;
             });
             el.classList.add('is-selected');
             setAnswer(q.$id, el.dataset.k);
             showFeedback(q, el.dataset.k);
+            scrollFbIntoView();
           }));
         }
-        /* Re-show feedback for already-answered question */
-        if (val) showFeedback(q, val);
+        /* Re-show feedback when navigating back to an answered question */
+        if (val) { showFeedback(q, val); scrollFbIntoView(); }
       }
 
       document.getElementById('progress').style.width = ((current + 1) / questions.length * 100) + '%';
@@ -406,52 +464,156 @@
 
       /* Stop dictation when question changes */
       if (typeof STTMode !== 'undefined' && STTMode.stop) STTMode.stop();
-      /* TTS: auto-read new question if Read mode is ON */
-      if (typeof TTSMode !== 'undefined') TTSMode.onRender(q);
+      /* TTS: auto-read new question — skip if Voice Mode is driving (it handles reading itself) */
+      var _vmDriving = typeof VoiceMode !== 'undefined' && VoiceMode.isActive();
+      if (typeof TTSMode !== 'undefined' && !_vmDriving) TTSMode.onRender(q);
+      /* Voice Mode: triggered by manual nav (user tapped Next while mode was on) */
+      if (typeof VoiceMode !== 'undefined') VoiceMode.onRender(q);
     }
 
     /* ── Immediate answer feedback ───────────────────────────
        Shows correct/wrong highlight + explanation right after
        the student selects an answer (before they tap Next).
     ──────────────────────────────────────────────────────── */
-    function showFeedback(q, selectedValue) {
-      /* Appwrite stores correct answer as "correctAnswer", explanation as "explanation".
-         Fall back to legacy field names for safety. */
-      const correctAns = q.correctAnswer || q.answer || '';
-      const explain    = q.explanation   || q.explain  || '';
-
-      if (!correctAns || q.type === 'theory' || q.type === 'fill' || q.type === 'upload') return;
-
-      const correctKeys  = String(correctAns).split(',').map(s => s.trim());
-      const selectedKeys = String(selectedValue || '').split(',').map(s => s.trim());
-      const isCorrect    = correctKeys.sort().join(',') === selectedKeys.sort().join(',');
-
-      /* Colour the option chips */
-      document.querySelectorAll('#qbody .opt').forEach(el => {
-        const k = el.dataset.k;
-        if (correctKeys.includes(k)) {
-          el.classList.add('fb-correct');
-          el.querySelector('.opt__key').textContent = '✓';
-        } else if (selectedKeys.includes(k) && !correctKeys.includes(k)) {
-          el.classList.add('fb-wrong');
-          el.querySelector('.opt__key').textContent = '✗';
-        }
+    function resolveCorrectKeys(q, rawOpts) {
+      var OPT_KEYS = ['A','B','C','D','E','F','G','H'];
+      var correctAns = String(q.correctAnswer || q.answer || '').trim();
+      if (!correctAns) return [];
+      if (q.type === 'truefalse') return [correctAns];
+      /* Already letter-format: "A", "B|C", "A,B" */
+      if (/^[A-Ha-h]([,|][A-Ha-h])*$/.test(correctAns)) {
+        return correctAns.replace(/\|/g, ',').split(',').map(function(s){ return s.trim().toUpperCase(); });
+      }
+      /* Text-format: match against option texts */
+      var corrTexts = correctAns.split('|').map(function(s){ return s.trim().toLowerCase(); });
+      var keys = [];
+      rawOpts.forEach(function(o, i) {
+        if (i >= OPT_KEYS.length) return;
+        var txt = (typeof o === 'string' ? o : (o.text || o.exp || '')).trim().toLowerCase();
+        if (corrTexts.indexOf(txt) !== -1) keys.push(OPT_KEYS[i]);
       });
+      return keys;
+    }
 
-      /* Remove old card if re-answering */
-      const old = document.getElementById('fbCard');
-      if (old) old.remove();
+    function showFeedback(q, selectedValue) {
+      try {
+        if (q.type === 'theory' || q.type === 'fill' || q.type === 'upload') return null;
 
-      /* Build feedback card */
-      const card = document.createElement('div');
-      card.id = 'fbCard';
-      card.className = 'feedback-card ' + (isCorrect ? 'correct' : 'wrong');
-      const hd = isCorrect
-        ? '&#9989; Correct!'
-        : '&#10060; Wrong &mdash; correct: <strong>' + correctAns + '</strong>';
-      card.innerHTML = '<div class="feedback-card__hd">' + hd + '</div>' +
-        (explain ? '<div class="feedback-card__body">' + explain + '</div>' : '');
-      document.getElementById('qbody').appendChild(card);
+        var OPT_KEYS = ['A','B','C','D','E','F','G','H'];
+        var explain = String(q.explanation || q.explain || '').trim();
+        var rawOpts = [];
+        try { rawOpts = JSON.parse(q.options || '[]'); } catch(e) {}
+
+        var correctKeys  = resolveCorrectKeys(q, rawOpts);
+        var selectedKeys = String(selectedValue || '').split(',').map(function(s){ return s.trim().toUpperCase(); }).filter(Boolean);
+
+        /* Always lock the question first */
+        answeredQs.add(q.$id || q.id);
+        document.querySelectorAll('#qbody .opt').forEach(function(el) {
+          el.style.pointerEvents = 'none';
+          el.style.cursor = 'default';
+        });
+
+        function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function optLabel(key) {
+          if (q.type === 'truefalse') return key;
+          var idx = OPT_KEYS.indexOf(String(key).toUpperCase());
+          if (idx === -1 || idx >= rawOpts.length) return key;
+          var o = rawOpts[idx];
+          return key + ' — ' + (typeof o === 'string' ? o : (o.text || ''));
+        }
+        function optSpeech(key) {
+          if (q.type === 'truefalse') return key;
+          var idx = OPT_KEYS.indexOf(String(key).toUpperCase());
+          if (idx === -1 || idx >= rawOpts.length) return key;
+          var o = rawOpts[idx];
+          return key + ': ' + (typeof o === 'string' ? o : (o.text || ''));
+        }
+
+        /* Remove any existing feedback card */
+        var _old = document.getElementById('fbCard');
+        if (_old) _old.remove();
+
+        /* ── Case A: No correct answer in DB — neutral confirmation ── */
+        if (!correctKeys.length) {
+          /* Highlight the selected option(s) in neutral primary tint */
+          document.querySelectorAll('#qbody .opt').forEach(function(el) {
+            if (selectedKeys.indexOf(el.dataset.k) !== -1) {
+              el.style.borderColor = 'rgba(109,94,252,.7)';
+              el.style.background  = 'rgba(109,94,252,.12)';
+              var keyEl = el.querySelector('.opt__key');
+              if (keyEl) { keyEl.style.background = '#6d5efc'; keyEl.style.color = '#fff'; keyEl.textContent = '✓'; }
+            }
+          });
+          /* Always show a card — confirmation + explanation if available */
+          var nc = document.createElement('div');
+          nc.id = 'fbCard'; nc.className = 'feedback-card';
+          nc.style.cssText = 'background:rgba(109,94,252,.07);border:1px solid rgba(109,94,252,.22);';
+          var ncHtml = '<div class="feedback-card__hd" style="color:#a89bff;">&#10003; Answer recorded</div>';
+          if (explain) ncHtml += '<div class="feedback-card__body">' + esc(explain) + '</div>';
+          nc.innerHTML = ncHtml;
+          document.getElementById('qbody').appendChild(nc);
+          return null;
+        }
+
+        /* ── Case B: Correct answer known — full quiz feedback ── */
+        var isCorrect = [...correctKeys].sort().join(',') === [...selectedKeys].sort().join(',');
+
+        /* Colour option chips */
+        document.querySelectorAll('#qbody .opt').forEach(function(el) {
+          var k = el.dataset.k;
+          var keyEl = el.querySelector('.opt__key');
+          if (correctKeys.indexOf(k) !== -1) {
+            el.classList.add('fb-correct');
+            if (keyEl) keyEl.textContent = '✓';
+          } else if (selectedKeys.indexOf(k) !== -1 && correctKeys.indexOf(k) === -1) {
+            el.classList.add('fb-wrong');
+            if (keyEl) keyEl.textContent = '✗';
+          }
+        });
+
+        /* Build feedback card */
+        var card = document.createElement('div');
+        card.id = 'fbCard';
+        card.className = 'feedback-card ' + (isCorrect ? 'correct' : 'wrong');
+
+        var html = '<div class="feedback-card__hd">' + (isCorrect ? '&#9989; Correct!' : '&#10060; Incorrect') + '</div>';
+
+        if (!isCorrect) {
+          html += '<div class="fb-compare">';
+          html += '<div class="fb-row fb-row--yours"><span class="fb-row__tag">You chose</span>';
+          html += '<span class="fb-row__val">' + selectedKeys.map(function(k){ return esc(optLabel(k)); }).join(', ') + '</span></div>';
+          html += '<div class="fb-row fb-row--correct"><span class="fb-row__tag">Correct</span>';
+          html += '<span class="fb-row__val">' + correctKeys.map(function(k){ return esc(optLabel(k)); }).join(', ') + '</span></div>';
+          html += '</div>';
+        }
+        if (explain) {
+          html += '<div class="feedback-card__body">' + esc(explain) + '</div>';
+        }
+        card.innerHTML = html;
+        document.getElementById('qbody').appendChild(card);
+
+        var shortExplain = explain ? (explain.length > 200 ? explain.slice(0, 197) + '...' : explain) : '';
+        var speechText = isCorrect
+          ? 'Correct!' + (shortExplain ? ' ' + shortExplain : '')
+          : 'Incorrect. You chose ' + selectedKeys.map(optSpeech).join(' and ') +
+            '. The correct answer is ' + correctKeys.map(optSpeech).join(' and ') + '.' +
+            (shortExplain ? ' ' + shortExplain : '');
+
+        return { isCorrect: isCorrect, speechText: speechText };
+      } catch(err) {
+        console.error('[Exam] showFeedback error:', err);
+        answeredQs.add(q.$id || q.id);
+        return null;
+      }
+    }
+
+    /* Scroll the feedback card into view so the student always sees it */
+    function scrollFbIntoView() {
+      setTimeout(function() {
+        const el = document.getElementById('fbCard');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 60);
     }
 
     let saveTimer;
@@ -482,6 +644,22 @@
 
     document.getElementById('prevBtn').onclick = () => { if (current > 0) { current--; render(); } };
     document.getElementById('nextBtn').onclick = () => {
+      const cq = questions[current];
+      /* Multi-select only: if the student has chosen but the feedback card hasn't
+         appeared yet, reveal it and auto-advance after 2 s so they see the result. */
+      if (cq && cq.type === 'multi' && !document.getElementById('fbCard')) {
+        const cVal = answers[cq.$id];
+        if (cVal) {
+          showFeedback(cq, cVal);
+          scrollFbIntoView();
+          setTimeout(() => {
+            if (current < questions.length - 1) { current++; render(); }
+            else location.href = '/pages/student/review.html';
+          }, 2200);
+          return;
+        }
+      }
+      /* All other types — advance immediately (single MCQ/TF already got feedback on click) */
       if (current < questions.length - 1) { current++; render(); }
       else location.href = '/pages/student/review.html';
     };
@@ -502,6 +680,7 @@
     function startTimer() {
       const display = document.getElementById('examTimer');
       const tick = () => {
+        if (timerPaused) return;
         if (durationSec <= 0) { location.href = '/pages/student/review.html'; return; }
         durationSec--;
         const h = Math.floor(durationSec / 3600), m = Math.floor(durationSec % 3600 / 60), s = durationSec % 60;
@@ -526,6 +705,7 @@
       var btn    = document.getElementById('ttsBtn');
       var KEYS   = ['A','B','C','D','E','F','G','H'];
       var active = false;
+      var slowMode = false;
 
       if (!btn) return { onRender: function(){} };
       if (!SYNTH) {
@@ -535,9 +715,21 @@
 
       function bestVoice() {
         var vs = SYNTH.getVoices();
-        var en = vs.filter(function(v) { return /en/i.test(v.lang); });
-        return en.find(function(v) { return /en[-_]?(US|GB)/i.test(v.lang) && !v.localService; })
-            || en[0] || vs[0] || null;
+        if (!vs.length) return null;
+        var en = vs.filter(function(v) { return /^en/i.test(v.lang); });
+        /* Prefer online neural voices (Google/Microsoft/Premium) for en-US */
+        var neural = en.filter(function(v) {
+          return /Google|Microsoft|Premium|Enhanced|Natural/i.test(v.name)
+              && /en[-_]?US/i.test(v.lang) && !v.localService;
+        });
+        if (neural.length) return neural[0];
+        /* Any online en-US/en-GB */
+        var online = en.filter(function(v) { return /en[-_]?(US|GB)/i.test(v.lang) && !v.localService; });
+        if (online.length) return online[0];
+        /* Best local en-US/en-GB */
+        var usGb = en.filter(function(v) { return /en[-_]?(US|GB)/i.test(v.lang); });
+        if (usGb.length) return usGb[0];
+        return en[0] || vs[0] || null;
       }
 
       function buildText(q) {
@@ -566,27 +758,46 @@
         if (!active || !q) return;
         SYNTH.cancel();
         var u = new SpeechSynthesisUtterance(buildText(q));
-        u.rate = 0.88; u.pitch = 1;
+        u.rate = slowMode ? 0.65 : 0.88; u.pitch = 1;
         var v = bestVoice(); if (v) u.voice = v;
         u.onend = u.onerror = function() {
-          /* keep button "on" visually — stays ready for next question */
           btn.title = 'Reading ON — tap to re-read or double-tap to turn off';
         };
         SYNTH.speak(u);
         btn.classList.add('audio-fab--on');
-        btn.title = 'Speaking… tap to stop';
+        btn.title = (slowMode ? '🐢 Slow · ' : '') + 'Speaking…';
       }
 
       function turnOff() {
-        active = false;
+        active = false; slowMode = false;
         SYNTH.cancel();
         btn.classList.remove('audio-fab--on');
         btn.innerHTML = '&#128266;';
+        var lbl = btn.parentElement && btn.parentElement.querySelector('.audio-fab__lbl');
+        if (lbl) lbl.textContent = 'Read';
         btn.title = 'Read question &amp; options aloud';
       }
 
+      /* Long press (600 ms) on TTS button → toggle slow (🐢) mode */
+      var _ttsHoldTimer = null, _ttsHoldFired = false;
+      btn.addEventListener('touchstart', function() {
+        _ttsHoldFired = false;
+        _ttsHoldTimer = setTimeout(function() {
+          _ttsHoldFired = true;
+          slowMode = !slowMode;
+          var lbl = btn.parentElement && btn.parentElement.querySelector('.audio-fab__lbl');
+          if (lbl) lbl.textContent = slowMode ? '🐢 Slow' : 'Read';
+          btn.title = slowMode ? '🐢 Slow mode ON — long press again to turn off' : 'Read question aloud';
+          if (active && questions && questions[current]) read(questions[current]);
+        }, 600);
+      }, { passive: true });
+      ['touchend', 'touchcancel'].forEach(function(ev) {
+        btn.addEventListener(ev, function() { clearTimeout(_ttsHoldTimer); });
+      });
+
       var lastTap = 0;
       btn.addEventListener('click', function() {
+        if (_ttsHoldFired) { _ttsHoldFired = false; return; }
         var now = Date.now();
         if (active && now - lastTap < 400) { turnOff(); lastTap = 0; return; }
         lastTap = now;
@@ -597,7 +808,6 @@
           btn.title = 'Read ON — double-tap to turn off';
           if (questions && questions[current]) read(questions[current]);
         } else {
-          /* Already ON: if speaking → stop; if idle → re-read */
           if (SYNTH.speaking) { SYNTH.cancel(); }
           else { if (questions && questions[current]) read(questions[current]); }
         }
@@ -728,17 +938,37 @@
       }
 
       var _popTimer = null;
-      function showSpeechPop(heard, matched) {
+      function showSpeechPop(heard, matched, rawOpts) {
         var pop  = document.getElementById('speechPop');
         var txt  = document.getElementById('spText');
         var mtch = document.getElementById('spMatch');
         if (!pop || !txt) return;
-        txt.textContent  = heard || '(nothing)';
-        mtch.textContent = matched ? ('-> ' + matched) : 'no match - try again';
-        mtch.style.color = matched ? '#34d399' : '#f87171';
+        txt.textContent = heard || '(nothing)';
+        if (matched) {
+          var label = matched;
+          /* Show the option text alongside the letter for richer feedback */
+          if (rawOpts && /^[A-H]$/.test(matched)) {
+            var idx2 = matched.charCodeAt(0) - 65;
+            if (idx2 >= 0 && idx2 < rawOpts.length) {
+              var o2 = rawOpts[idx2];
+              var ot = (typeof o2 === 'string' ? o2 : (o2.text || '')).slice(0, 36);
+              if (ot) label = matched + ' — ' + ot;
+            }
+          }
+          mtch.textContent = '✓ ' + label;
+          mtch.style.color = '#34d399';
+          pop.style.borderColor = 'rgba(52,211,153,.5)';
+        } else {
+          mtch.textContent = heard ? 'No match — try again' : 'Nothing heard — try again';
+          mtch.style.color = '#f87171';
+          pop.style.borderColor = 'rgba(248,113,113,.4)';
+        }
         clearTimeout(_popTimer);
         pop.classList.add('show');
-        _popTimer = setTimeout(function() { pop.classList.remove('show'); }, 2200);
+        _popTimer = setTimeout(function() {
+          pop.classList.remove('show');
+          pop.style.borderColor = '';
+        }, matched ? 1500 : 2600);
       }
 
       if (!SRec) {
@@ -772,7 +1002,7 @@
         cancelRestart();
       }
 
-      function parseVoice(text, qtype) {
+      function parseVoice(text, qtype, rawOpts) {
         var t = text.trim().toUpperCase().replace(/[^A-Z0-9\s]/g,'').replace(/\s+/g,' ');
         if (qtype === 'truefalse') {
           if (/\b(TRUE|YES|CORRECT|RIGHT|YEP|YEA|YEAH)\b/.test(t)) return 'True';
@@ -780,7 +1010,8 @@
           return null;
         }
         if (/^[A-H]$/.test(t)) return t;
-        var MAP = { AY:'A',EI:'A',EY:'A',BEE:'B',BE:'B',BI:'B',
+        var MAP = { AY:'A',EI:'A',EY:'A',AH:'A',EH:'A',AYE:'A',
+                    BEE:'B',BE:'B',BI:'B',
                     SEE:'C',SEA:'C',SI:'C',DEE:'D',DE:'D',DI:'D',
                     EE:'E',HEE:'E',EF:'F',GEE:'G',AGE:'G',AITCH:'H',ACE:'A' };
         if (MAP[t]) return MAP[t];
@@ -792,6 +1023,29 @@
                     FIRST:'A',SECOND:'B',THIRD:'C',FOURTH:'D' };
         var ws = t.split(' ');
         for (var i = 0; i < ws.length; i++) { if (NUM[ws[i]]) return NUM[ws[i]]; }
+        /* Content matching — student can say the option text instead of just a letter */
+        if (rawOpts && rawOpts.length) {
+          var OKS = ['A','B','C','D','E','F','G','H'];
+          var heard = text.trim().toLowerCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ');
+          var bestK = null, bestSc = 0;
+          rawOpts.forEach(function(o, idx) {
+            if (idx >= OKS.length) return;
+            var optTxt = (typeof o === 'string' ? o : (o.text || '')).toLowerCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+            if (!optTxt || optTxt.length < 3) return;
+            /* Direct substring match */
+            if (optTxt.length >= 5 && heard.indexOf(optTxt) !== -1) {
+              if (1.0 > bestSc) { bestSc = 1.0; bestK = OKS[idx]; }
+              return;
+            }
+            /* Keyword overlap (words ≥ 4 chars) */
+            var kws = optTxt.split(' ').filter(function(w) { return w.length >= 4; });
+            if (!kws.length) return;
+            var hits = kws.filter(function(w) { return heard.indexOf(w) !== -1; }).length;
+            var sc = hits / kws.length;
+            if (sc >= 0.55 && sc > bestSc) { bestSc = sc; bestK = OKS[idx]; }
+          });
+          if (bestK) return bestK;
+        }
         return null;
       }
 
@@ -809,136 +1063,132 @@
       }
 
       function startMCQ(q) {
-        if (recBusy) return;
-        killRec(); setBusy(); recBusy = true;
+        if (rec) { try { rec.abort(); } catch(e2) {} rec = null; }
 
-        function go() {
+        var rawOpts = [];
+        try { rawOpts = JSON.parse(q.options || '[]'); } catch(e3) {}
+        var _attempts = 0, MAX_ATT = 4;
+
+        recBusy = true; setBusy(); setMicState('setup');
+
+        function tryListen() {
+          if (!sttActive) return;
           try {
             rec = new SRec();
-            rec.lang            = 'en-US';
-            rec.continuous      = false;
-            rec.interimResults  = false;
-            rec.maxAlternatives = isMobile ? 3 : 6;
+            rec.lang = 'en-US';
+            rec.continuous = false;
+            rec.interimResults = true;
+            rec.maxAlternatives = 8;
 
             rec.onstart = function() {
-              recStarted = true;
               setMicState('listening');
-              showHint('Say A, B, C, D or True / False', 0);
+              var hint = _attempts === 0 ? 'Say your answer or A · B · C · D'
+                       : _attempts === 1 ? 'Try again — say the answer or a letter'
+                       : 'One more try…';
+              showHint(hint, 0);
             };
 
             rec.onresult = function(e) {
-              var letter = null, heard = '';
-              outer: for (var ri = 0; ri < e.results.length; ri++) {
-                for (var ai = 0; ai < e.results[ri].length; ai++) {
-                  var tr = e.results[ri][ai].transcript || '';
-                  if (!heard) heard = tr;
-                  letter = parseVoice(tr, q.type);
-                  if (letter) break outer;
-                }
-              }
-              showSpeechPop(heard, letter);
-              sttActive = false; killRec(); setIdle();
-              if (letter) {
-                showHint('Heard: ' + heard + ' -> ' + letter, 2500);
-                /* Capture refs now, before the timeout fires */
-                var _q = q;
-                var _letter = letter;
-                setTimeout(function() {
-                  try {
-                    var body = document.getElementById('qbody');
-                    if (!body) return;
-                    var allOpts = body.querySelectorAll('.opt');
-
-                    /* Find the target option */
-                    var sel = null;
-                    for (var i = 0; i < allOpts.length; i++) {
-                      if (String(allOpts[i].dataset.k) === String(_letter)) { sel = allOpts[i]; break; }
-                    }
-                    if (!sel) { showHint('Option ' + _letter + ' not on this question.', 3000); return; }
-
-                    /* Reset all options then highlight chosen */
-                    for (var j = 0; j < allOpts.length; j++) {
-                      allOpts[j].classList.remove('is-selected', 'fb-correct', 'fb-wrong');
-                      var kEl = allOpts[j].querySelector('.opt__key');
-                      if (kEl) kEl.textContent = allOpts[j].dataset.k;
-                    }
-                    sel.classList.add('is-selected');
-
-                    /* Save answer */
-                    var qid = (_q && (_q.$id || _q.id)) || '';
-                    if (qid) {
-                      try { answers[qid] = _letter; sessionStorage.setItem(ANSWERS_KEY, JSON.stringify(answers)); } catch(e) {}
-                    }
-
-                    /* Inline feedback - green if correct, red if wrong */
-                    var correctAns = '';
-                    try { correctAns = String((_q && (_q.correctAnswer || _q.answer)) || '').trim(); } catch(e) {}
-                    if (correctAns) {
-                      var cKeys = correctAns.split(',').map(function(s) { return s.trim().toUpperCase(); });
-                      var chosen = String(_letter).toUpperCase();
-                      var isOk   = cKeys.indexOf(chosen) !== -1;
-                      for (var k = 0; k < allOpts.length; k++) {
-                        var dk = String(allOpts[k].dataset.k || '').toUpperCase();
-                        var ke = allOpts[k].querySelector('.opt__key');
-                        if (cKeys.indexOf(dk) !== -1) {
-                          allOpts[k].classList.add('fb-correct');
-                          if (ke) ke.textContent = '\u2713';
-                        } else if (dk === chosen) {
-                          allOpts[k].classList.add('fb-wrong');
-                          if (ke) ke.textContent = '\u2717';
-                        }
-                      }
-                      var old = document.getElementById('fbCard');
-                      if (old) old.remove();
-                      var card = document.createElement('div');
-                      card.id = 'fbCard';
-                      card.className = 'feedback-card ' + (isOk ? 'correct' : 'wrong');
-                      var expl = '';
-                      try { expl = String((_q && (_q.explanation || _q.explain)) || '').trim(); } catch(e) {}
-                      var hdTxt = isOk ? '&#9989; Correct!' : '&#10060; Wrong &mdash; correct: <strong>' + correctAns + '</strong>';
-                      card.innerHTML = '<div class="feedback-card__hd">' + hdTxt + '</div>' +
-                        (expl ? '<div class="feedback-card__body">' + expl + '</div>' : '');
-                      body.appendChild(card);
-                    }
-                  } catch(e) {
-                    showHint('Heard ' + _letter + '. Tap to select manually.', 3000);
-                  }
-                }, 80);
-              } else {
-                showHint(heard ? ('Heard: ' + heard + ' - say A B C or D') : 'Nothing heard. Tap mic to try again.', 3000);
-              }
-            };
-            rec.onnomatch = function() {
-              sttActive = false; killRec(); setIdle();
-              showHint('Did not catch that. Tap mic to try again.', 2500);
-            };
-            rec.onerror = function(ev) {
-              if (ev.error === 'aborted') { rec = null; recBusy = false; return; }
-              sttActive = false; killRec(); setIdle();
-              if (ev.error === 'no-speech') {
-                showHint('Nothing heard. Tap mic to try again.', 2500);
+              var last = e.results[e.results.length - 1];
+              /* Show what's being heard in real time */
+              if (!last.isFinal) {
+                var interim = last[0].transcript || '';
+                if (interim) showHint('"' + interim + '"', 0);
                 return;
               }
+              /* Final result — process all alternatives */
+              var heard = '', letter = null;
+              for (var ri = 0; ri < e.results.length; ri++) {
+                if (!e.results[ri].isFinal) continue;
+                for (var ai = 0; ai < e.results[ri].length; ai++) {
+                  var tx = e.results[ri][ai].transcript || '';
+                  if (!heard) heard = tx;
+                  if (!letter) letter = parseVoice(tx, q.type, rawOpts);
+                  if (letter) break;
+                }
+              }
+              rec = null; recBusy = false; cancelRestart();
+              hideHint();
+              showSpeechPop(heard, letter, rawOpts);
+              if (letter) {
+                sttActive = false; setIdle();
+                applyMCQAnswer(q, letter);
+              } else {
+                _attempts++;
+                setIdle();
+                if (sttActive && _attempts < MAX_ATT) {
+                  showHint(heard ? ('"' + heard.slice(0, 28) + '" — try again') : 'Nothing matched — try again', 1000);
+                  setTimeout(function() {
+                    if (sttActive) { recBusy = true; setBusy(); tryListen(); }
+                  }, 1200);
+                } else {
+                  sttActive = false; setIdle();
+                  showHint(heard ? 'Couldn\'t match — tap an option directly' : 'Couldn\'t hear — tap to retry', 3500);
+                }
+              }
+            };
+
+            rec.onnomatch = function() {
+              rec = null; recBusy = false; cancelRestart();
+              _attempts++;
+              if (sttActive && _attempts < MAX_ATT) {
+                setIdle();
+                showHint('Nothing clear — trying again…', 800);
+                setTimeout(function() {
+                  if (sttActive) { recBusy = true; setBusy(); tryListen(); }
+                }, 1000);
+              } else {
+                sttActive = false; setIdle();
+                showHint('Couldn\'t hear clearly — tap the option', 3000);
+              }
+            };
+
+            rec.onerror = function(ev) {
+              if (ev.error === 'aborted') { rec = null; recBusy = false; return; }
+              rec = null; recBusy = false; cancelRestart();
+              if (ev.error === 'no-speech') {
+                _attempts++;
+                if (sttActive && _attempts < MAX_ATT) {
+                  setTimeout(function() { if (sttActive) { recBusy = true; tryListen(); } }, 500);
+                } else {
+                  sttActive = false; setIdle();
+                  showHint('Ready when you are — tap mic to try again', 3000);
+                }
+                return;
+              }
+              sttActive = false; setIdle();
               handleFatalError(ev.error);
             };
-            rec.onend = function() {
-              rec = null; recBusy = false;
-              if (sttActive) { sttActive = false; setIdle(); }
-            };
+
+            rec.onend = function() { rec = null; recBusy = false; };
+
             rec.start();
-          } catch(err) {
-            showHint('Could not start mic: ' + (err.message || err), 4000);
-            sttActive = false; recBusy = false; setIdle();
+          } catch(e) {
+            sttActive = false; rec = null; recBusy = false; setIdle();
+            showHint('Mic error: ' + (e.message || e), 4000);
           }
         }
 
-        /* First tap: show “Speak Now…” wave; restarts go straight to go()
-           so the waveform never flickers between phrases.                */
-        if (_isFirstRec) {
-          _isFirstRec = false;
-          setMicState('setup');
+        tryListen();
+      }
+
+      function applyMCQAnswer(q, letter) {
+        var qid = q.$id || q.id;
+        if (answeredQs.has(qid)) { showHint('Already answered - move to next question.', 2000); return; }
+        var body = document.getElementById('qbody');
+        if (!body) return;
+        var opts = body.querySelectorAll('.opt');
+        var sel = null;
+        for (var i = 0; i < opts.length; i++) {
+          opts[i].classList.remove('is-selected', 'fb-correct', 'fb-wrong');
+          var ke0 = opts[i].querySelector('.opt__key');
+          if (ke0) ke0.textContent = opts[i].dataset.k;
+          if (String(opts[i].dataset.k) === String(letter)) sel = opts[i];
         }
-        go();
+        if (!sel) { showHint('Option ' + letter + ' not on this question.', 2500); return; }
+        sel.classList.add('is-selected');
+        try { setAnswer(q.$id || q.id, letter); } catch(e) {}
+        try { showFeedback(q, letter); } catch(e) {}
       }
 
       function startDictation(q) {
@@ -1125,6 +1375,490 @@
         stop: function() {
           if (!sttActive) return;
           sttActive = false; killRec(); clearDictUI(); setIdle(); hideHint();
+        }
+      };
+    })();
+
+    /* ═══════════════════════════════════════════════════════════
+       VOICE MODE — hands-free exam loop
+       Flow: [one-time intro, timer paused] → readQuestion (dynamic rate)
+             → STT listens (continuous, no timeout penalty)
+             → answer / "next" / "previous" → advance → repeat
+    ═══════════════════════════════════════════════════════════ */
+    var VoiceMode = (function () {
+      var SYNTH    = window.speechSynthesis || null;
+      var SRec     = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+      var vmBtn    = document.getElementById('vmBtn');
+      var vmLbl    = document.getElementById('vmLbl');
+      var statEl   = document.getElementById('vmStatus');
+      var statTxt  = document.getElementById('vmStatusText');
+      var OPT_KEYS = ['A','B','C','D','E','F','G','H'];
+
+      var active        = false;
+      var vmRec         = null;
+      var advTimer      = null;
+      var rstTimer      = null; /* STT restart guard — only one restart at a time */
+      var retries       = 0;
+      var MAX_RETRY     = 3;
+
+      if (!vmBtn) return { isActive: function(){ return false; }, onRender: function(){} };
+
+      /* ── UI helpers ── */
+      function setBanner(txt) {
+        if (statTxt) statTxt.textContent = txt || '';
+        if (statEl)  statEl.classList.toggle('show', active && !!txt);
+      }
+      function updateBtn(state) {
+        var labels = { reading:'Reading…', listening:'Listening…', answered:'Got it!', idle:'Auto' };
+        if (vmLbl) vmLbl.textContent = active ? (labels[state] || 'Auto') : 'Auto';
+        vmBtn.classList.toggle('vm-on', active);
+        vmBtn.title = active ? 'Tap to end voice mode' : 'Hands-free voice mode';
+      }
+      function disableManualAudio(off) {
+        ['ttsBtn','sttBtn'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) { el.disabled = off; el.style.opacity = off ? '0.35' : ''; }
+        });
+      }
+
+      /* ── Cancel all pending timers + speech ── */
+      function cancelAll() {
+        if (advTimer) { clearTimeout(advTimer); advTimer = null; }
+        if (rstTimer)  { clearTimeout(rstTimer);  rstTimer  = null; }
+        if (vmRec)    { try { vmRec.abort(); } catch(e) {} vmRec = null; }
+        if (SYNTH)    SYNTH.cancel();
+      }
+
+      /* Restart STT after a delay — only one restart scheduled at a time */
+      function scheduleRecRestart(delay) {
+        if (rstTimer) return;
+        rstTimer = setTimeout(function() {
+          rstTimer = null;
+          if (active) startListen();
+        }, delay || 300);
+      }
+
+      /* ── Dynamic TTS rate based on time remaining per question ── */
+      function calcRate() {
+        var qLeft = questions.length - current;
+        if (!qLeft || !durationSec) return 0.88;
+        var sPerQ = durationSec / qLeft;
+        if (sPerQ < 8)  return 1.5;
+        if (sPerQ < 12) return 1.2;
+        if (sPerQ < 18) return 1.0;
+        if (sPerQ < 25) return 0.92;
+        return 0.88;
+      }
+
+      /* ── Parse transcript → answer letter OR navigation keyword ── */
+      function parseAnswer(text, qType, rawOpts) {
+        var raw = (text || '').trim();
+        var lo  = raw.toLowerCase().replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ').trim();
+
+        /* ── Navigation first ── */
+        if (/\b(next|skip|forward|move on|continue|proceed)\b/.test(lo)) return '__next__';
+        if (/\b(previous|prev|back|go back|last one)\b/.test(lo))         return '__prev__';
+
+        /* ── True/False ── */
+        if (qType === 'truefalse') {
+          if (/\b(true|yes|correct|right|yeah|yep|yea|affirmative)\b/.test(lo))  return 'True';
+          if (/\b(false|no|wrong|incorrect|nope|nah|negative)\b/.test(lo))        return 'False';
+          return null;
+        }
+
+        /* ── MCQ / Multi — 6-pass strategy (specific → broad) ── */
+
+        /* Pass 1: whole utterance is a bare letter ("b", "B") */
+        var bare = raw.replace(/[\s.,!?]/g, '');
+        if (/^[A-Ha-h]$/.test(bare)) return bare.toUpperCase();
+
+        /* Pass 2: whole cleaned utterance matches a phonetic word exactly.
+           'ah' and 'eh' are common STT transcriptions for the letter A
+           (especially with non-native / West-African accents). */
+        var P = {
+          A:['alpha','able','apple','ay','aye','ah','eh','ace','a'],
+          B:['bravo','bee','be','bi','bea','beat'],
+          C:['charlie','see','sea','si','ce'],
+          D:['delta','dee','di','de'],
+          E:['echo','ee'],
+          F:['foxtrot','ef','eff'],
+          G:['golf','gee','ge'],
+          H:['hotel','aitch','haitch','ache'],
+        };
+        var stripped = lo.replace(/[^a-z\s]/g,'').trim();
+        for (var l0 in P) { if (P[l0].indexOf(stripped) !== -1) return l0; }
+
+        /* Pass 3: explicit answer phrase — "my answer is B", "I choose C", "option D" */
+        var mp = lo.match(/\b(?:(?:my\s+)?answer\s+(?:is\s+)?|i\s+(?:choose|pick|select|say|go\s+with)\s+|option\s+|letter\s+|choice\s+|it(?:'?s)?\s+)([a-h])\b/);
+        if (mp) return mp[1].toUpperCase();
+
+        /* Pass 4: ordinal / number words → letter */
+        var N = {one:'A',first:'A','1':'A','1st':'A',
+                 two:'B',second:'B','2':'B','2nd':'B',
+                 three:'C',third:'C','3':'C','3rd':'C',
+                 four:'D',fourth:'D','4':'D','4th':'D',
+                 five:'E',fifth:'E','5':'E','5th':'E',
+                 six:'F',sixth:'F','6':'F','6th':'F',
+                 seven:'G',seventh:'G','7':'G','7th':'G',
+                 eight:'H',eighth:'H','8':'H','8th':'H'};
+        var ws = stripped.replace(/[^a-z0-9\s]/g,'').split(/\s+/);
+        for (var wi=0;wi<ws.length;wi++) { if (N[ws[wi]]) return N[ws[wi]]; }
+
+        /* Pass 4.5: word-by-word scan for short phonetics that won't false-match
+           inside the general \b regex passes (ah/eh/ay are clearly "A" sounds). */
+        var SHORT_A = {ah:'A', ay:'A', eh:'A', aye:'A'};
+        for (var si=0;si<ws.length;si++) { if (SHORT_A[ws[si]]) return SHORT_A[ws[si]]; }
+
+        /* Pass 5: single letter as a whole word (\b boundary) */
+        var ml = lo.match(/\b([a-h])\b/);
+        if (ml) return ml[1].toUpperCase();
+
+        /* Pass 6: phonetic word appearing anywhere (3+ chars to avoid short false matches) */
+        for (var l6 in P) {
+          for (var j=0;j<P[l6].length;j++) {
+            var ph = P[l6][j];
+            if (ph.length >= 3 && new RegExp('\\b' + ph + '\\b').test(stripped)) return l6;
+          }
+        }
+
+        /* Pass 7: content matching — student says the actual option text */
+        if (rawOpts && rawOpts.length) {
+          var OKP = ['A','B','C','D','E','F','G','H'];
+          var heardP = lo.replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+          var bestKP = null, bestScP = 0;
+          rawOpts.forEach(function(o, idx) {
+            if (idx >= OKP.length) return;
+            var optP = (typeof o === 'string' ? o : (o.text || '')).toLowerCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+            if (!optP || optP.length < 4) return;
+            if (optP.length >= 6 && heardP.indexOf(optP) !== -1) {
+              if (1.0 > bestScP) { bestScP = 1.0; bestKP = OKP[idx]; }
+              return;
+            }
+            var kwP = optP.split(' ').filter(function(w) { return w.length >= 4; });
+            if (!kwP.length) return;
+            var hitsP = kwP.filter(function(w) { return heardP.indexOf(w) !== -1; }).length;
+            var scP = hitsP / kwP.length;
+            if (scP >= 0.55 && scP > bestScP) { bestScP = scP; bestKP = OKP[idx]; }
+          });
+          if (bestKP) return bestKP;
+        }
+
+        return null;
+      }
+
+      /* ── Apply the chosen letter to the DOM ── */
+      function applyAnswer(q, letter) {
+        if (!q || !letter) return null;
+        if (answeredQs && answeredQs.has(q.$id)) return null;
+        var body = document.getElementById('qbody');
+        if (!body) return null;
+        body.querySelectorAll('.opt').forEach(function(el) {
+          el.classList.remove('is-selected','fb-correct','fb-wrong');
+          var ke = el.querySelector('.opt__key');
+          if (ke) ke.textContent = q.type === 'truefalse'
+            ? (el.dataset.k === 'True' ? '✓' : '✗') : el.dataset.k;
+        });
+        var target = body.querySelector('.opt[data-k="' + letter + '"]');
+        if (!target) return null;
+        target.classList.add('is-selected');
+        try { setAnswer(q.$id, letter); } catch(e) {}
+        var fb = null;
+        try { fb = showFeedback(q, letter); } catch(e) {}
+        return fb;
+      }
+
+      /* ── Pick best English TTS voice ── */
+      function bestVoice() {
+        if (!SYNTH) return null;
+        var vs = SYNTH.getVoices();
+        var en = vs.filter(function(v){ return /en/i.test(v.lang); });
+        return en.find(function(v){ return /en[-_]?(US|GB)/i.test(v.lang); }) || en[0] || vs[0] || null;
+      }
+
+      /* ── Build TTS text from question ── */
+      function buildText(q) {
+        var t = 'Question ' + (current + 1) + '. ' + q.text + '. ';
+        if (q.type === 'truefalse') {
+          t += 'True or False?';
+        } else if (q.type === 'mcq' || q.type === 'multi') {
+          try {
+            var opts = JSON.parse(q.options || '[]');
+            opts.forEach(function(o, i) {
+              if (i >= OPT_KEYS.length) return;
+              var txt = typeof o === 'string' ? o : (o.text || '');
+              t += OPT_KEYS[i] + ': ' + txt + '. ';
+            });
+          } catch(e) {}
+          if (q.type === 'multi') t += 'Multiple correct answers possible.';
+          /* "Say A, B, C or D" is in the one-time intro — not repeated per question */
+        } else {
+          t += 'This question needs a typed answer. Moving on in 5 seconds.';
+        }
+        return t;
+      }
+
+      /* ── Read feedback aloud, then call cb when done ── */
+      function readFeedback(speechText, cb) {
+        if (!active) return;
+        setBanner('Reviewing…');
+        if (!SYNTH || !speechText) {
+          advTimer = setTimeout(function() { if (active) cb(); }, 2000);
+          return;
+        }
+        SYNTH.cancel();
+        var u = new SpeechSynthesisUtterance(speechText);
+        u.rate  = calcRate();
+        u.pitch = 1.0;
+        var v = bestVoice(); if (v) u.voice = v;
+        u.onend   = function() { if (active) advTimer = setTimeout(function() { if (active) cb(); }, 500); };
+        u.onerror = function() { if (active) advTimer = setTimeout(function() { if (active) cb(); }, 500); };
+        SYNTH.speak(u);
+      }
+
+      /* ── Step 3: advance to next question ── */
+      function advance() {
+        if (!active) return;
+        cancelAll();
+        if (current < questions.length - 1) {
+          current++;
+          render(); /* render() → VoiceMode.onRender → readQuestion */
+        } else {
+          setBanner('All done! Exam complete.');
+          updateBtn('idle');
+          advTimer = setTimeout(function() { stop(true); }, 2500);
+        }
+      }
+
+      /* ── Step 2: continuous STT — waits indefinitely for user to speak ── */
+      function startListen() {
+        if (!active) return;
+        var q = questions[current];
+        if (!q) { stop(); return; }
+
+        if (q.type !== 'mcq' && q.type !== 'truefalse' && q.type !== 'multi') {
+          setBanner('Type required — moving on in 5 s');
+          updateBtn('listening');
+          advTimer = setTimeout(function() { if (active) advance(); }, 5000);
+          return;
+        }
+        if (answeredQs && answeredQs.has(q.$id)) {
+          setBanner('Already answered — skipping');
+          advTimer = setTimeout(function() { if (active) advance(); }, 1500);
+          return;
+        }
+        if (!SRec) {
+          setBanner('No speech recognition in this browser');
+          advTimer = setTimeout(function() { stop(); }, 3000);
+          return;
+        }
+
+        setBanner('Listening… say your answer');
+        updateBtn('listening');
+
+        if (vmRec) { try { vmRec.abort(); } catch(e) {} vmRec = null; }
+        if (rstTimer) { clearTimeout(rstTimer); rstTimer = null; }
+
+        var rawOpts = [];
+        try { rawOpts = JSON.parse(q.options || '[]'); } catch(e0) {}
+
+        try {
+          vmRec = new SRec();
+          vmRec.lang            = 'en-US';
+          vmRec.continuous      = true;  /* keep mic open even during silence */
+          vmRec.interimResults  = true;
+          vmRec.maxAlternatives = 6;
+
+          vmRec.onresult = function(e) {
+            /* Show what's being heard in real time */
+            if (!e.results[e.resultIndex].isFinal) {
+              var interim = e.results[e.resultIndex][0].transcript || '';
+              if (interim) setBanner('Heard: "' + interim.slice(0, 50) + '"…');
+              return;
+            }
+            /* Process final results (continuous mode — start from resultIndex) */
+            var heard = '', letter = null;
+            for (var ri = e.resultIndex; ri < e.results.length; ri++) {
+              if (!e.results[ri].isFinal) continue;
+              for (var ai = 0; ai < e.results[ri].length; ai++) {
+                var tx = e.results[ri][ai].transcript || '';
+                if (!heard) heard = tx;
+                if (!letter) letter = parseAnswer(tx, q.type, rawOpts);
+              }
+            }
+            if (!letter) return; /* wait for more speech */
+
+            /* Valid answer found — stop this recognition session */
+            var captured = vmRec;
+            vmRec = null;
+            if (captured) { try { captured.abort(); } catch(e2) {} }
+            if (!active) return;
+
+            if (letter === '__next__') {
+              setBanner('Skipping…');
+              advTimer = setTimeout(function() { if (active) advance(); }, 700);
+              return;
+            }
+            if (letter === '__prev__') {
+              if (current > 0) {
+                setBanner('Going back…');
+                advTimer = setTimeout(function() {
+                  if (!active) return;
+                  current--;
+                  render();
+                }, 700);
+              } else {
+                setBanner('Already at first question');
+                advTimer = setTimeout(function() { if (active) startListen(); }, 1500);
+              }
+              return;
+            }
+
+            retries = 0;
+            setBanner('Heard: ' + letter + ' ✓');
+            updateBtn('answered');
+            var fb = applyAnswer(q, letter);
+            readFeedback(fb && fb.speechText, function() { if (active) advance(); });
+          };
+
+          vmRec.onerror = function(ev) {
+            if (!active) return;
+            if (ev.error === 'aborted') { vmRec = null; return; }
+            vmRec = null;
+            if (ev.error === 'no-speech') {
+              /* Chrome silence timeout — restart without counting as a retry */
+              setBanner('Still listening… take your time');
+              scheduleRecRestart(300);
+              return;
+            }
+            /* Fatal mic error */
+            setBanner('Mic error — moving on');
+            advTimer = setTimeout(function() { if (active) advance(); }, 2000);
+          };
+
+          vmRec.onnomatch = function() {
+            if (!active) return;
+            vmRec = null;
+            retries++;
+            if (retries < MAX_RETRY) {
+              setBanner('Not clear — say A, B, C or D');
+              scheduleRecRestart(800);
+            } else {
+              retries = 0;
+              setBanner('Moving on…');
+              advTimer = setTimeout(function() { if (active) advance(); }, 1500);
+            }
+          };
+
+          vmRec.onend = function() {
+            /* Only restart if we haven't already handled this end via onerror/onresult */
+            if (vmRec !== null) { vmRec = null; if (active) scheduleRecRestart(400); }
+          };
+
+          vmRec.start();
+        } catch(e) {
+          vmRec = null;
+          advTimer = setTimeout(function() { if (active) advance(); }, 2000);
+        }
+      }
+
+      /* ── Step 1: TTS reads current question then starts STT ── */
+      function readQuestion() {
+        if (!active) return;
+        cancelAll();
+        retries = 0;
+        var q = questions[current];
+        if (!q) { stop(); return; }
+        updateBtn('reading');
+        setBanner('Reading Q' + (current + 1) + ' of ' + questions.length + '…');
+        if (!SYNTH) { startListen(); return; }
+        SYNTH.cancel();
+        var u = new SpeechSynthesisUtterance(buildText(q));
+        u.rate  = calcRate();
+        u.pitch = 1.0;
+        var v = bestVoice(); if (v) u.voice = v;
+        u.onend   = function() { if (active) advTimer = setTimeout(function(){ if (active) startListen(); }, 600); };
+        u.onerror = function() { if (active) startListen(); };
+        SYNTH.speak(u);
+      }
+
+      /* ── Start voice mode ── */
+      function start() {
+        if (active) return;
+        active = true;
+        retries = 0;
+        updateBtn('reading');
+        setBanner('Starting…');
+        disableManualAudio(true);
+
+        var INTRO_KEY    = 'ronyx_vm_intro_' + examId;
+        var hasSeenIntro = sessionStorage.getItem(INTRO_KEY) === '1';
+
+        if (!hasSeenIntro && SYNTH) {
+          /* First activation this exam — pause timer, play full instructions */
+          timerPaused = true;
+          SYNTH.cancel();
+          var intro = new SpeechSynthesisUtterance(
+            'Voice mode on. I will read each question and its options, then listen for your answer. ' +
+            'Say A, B, C, or D to choose your answer. ' +
+            'Say next or skip to move to the next question. ' +
+            'Say previous to go back. ' +
+            'Tap the Auto button to end voice mode at any time. ' +
+            'Your exam timer is now paused.'
+          );
+          intro.rate = 0.90;
+          var v1 = bestVoice(); if (v1) intro.voice = v1;
+          var done = function() {
+            timerPaused = false;
+            try { sessionStorage.setItem(INTRO_KEY, '1'); } catch(e) {}
+            if (active) readQuestion();
+          };
+          intro.onend   = done;
+          intro.onerror = done;
+          SYNTH.speak(intro);
+        } else if (SYNTH) {
+          /* Already seen intro — just play a short "on" cue */
+          SYNTH.cancel();
+          var cue = new SpeechSynthesisUtterance('Voice mode on.');
+          cue.rate = 0.92;
+          var v2 = bestVoice(); if (v2) cue.voice = v2;
+          cue.onend   = function() { if (active) readQuestion(); };
+          cue.onerror = function() { if (active) readQuestion(); };
+          SYNTH.speak(cue);
+        } else {
+          readQuestion();
+        }
+      }
+
+      /* ── Stop voice mode ── */
+      function stop(quiet) {
+        active = false;
+        timerPaused = false; /* always resume timer when VM stops */
+        cancelAll();
+        retries = 0;
+        updateBtn('idle');
+        setBanner('');
+        disableManualAudio(false);
+        if (!quiet && SYNTH) {
+          SYNTH.cancel();
+          var bye = new SpeechSynthesisUtterance('Voice mode off.');
+          bye.rate = 0.92;
+          SYNTH.speak(bye);
+        }
+      }
+
+      function toggle() { if (active) stop(false); else start(); }
+
+      vmBtn.addEventListener('click', toggle);
+      vmBtn.addEventListener('touchend', function(e){ e.preventDefault(); toggle(); }, { passive:false });
+
+      return {
+        isActive: function() { return active; },
+        stop: stop,
+        onRender: function() {
+          if (!active) return;
+          cancelAll();
+          retries = 0;
+          advTimer = setTimeout(function() { if (active) readQuestion(); }, 350);
         }
       };
     })();

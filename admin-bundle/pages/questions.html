@@ -123,12 +123,12 @@
   <nav class="tabbar" data-nav-admin="questions"></nav>
 </div>
 
-<script src="../js/appwrite.min.js?v=mqypss88"></script>
-<script src="../js/config.js?v=mqypss88"></script>
-<script src="../js/appwrite.js?v=mqypss88"></script>
-<script src="../js/admin-data.js?v=mqypss88"></script>
-<script src="../js/theme.js?v=mqypss88"></script>
-<script src="../js/ui.js?v=mqypss88"></script>
+<script src="../js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="../js/config.js?v=mrr39s6t"></script>
+<script src="../js/appwrite.js?v=mrr39s6t"></script>
+<script src="../js/admin-data.js?v=mrr39s6t"></script>
+<script src="../js/theme.js?v=mrr39s6t"></script>
+<script src="../js/ui.js?v=mrr39s6t"></script>
 <script>
 requireAdmin();
 
@@ -269,7 +269,38 @@ function draw(list) {
   }).join('');
 }
 
-/* ---- Load ---- */
+/* ---- Load — progressive: show first 100 immediately, rest in background ---- */
+var _loadingMore = false;
+
+function _updateStats() {
+  document.getElementById('stPub').textContent   = allQs.filter(function(q){ return q.status==='published'; }).length;
+  document.getElementById('stDraft').textContent = allQs.filter(function(q){ return !q.status||q.status==='draft'; }).length;
+  buildTypeTally(allQs);
+}
+
+async function _loadMoreBackground(cursor, total) {
+  _loadingMore = true;
+  try {
+    while (allQs.length < total) {
+      var page = await RonyxAdmin.listQuestionsPage(examId || null, cursor);
+      if (!page.documents.length) break;
+      allQs = allQs.concat(page.documents);
+      document.getElementById('stTotal').textContent = allQs.length + (allQs.length < total ? '…' : '');
+      _updateStats();
+      filterDraw();
+      if (page.documents.length < 100) break;
+      cursor = page.documents[page.documents.length - 1].$id;
+    }
+    document.getElementById('stTotal').textContent = allQs.length;
+    _updateStats(); filterDraw();
+  } catch(e) { /* partial load is fine */ }
+  _loadingMore = false;
+}
+
+function _timeout(ms) {
+  return new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout')); }, ms); });
+}
+
 async function load() {
   if (examId) {
     document.getElementById('examBanner').style.display = 'block';
@@ -282,17 +313,28 @@ async function load() {
     } catch(e) {}
   }
   try {
-    allQs = await RonyxAdmin.listQuestions(examId || null);
-    /* Sort newest first */
-    allQs.sort(function(a,b){ return (b.$createdAt||'').localeCompare(a.$createdAt||''); });
-    document.getElementById('stTotal').textContent = allQs.length;
-    document.getElementById('stPub').textContent   = allQs.filter(function(q){return q.status==='published';}).length;
-    document.getElementById('stDraft').textContent = allQs.filter(function(q){return !q.status||q.status==='draft';}).length;
-    buildTypeTally(allQs);
+    /* Phase 1 — first 100 questions with 10s timeout */
+    var first = await Promise.race([
+      RonyxAdmin.listQuestionsPage(examId || null, null),
+      _timeout(10000)
+    ]);
+    allQs = first.documents;
+    var total = first.total;
+    document.getElementById('stTotal').textContent = allQs.length < total ? allQs.length + '…' : allQs.length;
+    _updateStats();
     filterDraw();
+
+    /* Phase 2 — load the rest silently in the background */
+    if (allQs.length < total && allQs.length > 0) {
+      var cursor = allQs[allQs.length - 1].$id;
+      _loadMoreBackground(cursor, total);
+    }
   } catch(e) {
+    var msg = e.message === 'timeout'
+      ? 'Request timed out — check your connection and reload.'
+      : ('Failed to load: ' + (e.message || 'unknown error'));
     document.getElementById('qList').innerHTML =
-      '<div class="empty"><div class="empty__icon">&#9888;&#65039;</div><p>Failed to load: ' + e.message + '</p></div>';
+      '<div class="empty"><div class="empty__icon">&#9888;&#65039;</div><p>' + msg + '</p></div>';
   }
 }
 load();

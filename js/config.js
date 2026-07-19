@@ -36,8 +36,28 @@ window.RONYX_CONFIG = {
     notifications: 'notifications',
     notes:         'notes',
     books:         'books',
+    /* Launch features — added by setup-launch.js */
+    competitions:  'competitions',
+    study_rooms:   'study_rooms',
+    points_ledger: 'points_ledger',
+    /* Nexus chat — added by setup-nexus.js */
+    nexus_rooms:    'nexus_rooms',
+    nexus_messages: 'nexus_messages',
+    /* Social layer — added by setup-social.js */
+    social_posts:    'social_posts',
+    social_follows:  'social_follows',
+    social_comments: 'social_comments',
   },
+
+  /* Paystack — paste your PUBLIC key here when you're ready to enable payouts.
+     Leave empty to keep the withdrawal UI hidden.                              */
+  PAYSTACK_PUBLIC_KEY: '',
   BUCKETS: {
     uploads: 'uploads',
   },
+
+  /* Web Push (VAPID) — run: npx web-push generate-vapid-keys
+     Paste the PUBLIC key here. Store PRIVATE key + VAPID_EMAIL in Vercel env vars.
+     Leave empty string to disable push (API route will no-op gracefully). */
+  VAPID_PUBLIC_KEY: 'BMM8SNemvtt5TNK8sotNsRcOrP8k-sA6ktcgMOONepFlzqX1pMDr59PYajIaM1G9gVjHKOIqsFXzKcK3WAkm-7w',
 };

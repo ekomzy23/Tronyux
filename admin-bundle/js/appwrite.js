@@ -14,6 +14,13 @@ if (RONYX.CONFIGURED && window.Appwrite) {
 
 function goTo(p) { location.href = p; }
 
+/* HTML-escape helper — use for every user-controlled value in innerHTML */
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = String(s == null ? '' : s);
+  return d.innerHTML;
+}
+
 function toast(msg, type) {
   type = type || 'info';
   let stack = document.getElementById('ronyx-toasts');
@@ -33,11 +40,18 @@ function toast(msg, type) {
 }
 
 async function isAdmin() {
-  if (!RONYX.REQUIRE_ADMIN_TEAM) return true;
-  if (!teams) return true;
+  if (!account) return false;
   try {
-    const list = await teams.list();
-    return list.teams.some(t => t.$id === 'admins' || (t.name || '').toLowerCase() === 'admins');
+    const user = await account.get();
+    const email = (user.email || '').toLowerCase();
+    /* Primary check: email matches the configured admin email */
+    if (RONYX.ADMIN_EMAIL && email === (RONYX.ADMIN_EMAIL || '').toLowerCase()) return true;
+    /* Secondary check: user is in the 'admins' Appwrite team */
+    if (RONYX.REQUIRE_ADMIN_TEAM && teams) {
+      const list = await teams.list();
+      return list.teams.some(t => t.$id === 'admins' || (t.name || '').toLowerCase() === 'admins');
+    }
+    return false; /* fail-closed: deny if neither check passes */
   } catch (e) { return false; }
 }
 
@@ -50,6 +64,11 @@ let _pendingUserId = null;
 
 async function adminSendOtp(email, onSent) {
   if (!RONYX.CONFIGURED) { goTo('dashboard.html'); return; }
+  /* Block non-admin emails before touching Appwrite at all */
+  if (RONYX.ADMIN_EMAIL && (email || '').toLowerCase() !== (RONYX.ADMIN_EMAIL || '').toLowerCase()) {
+    toast('This email is not authorised to access the admin panel.', 'error');
+    return;
+  }
   try {
     /* Clear any stale session before requesting a new token */
     try { await account.deleteSession('current'); } catch(e) {}
@@ -75,7 +94,14 @@ async function adminVerifyOtp(otp) {
   try {
     /* Clear any stale session so Appwrite accepts the new token session */
     try { await account.deleteSession('current'); } catch(e) {}
-    await account.createSession(_pendingUserId, otp.trim());
+    const _sess = await account.createSession(_pendingUserId, otp.trim());
+    /* Store session secret as localStorage fallback so the Appwrite SDK sends
+       X-Fallback-Cookies on every request (including POST). Without this,
+       SameSite=Lax cookie policy blocks cross-origin POST auth. */
+    if (_sess && _sess.secret && window.localStorage) {
+      const _ck = 'a_session_' + (RONYX.PROJECT_ID || '').toLowerCase();
+      try { localStorage.setItem('cookieFallback', JSON.stringify({ [_ck]: _sess.secret })); } catch(e) {}
+    }
     if (await isAdmin()) {
       _pendingUserId = null;
       goTo('dashboard.html');
@@ -97,11 +123,37 @@ async function adminLogout() {
   goTo('login.html');
 }
 
+/* Warn once per session if the session secret isn't stored (POST requests need it).
+   The secret is saved on login — if missing, the admin must log out and back in. */
+function _checkCookieFallback() {
+  if (sessionStorage.getItem('ronyx_fb_ok')) return;
+  sessionStorage.setItem('ronyx_fb_ok', '1');
+  try {
+    var fb = JSON.parse(localStorage.getItem('cookieFallback') || 'null');
+    var key = 'a_session_' + (RONYX.PROJECT_ID || '').toLowerCase();
+    if (!fb || !fb[key]) {
+      setTimeout(function() {
+        toast('Session needs refresh — log out and back in so saving/creating content works correctly.', 'info');
+      }, 1500);
+    }
+  } catch(e) {}
+}
+
+/* Helper called by AI features to get the current session key */
+function getAdminSessionKey() {
+  try {
+    var fb = JSON.parse(localStorage.getItem('cookieFallback') || '{}');
+    var key = 'a_session_' + (RONYX.PROJECT_ID || '').toLowerCase();
+    return fb[key] || '';
+  } catch(e) { return ''; }
+}
+
 async function requireAdmin() {
   if (!RONYX.CONFIGURED) return;
   try {
     await account.get();
     if (!(await isAdmin())) goTo('login.html');
+    _checkCookieFallback();
   } catch (e) { goTo('login.html'); }
 }
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Submitted — Runyx</title>
+  <title>Submitted — Ronyx</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,10 +25,10 @@
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/data.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
   <script>
   (async function () {
     var examId    = sessionStorage.getItem('ronyx_examId') || '';
@@ -37,57 +37,122 @@
     var attemptId = sessionStorage.getItem('ronyx_attemptId');
     var aKey      = examId ? 'ronyx_ans_' + examId : 'ronyx_answers';
     var answers   = JSON.parse(sessionStorage.getItem(aKey) || '{}');
-    var rawQs     = JSON.parse(sessionStorage.getItem('ronyx_q_' + examId) || '[]');
+
+    /* Fetch questions with correct answers from Appwrite for server-side-style grading.
+       Correct answers are NOT in sessionStorage (stripped during exam to prevent devtools cheating).
+       Fall back to sessionStorage data only if Appwrite is unavailable (offline). */
+    /* Questions this student was actually assigned (subset of the full bank) */
+    var sessionQs = JSON.parse(sessionStorage.getItem('ronyx_q_' + examId) || '[]');
+    var sessionIds = sessionQs.map(function(q) { return q.id; });
+
+    var rawQs = [];
+    try {
+      if (examId && window.RonyxData && window.RONYX_CONFIG && RONYX_CONFIG.CONFIGURED) {
+        var qDocs = await RonyxData.listQuestions(examId);
+        var allFromServer = qDocs.map(function(q) {
+          return {
+            id:      q.$id,
+            text:    q.text,
+            type:    q.type,
+            options: q.options || '[]',
+            answer:  q.correctAnswer || q.answer || '',
+            explain: q.explanation   || q.explain  || '',
+            marks:   q.marks || 1,
+          };
+        });
+        /* Keep only the questions this student was given */
+        rawQs = sessionIds.length
+          ? allFromServer.filter(function(q) { return sessionIds.indexOf(q.id) !== -1; })
+          : allFromServer;
+      }
+    } catch(e) {}
+    /* Offline fallback — use sessionStorage questions directly */
+    if (!rawQs.length) {
+      rawQs = sessionQs;
+    }
 
     /* ── Auto-score ──────────────────────────────────────────
-       Objective questions (MCQ / true-false / multi-select) are
-       scored automatically by comparing the student's answer key
-       to the correct answer key stored in the question.
-       Theory / fill / upload questions cannot be auto-graded;
-       they are shown in the review but do not add to totalMarks.
+       Admin stores MCQ/multi correctAnswer as pipe-separated option TEXTS
+       (e.g. "Paris" or "Paris|London") because that is what the question
+       editor saves.  Students answer with letter KEYS ("A", "B", "A,C").
+       resolveCorrectKeys() bridges the two by matching texts → positions.
     ────────────────────────────────────────────────────────── */
-    var OBJECTIVE = ['mcq', 'truefalse', 'multi'];
+    var OBJECTIVE   = ['mcq', 'truefalse', 'multi'];
+    var LETTER_KEYS = ['A','B','C','D','E','F','G','H'];
+
+    function resolveCorrectKeys(q) {
+      var raw = String(q.answer || '').trim();
+      if (!raw) return [];
+      if (q.type === 'truefalse') return [raw];
+
+      /* If correctAnswer is already letter keys ("A", "B,C", "A|B") use them directly.
+         This handles questions created via JSON import (correctAnswer:"B") vs UI editor
+         (correctAnswer:"London") — both formats must score correctly. */
+      if (/^[A-Ha-h]([,|][A-Ha-h])*$/.test(raw)) {
+        return raw.replace(/\|/g, ',').split(',').map(function(s){ return s.trim().toUpperCase(); });
+      }
+
+      /* correctAnswer is option text(s) — look up letter position in options array */
+      try {
+        var opts      = JSON.parse(q.options || '[]');
+        var corrTexts = raw.split('|').map(function(s){ return s.trim().toLowerCase(); });
+        var keys = [];
+        opts.forEach(function(o, idx) {
+          if (idx >= LETTER_KEYS.length) return;
+          var txt = (typeof o === 'string' ? o : (o.text || '')).trim().toLowerCase();
+          if (corrTexts.indexOf(txt) !== -1) keys.push(LETTER_KEYS[idx]);
+        });
+        return keys;
+      } catch(e) { return []; }
+    }
+
     var totalMarks = 0, score = 0, correct = 0, incorrect = 0, unattempted = 0;
     var resultQuestions = [];
 
     rawQs.forEach(function (q) {
-      var marks   = q.marks || 1;
-      var chosen  = (answers[q.id] !== undefined && answers[q.id] !== null) ? String(answers[q.id]) : '';
-      var corrAns = String(q.answer || '').trim();
-      var isObj   = OBJECTIVE.indexOf(q.type) !== -1;
-      var tried   = chosen.trim() !== '';
+      var marks  = q.marks || 1;
+      var chosen = (answers[q.id] !== undefined && answers[q.id] !== null) ? String(answers[q.id]) : '';
+      var isObj  = OBJECTIVE.indexOf(q.type) !== -1;
+      var tried  = chosen.trim() !== '';
 
       var isCorrect = false, earned = 0;
 
       if (isObj) {
-        totalMarks += marks;
-        if (tried && corrAns) {
-          var cKeys = corrAns.split(',').map(function(s){ return s.trim().toUpperCase(); }).sort().join(',');
-          var sKeys = chosen.split(',').map(function(s){ return s.trim().toUpperCase(); }).sort().join(',');
-          isCorrect = (cKeys === sKeys);
-          if (isCorrect) { earned = marks; correct++; }
-          else           { incorrect++; }
-        } else if (!tried) {
-          unattempted++;
+        var corrKeys = resolveCorrectKeys(q);
+        if (corrKeys.length) {
+          /* Correct answer configured — auto-score this question */
+          totalMarks += marks;
+          if (tried) {
+            var cStr = corrKeys.map(function(k){ return k.toUpperCase(); }).sort().join(',');
+            var sStr = chosen.split(',').map(function(s){ return s.trim().toUpperCase(); }).sort().join(',');
+            isCorrect = (cStr === sStr);
+            if (isCorrect) { earned = marks; correct++; } else { incorrect++; }
+          } else {
+            unattempted++;
+          }
         } else {
-          incorrect++;
+          /* No correct answer set — count attempt but don't penalise the student */
+          if (tried) correct++; else unattempted++;
         }
       } else {
-        /* Subjective: track attempt only, not scored */
+        /* Subjective: track attempt only */
         if (tried) correct++; else unattempted++;
       }
 
       score += earned;
+      /* Store resolved letter key(s) so qreview.html optLabel can display "A. Option text" */
+      var corrKeys2 = resolveCorrectKeys(q);
+      var corrLetter = (q.type === 'truefalse') ? q.answer : corrKeys2.join(',');
       resultQuestions.push({
         id: q.id, text: q.text, type: q.type,
-        options: q.options, answer: q.answer, explain: q.explain,
+        options: q.options, answer: corrLetter || q.answer, explain: q.explain,
         marks: marks, chosen: chosen, isCorrect: isCorrect, earned: earned
       });
     });
 
     var pct  = totalMarks > 0 ? Math.round(score / totalMarks * 100) : 0;
     var mins = startTs ? Math.round((Date.now() - startTs) / 60000) : 0;
-    var grade = pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 45 ? 'D' : 'F';
+    var grade = pct >= 70 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 45 ? 'D' : totalMarks > 0 ? 'F' : '—';
 
     var result = {
       examId: examId, examTitle: examTitle,
@@ -123,6 +188,6 @@
     }, 1200);
   })();
   </script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
 </body>
 </html>

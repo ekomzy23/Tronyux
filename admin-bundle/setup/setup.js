@@ -106,9 +106,9 @@ async function run() {
   console.log('\n▶ questions attributes…');
   await aStr('questions','examId',64,true);
   await aEnum('questions','type',['mcq','multi','truefalse','theory','fill','match','upload'],false,'mcq');
-  await aStr('questions','text',5000,true);
-  await aStr('questions','options',5000);        // JSON string of choices
-  await aStr('questions','correctAnswer',1000);
+  await aStr('questions','text',500000,true);
+  await aStr('questions','options',500000);      // JSON string of choices
+  await aStr('questions','correctAnswer',500000);
   await aInt('questions','marks',false,1);
   await aEnum('questions','difficulty',['easy','medium','hard'],false,'medium');
   await aStr('questions','topic',128);
@@ -167,6 +167,10 @@ async function run() {
   await aInt('books','readMinutes',false,10);
   await aInt('books','pages',false,0);
   await aStr('books','fileId',64);         // PDF in storage
+  await aStr('books','faculty',256);
+  await aStr('books','department',256);
+  await aStr('books','courseCode',64);
+  await aStr('books','category',64);       // e.g. "books","summaries","research","materials","notes","past"
 
   console.log('\n▶ equations attributes…');
   await aStr('equations','name',128,true);
@@ -184,6 +188,20 @@ async function run() {
   await safe('results.byUser',        () => databases.createIndex(DB,'results','byUser',IndexType.Key,['userId']));
   await safe('drafts.byKeyUser',      () => databases.createIndex(DB,'drafts','byKeyUser',IndexType.Key,['key','userId']));
   await safe('notifications.byUser',  () => databases.createIndex(DB,'notifications','byUser',IndexType.Key,['userId']));
+
+  /* Patch: notifications was created with ownerOnly (create-only).
+     Appwrite checks collection-level READ before any operation — without it,
+     all createDocument calls return 401.  updateCollection is idempotent. */
+  console.log('\n▶ patching notifications permissions…');
+  try {
+    await databases.updateCollection(DB, 'notifications', 'Notifications', [
+      Permission.read(Role.users()),
+      Permission.create(Role.users()),
+      Permission.update(Role.users()),
+      Permission.delete(Role.users()),
+    ], true);
+    console.log('  ✓ notifications.permissions');
+  } catch(e) { console.log('  ✗ notifications.permissions →', e.message); }
   await safe('notes.byUser',          () => databases.createIndex(DB,'notes','byUser',IndexType.Key,['userId']));
   await safe('books.bySubject',        () => databases.createIndex(DB,'books','bySubject',IndexType.Key,['subject']));
   await safe('equations.byCategory',   () => databases.createIndex(DB,'equations','byCategory',IndexType.Key,['category']));

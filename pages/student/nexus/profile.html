@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Profile — Pulse · Ronyx</title>
+<link rel="stylesheet" href="/css/base.css">
+<style>
+  :root {
+    --nx-bg:     #06060e; --nx-surf: #0d0d1a; --nx-surf2: #111122;
+    --nx-border: rgba(124,109,245,.18); --nx-p: #7c6df5; --nx-c: #00d2ff;
+    --nx-g:      #00f09a; --nx-pk: #ff4d8c; --nx-text: #e2e0ff; --nx-muted: #7070a0;
+    --nx-glow:   0 0 32px rgba(124,109,245,.25); --nx-hdr: rgba(6,6,14,.95);
+  }
+  @media (prefers-color-scheme: light) { :root {
+    --nx-bg: #f0effe; --nx-surf: #ffffff; --nx-surf2: #f4f2ff;
+    --nx-border: rgba(124,109,245,.2); --nx-text: #1a1040; --nx-muted: #7070a0;
+    --nx-glow: 0 0 32px rgba(124,109,245,.12); --nx-hdr: rgba(240,239,254,.96);
+  }}
+  :root[data-theme="light"] {
+    --nx-bg: #f0effe; --nx-surf: #ffffff; --nx-surf2: #f4f2ff;
+    --nx-border: rgba(124,109,245,.2); --nx-text: #1a1040; --nx-muted: #7070a0;
+    --nx-glow: 0 0 32px rgba(124,109,245,.12); --nx-hdr: rgba(240,239,254,.96);
+  }
+  :root[data-theme="dark"] {
+    --nx-bg: #06060e; --nx-surf: #0d0d1a; --nx-surf2: #111122;
+    --nx-border: rgba(124,109,245,.18); --nx-text: #e2e0ff; --nx-muted: #7070a0;
+    --nx-glow: 0 0 32px rgba(124,109,245,.25); --nx-hdr: rgba(6,6,14,.95);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; background: var(--nx-bg); color: var(--nx-text);
+    font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  /* ── Header ── */
+  .nx-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--nx-border);
+    background: var(--nx-hdr); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .back-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--nx-border); background: var(--nx-surf2);
+    color: var(--nx-text); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hdr-title { font-size: 16px; font-weight: 800; }
+
+  /* ── Profile hero ── */
+  .profile-hero {
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid var(--nx-border);
+  }
+  .profile-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; margin-bottom: 16px;
+  }
+  .profile-avatar-wrap { position: relative; }
+  .profile-avatar {
+    width: 76px; height: 76px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 900;
+    border: 3px solid var(--nx-border);
+  }
+  .profile-avatar-ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid transparent;
+    background: linear-gradient(135deg, var(--nx-p), var(--nx-c)) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out; mask-composite: exclude;
+  }
+  .profile-handle {
+    font-size: 18px; font-weight: 900; letter-spacing: -.3px;
+    margin-top: 4px;
+  }
+  .profile-handle-sub {
+    font-size: 12px; color: var(--nx-muted); margin-top: 3px;
+  }
+
+  .follow-btn {
+    padding: 9px 20px; border-radius: 22px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 800; transition: all .15s;
+  }
+  .follow-btn--follow {
+    background: linear-gradient(135deg, var(--nx-p), var(--nx-c));
+    color: #fff; box-shadow: 0 0 14px rgba(124,109,245,.4);
+  }
+  .follow-btn--following {
+    background: transparent; border: 1.5px solid var(--nx-p);
+    color: var(--nx-p);
+  }
+  .follow-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+  .profile-stats {
+    display: flex; gap: 28px; margin-top: 4px;
+  }
+  .stat-item { text-align: center; cursor: pointer; }
+  .stat-item__n { font-size: 18px; font-weight: 900; }
+  .stat-item__l { font-size: 11px; color: var(--nx-muted); margin-top: 1px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── Bio / name ── */
+  .profile-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .profile-bio  { font-size: 13px; color: var(--nx-muted); line-height: 1.4; }
+
+  /* ── Posts section ── */
+  .posts-section { padding-bottom: 100px; }
+  .section-label {
+    padding: 12px 16px 8px;
+    font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--nx-muted);
+    border-bottom: 1px solid var(--nx-border);
+  }
+
+  /* ── Post card ── */
+  .post-card {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--nx-border);
+    transition: background .15s;
+  }
+  .post-card:hover { background: rgba(124,109,245,.03); }
+  .post-type-tag {
+    display: inline-block;
+    font-size: 10px; font-weight: 800; padding: 2px 8px;
+    border-radius: 10px; letter-spacing: .5px; margin-bottom: 8px;
+  }
+  .post-type-note     { background: rgba(124,109,245,.15); color: var(--nx-p); }
+  .post-type-question { background: rgba(255,77,140,.12);  color: var(--nx-pk); }
+  .post-type-formula  { background: rgba(0,210,255,.12);   color: var(--nx-c); }
+  .post-type-tip      { background: rgba(0,240,154,.12);   color: var(--nx-g); }
+
+  .post-body { font-size: 14px; line-height: 1.55; color: var(--nx-text);
+    white-space: pre-wrap; word-break: break-word; }
+  .post-subject { font-size: 11px; color: var(--nx-muted); margin-top: 3px; }
+  .post-footer {
+    display: flex; gap: 14px; margin-top: 10px;
+    font-size: 12px; color: var(--nx-muted);
+  }
+  .post-footer span { display: flex; align-items: center; gap: 4px; }
+
+  /* ── Empty & spin ── */
+  .nx-empty {
+    text-align: center; padding: 50px 20px; color: var(--nx-muted); font-size: 14px;
+  }
+  .nx-empty__icon { font-size: 42px; margin-bottom: 12px; }
+  .nx-spin {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 3px solid rgba(124,109,245,.2); border-top-color: var(--nx-p);
+    animation: spin .7s linear infinite; margin: 50px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Skeleton ── */
+  .skeleton {
+    background: linear-gradient(90deg,rgba(124,109,245,.08) 25%,rgba(124,109,245,.15) 50%,rgba(124,109,245,.08) 75%);
+    background-size: 200% 100%; border-radius: 6px;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+<script>(function(){ var t=localStorage.getItem('ronyx_theme'); if(t) document.documentElement.setAttribute('data-theme',t); })();</script>
+</head>
+<body>
+
+<header class="nx-header">
+  <button class="back-btn" onclick="history.back()" style="font-size:18px;">←</button>
+  <span class="hdr-title" id="hdrHandle">Profile</span>
+  <button class="back-btn" id="themeBtn" onclick="toggleTheme()" style="margin-left:auto;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;">🌙</button>
+</header>
+
+<div id="mainContent">
+  <div class="nx-spin"></div>
+</div>
+
+<script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+<script src="/js/config.js?v=mrr39s6t"></script>
+<script src="/js/appwrite.js?v=mrr39s6t"></script>
+<script src="/js/data.js?v=mrr39s6t"></script>
+<script src="/js/social-data.js?v=mrr39s6t"></script>
+<script>
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function timeAgo(iso) {
+  const d = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (d < 60) return 'just now';
+  if (d < 3600) return Math.floor(d/60) + 'm ago';
+  if (d < 86400) return Math.floor(d/3600) + 'h ago';
+  return Math.floor(d/86400) + 'd ago';
+}
+
+let myId      = null;
+let targetId  = null;
+let isOwnProfile = false;
+let followState  = false;
+
+async function init() {
+  const me = await SocialData.getMe();
+  if (!me) return;
+  myId = me.$id;
+
+  const params = new URLSearchParams(window.location.search);
+  targetId = params.get('id') || myId;
+  isOwnProfile = (targetId === myId);
+
+  await renderProfile();
+}
+
+async function renderProfile() {
+  const handle = SocialData.nexusHandle(targetId);
+  const color  = SocialData.userColor(targetId);
+
+  document.getElementById('hdrHandle').textContent = 'Profile';
+  document.title = 'Profile — Ronyx';
+
+  /* parallel fetches */
+  const [counts, postCount, posts, following] = await Promise.all([
+    SocialData.getFollowCounts(targetId),
+    SocialData.getPostCount(targetId),
+    SocialData.getUserPosts(targetId, 30),
+    isOwnProfile ? Promise.resolve(false) : SocialData.isFollowing(targetId),
+  ]);
+  followState = following;
+
+  /* Try to get actual name from posts */
+  const realName = (posts[0] && posts[0].userName) || null;
+  const displayName = realName || handle;
+  const initls = displayName.split(/[\s\-]/).filter(Boolean)
+    .map(w=>w[0]).join('').toUpperCase().slice(0,2) || handle.slice(0,2).toUpperCase();
+
+  document.getElementById('hdrHandle').textContent = displayName;
+  document.title = displayName + ' — Ronyx';
+
+  const followHtml = isOwnProfile ? '' : `
+    <button class="follow-btn ${followState?'follow-btn--following':'follow-btn--follow'}"
+      id="followBtn" onclick="toggleFollow()">
+      ${followState ? '✓ Following' : '+ Follow'}
+    </button>`;
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-top">
+        <div>
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar" style="background:${color}20;color:${color};border-color:${color}40;">
+              ${initls}
+            </div>
+            <div class="profile-avatar-ring"></div>
+          </div>
+          <div class="profile-handle" style="color:${color};">${esc(displayName)}</div>
+          <div class="profile-handle-sub" style="color:var(--nx-muted)">${esc(handle)}</div>
+        </div>
+        ${followHtml}
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-item">
+          <div class="stat-item__n">${postCount}</div>
+          <div class="stat-item__l">Posts</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item__n">${counts.followers}</div>
+          <div class="stat-item__l">Crew</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-item__n">${counts.following}</div>
+          <div class="stat-item__l">Tracking</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="posts-section">
+      <div class="section-label">Posts</div>
+      ${posts.length ? posts.map(renderPost).join('') : `
+        <div class="nx-empty">
+          <div class="nx-empty__icon">✨</div>
+          <p>${isOwnProfile ? "You haven't posted anything yet. Share your first note!" : "No posts yet."}</p>
+          ${isOwnProfile ? `<a href="/pages/student/nexus/feed.html" style="display:inline-block;margin-top:16px;padding:10px 20px;border-radius:20px;background:linear-gradient(135deg,var(--nx-p),var(--nx-c));color:#fff;font-size:13px;font-weight:700;text-decoration:none;">Go to Feed →</a>` : ''}
+        </div>`}
+    </div>`;
+}
+
+function renderPost(p) {
+  const typeLabel = {note:'📝 Note', question:'❓ Question', formula:'🔢 Formula', tip:'💡 Tip'}[p.type] || '📝 Note';
+  const raw = p.content || '';
+  const imgIdx = raw.indexOf('__img__:');
+  const bodyText = imgIdx !== -1 ? raw.slice(0, imgIdx).trim() : raw;
+  const imgUrl   = imgIdx !== -1 ? raw.slice(imgIdx + 8).trim().split('\n')[0] : null;
+  return `<div class="post-card">
+    <span class="post-type-tag post-type-${p.type||'note'}">${typeLabel}</span>
+    ${p.subject ? `<div class="post-subject">${esc(p.subject)}</div>` : ''}
+    ${bodyText ? `<div class="post-body">${esc(bodyText)}</div>` : ''}
+    ${imgUrl ? `<div style="margin-top:8px;border-radius:10px;overflow:hidden;border:1px solid rgba(124,109,245,.15);"><img src="${imgUrl}" style="width:100%;max-height:240px;object-fit:cover;display:block;" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
+    <div class="post-footer">
+      <span>❤️ ${p.likes||0}</span>
+      <span>💬 ${p.commentCount||0}</span>
+      <span style="margin-left:auto;">${timeAgo(p.$createdAt)}</span>
+    </div>
+  </div>`;
+}
+
+async function toggleFollow() {
+  const btn = document.getElementById('followBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    if (followState) {
+      await SocialData.unfollowUser(targetId);
+      followState = false;
+      btn.textContent = '+ Follow';
+      btn.className = 'follow-btn follow-btn--follow';
+    } else {
+      await SocialData.followUser(targetId);
+      followState = true;
+      btn.textContent = '✓ Following';
+      btn.className = 'follow-btn follow-btn--following';
+    }
+  } catch(_) {} finally { btn.disabled = false; }
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = (root.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('ronyx_theme', next);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = next === 'dark' ? '🌙' : '☀️';
+}
+
+(function boot() {
+  const t = localStorage.getItem('ronyx_theme') || 'dark';
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = t === 'dark' ? '🌙' : '☀️';
+  const check = setInterval(function() {
+    if (window.SocialData && window.account) {
+      clearInterval(check);
+      init();
+    }
+  }, 80);
+})();
+</script>
+</body>
+</html>

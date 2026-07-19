@@ -67,19 +67,20 @@
         <div class="feature"><span class="feature__icon">4</span> Submit before the timer runs out</div>
       </div>
 
-      <label class="feature" style="font-size: 13px; margin-bottom: 16px;">
+      <label class="feature" style="font-size: 13px; margin-bottom: 6px;">
         <input type="checkbox" class="checkbox" id="agree">&nbsp;I've read and understood the instructions
       </label>
+      <p id="agreeErr" style="font-size:12px;color:var(--color-danger,#f43f5e);margin:0 0 12px 0;display:none;">Please tick the checkbox above to continue.</p>
 
       <button class="btn btn--primary" id="continueBtn">I'm ready &mdash; continue</button>
     </div>
   </div>
 
-  <script src="/js/appwrite.min.js?v=mqypss88"></script>
-  <script src="/js/config.js?v=mqypss88"></script>
-  <script src="/js/appwrite.js?v=mqypss88"></script>
-  <script src="/js/data.js?v=mqypss88"></script>
-  <script src="/js/theme.js?v=mqypss88"></script>
+  <script src="/js/appwrite.min.js?v=mrr39s6t"></script>
+  <script src="/js/config.js?v=mrr39s6t"></script>
+  <script src="/js/appwrite.js?v=mrr39s6t"></script>
+  <script src="/js/data.js?v=mrr39s6t"></script>
+  <script src="/js/theme.js?v=mrr39s6t"></script>
   <script>
     const params = new URLSearchParams(location.search);
     const examId = params.get('exam') || '';
@@ -120,7 +121,9 @@
 
     // continue → save chosen format + time, go to permissions
     document.getElementById('continueBtn').addEventListener('click', () => {
-      if (!document.getElementById('agree').checked) { alert('Please confirm you have read the instructions.'); return; }
+      var agreeErr = document.getElementById('agreeErr');
+      if (!document.getElementById('agree').checked) { agreeErr.style.display = ''; return; }
+      agreeErr.style.display = 'none';
       sessionStorage.setItem('ronyx_format', format);
       sessionStorage.setItem('ronyx_minutes', minutes);
       sessionStorage.setItem('ronyx_qcount', qcount);
